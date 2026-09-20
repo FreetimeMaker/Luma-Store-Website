@@ -50,7 +50,7 @@ export default function AuthNav() {
     .toUpperCase();
 
   return (
-    <nav className="mx-auto flex max-w-6xl items-center justify-between gap-3">
+    <nav className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
       <Link href="/" className="group flex min-w-0 items-center gap-3">
         <Image
           src="/android-chrome-192x192.png"
@@ -64,11 +64,11 @@ export default function AuthNav() {
           <div className="truncate text-sm font-semibold text-white transition-colors group-hover:text-indigo-200 sm:text-base">
             Luma Store
           </div>
-          <div className="hidden text-[11px] text-slate-500 sm:block">Apps & developer tools</div>
+          <div className="block text-[11px] text-slate-500">Apps & developer tools</div>
         </div>
       </Link>
 
-      <div className="flex items-center gap-1 sm:gap-3">
+      <div className="flex flex-wrap items-center gap-1 sm:gap-3">
         <Link
           href="/discover"
           className="rounded-lg px-2.5 py-2 text-sm font-medium text-slate-300 transition hover:bg-indigo-500/10 hover:text-indigo-200 sm:px-3"
@@ -79,14 +79,14 @@ export default function AuthNav() {
         {!loading && user && (
           <Link
             href="/dashboard"
-            className="hidden rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-indigo-500/10 hover:text-indigo-200 sm:inline-flex"
+            className="inline-flex rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-indigo-500/10 hover:text-indigo-200"
           >
             Dashboard
           </Link>
         )}
 
         {loading ? (
-          <span className="hidden text-sm text-slate-500 sm:inline">Checking login...</span>
+          <span className="inline text-sm text-slate-500">Checking login...</span>
         ) : user ? (
           <div className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/50 p-1.5 pl-2 sm:gap-3">
             {avatarUrl ? (
@@ -107,7 +107,7 @@ export default function AuthNav() {
                 {initials || "U"}
               </div>
             )}
-            <span className="hidden max-w-36 truncate text-sm text-slate-200 md:inline">{name}</span>
+            <span className="inline max-w-36 truncate text-sm text-slate-200">{name}</span>
             <button
               onClick={handleLogout}
               className="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-400 transition hover:bg-rose-500/10 hover:text-rose-300"

@@ -365,30 +365,15 @@ p, a, code, pre, span { overflow-wrap: anywhere; }
 }
 
 @media (max-width: 479px) {
-  .liquid-nav nav { gap: 0.5rem; }
+  .liquid-nav nav { gap: 0.75rem; flex-wrap: wrap; }
   .liquid-nav nav > a:first-child { flex: 1 1 auto; min-width: 0; }
-  .liquid-nav nav > div:last-child { flex: 0 1 auto; min-width: 0; }
+  .liquid-nav nav > div:last-child { flex: 1 1 100%; min-width: 0; flex-wrap: wrap; justify-content: flex-start; }
 
   .liquid-nav nav > div:last-child > a {
     padding-left: 0.625rem;
     padding-right: 0.625rem;
   }
 
-  .liquid-nav nav > div:last-child > a[href="/discover"] {
-    font-size: 0;
-    width: 2.5rem;
-    min-width: 2.5rem;
-    padding: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .liquid-nav nav > div:last-child > a[href="/discover"]::before {
-    content: "⌕";
-    font-size: 1.25rem;
-    line-height: 1;
-  }
 
   .liquid-nav nav > div:last-child > a[href="/login"] { white-space: nowrap; }
 

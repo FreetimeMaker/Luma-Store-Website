@@ -65,7 +65,7 @@ function LoginContent() {
         </div>
         <h1 className="text-2xl font-semibold text-white">Sign in to Luma Store</h1>
         <p className="mt-2 text-sm leading-6 text-slate-400">
-          Sign in with GitHub or GitLab to open the submission dashboard, submit an app, or view your review timeline.
+          Sign in to open the developer dashboard, submit an app, and follow its automatic security scan and publishing status.
         </p>
 
         <div className="mt-6 flex flex-col gap-3">

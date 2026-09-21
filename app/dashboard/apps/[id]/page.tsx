@@ -228,7 +228,7 @@ export default function SubmissionDetailsPage() {
       {submission.status === "Changes Requested" && (
         <section className="rounded-2xl border border-orange-700/40 bg-orange-950/20 p-5">
           <h2 className="font-semibold text-orange-200">Changes requested</h2>
-          <p className="mt-2 text-sm leading-6 text-orange-100/80">A reviewer requested changes. Review the message and comments below, update the submission, then resubmit it for review.</p>
+          <p className="mt-2 text-sm leading-6 text-orange-100/80">This is a legacy status from the previous manual-review workflow. Check the existing message, update the submission, and resubmit it for automatic scanning.</p>
           {submission.review_message && <p className="mt-3 whitespace-pre-wrap rounded-xl bg-slate-950/40 p-4 text-sm text-slate-300">{submission.review_message}</p>}
         </section>
       )}
@@ -242,7 +242,7 @@ export default function SubmissionDetailsPage() {
               <div><p className="text-xs uppercase tracking-wide text-slate-500">License</p><p className="mt-1 text-slate-200">{publishedApp.license_type || submission.license_type || "—"}</p></div>
               <div><p className="text-xs uppercase tracking-wide text-slate-500">Repository</p>{repoUrl ? <a href={repoUrl} target="_blank" rel="noopener noreferrer" className="mt-1 block break-all text-indigo-300 hover:text-indigo-200">{repoUrl}</a> : <p className="mt-1 text-slate-400">—</p>}</div>
               <div><p className="text-xs uppercase tracking-wide text-slate-500">Last published update</p><p className="mt-1 text-slate-200">{formatDate(publishedApp.updated_at)}</p></div>
-              <div className="md:col-span-2"><p className="text-xs uppercase tracking-wide text-slate-500">Anti-Features</p><div className="mt-2 flex flex-wrap gap-2">{antiFeatures.length ? antiFeatures.map((item) => <span key={item} className="rounded-full border border-amber-700/50 bg-amber-950/30 px-2.5 py-1 text-xs text-amber-200">{item}</span>) : <span className="text-sm text-slate-400">No Anti-Features set by review.</span>}</div></div>
+              <div className="md:col-span-2"><p className="text-xs uppercase tracking-wide text-slate-500">Anti-Features</p><div className="mt-2 flex flex-wrap gap-2">{antiFeatures.length ? antiFeatures.map((item) => <span key={item} className="rounded-full border border-amber-700/50 bg-amber-950/30 px-2.5 py-1 text-xs text-amber-200">{item}</span>) : <span className="text-sm text-slate-400">No Anti-Features detected or recorded.</span>}</div></div>
             </div>
           ) : <p className="p-5 text-sm text-slate-400">The submission is approved, but no matching published store record was found yet.</p>}
         </section>
@@ -266,9 +266,9 @@ export default function SubmissionDetailsPage() {
       </div>
 
       <section className={`${cardClass} overflow-hidden`}>
-        <div className="border-b border-slate-800 px-5 py-4"><h2 className="font-semibold text-white">Review comments</h2><p className="mt-1 text-xs text-slate-500">Reply to reviewer feedback without losing the conversation history.</p></div>
+        <div className="border-b border-slate-800 px-5 py-4"><h2 className="font-semibold text-white">Legacy review comments</h2><p className="mt-1 text-xs text-slate-500">Comments from the previous manual-review workflow are kept as legacy history.</p></div>
         <div className="space-y-3 p-5">
-          {comments.length === 0 ? <p className="rounded-xl border border-dashed border-slate-800 bg-slate-950/30 p-4 text-sm text-slate-500">No review comments yet.</p> : comments.map((item) => (
+          {comments.length === 0 ? <p className="rounded-xl border border-dashed border-slate-800 bg-slate-950/30 p-4 text-sm text-slate-500">No legacy review comments.</p> : comments.map((item) => (
             <div key={item.id} className={`rounded-xl border p-4 ${item.user_id === userId ? "border-indigo-800/40 bg-indigo-950/20" : "border-slate-800 bg-slate-950/40"}`}>
               <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{item.user_id === userId ? "You" : "Reviewer"}</p><p className="text-xs text-slate-600">{formatDate(item.created_at)}</p></div>
               <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-slate-300">{item.body}</p>
@@ -276,7 +276,7 @@ export default function SubmissionDetailsPage() {
           ))}
           <form onSubmit={submitComment} className="pt-2">
             <label className="mb-2 block text-sm font-medium text-slate-300">Add comment</label>
-            <textarea value={comment} onChange={(event) => setComment(event.target.value)} rows={4} maxLength={4000} placeholder="Reply to the review…" className="w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" />
+            <textarea value={comment} onChange={(event) => setComment(event.target.value)} rows={4} maxLength={4000} placeholder="Add a note to the legacy review thread…" className="w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" />
             <div className="mt-3 flex justify-end"><button type="submit" disabled={sendingComment || !comment.trim()} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40">{sendingComment ? "Sending…" : "Send comment"}</button></div>
           </form>
         </div>

@@ -202,7 +202,7 @@ export default function AppMetadataPage() {
 
       {app.status !== "Pending" && (
         <div className="rounded-xl border border-amber-700/40 bg-amber-950/20 p-4 text-sm leading-6 text-amber-200">
-          Saving app metadata sends this app back to <strong>Pending</strong> so the changes can be reviewed again.
+          Saving app metadata sends this app back to <strong>Pending</strong> so the automatic security scan and validation can run again.
         </div>
       )}
       {error && <div className="rounded-xl border border-red-800/50 bg-red-950/30 p-4 text-sm text-red-200">{error}</div>}

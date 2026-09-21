@@ -16,9 +16,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </Link>
           </div>
           <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 px-4 py-4 sm:px-5">
-            <h2 className="font-semibold text-amber-200">Manual review and publishing</h2>
+            <h2 className="font-semibold text-amber-200">Automatic security scanning and publishing</h2>
             <p className="mt-1 text-sm leading-relaxed text-amber-100/80">
-              Every Luma Store submission is reviewed manually. Source code, licensing, app details and publishing requirements are checked before approval.
+              Every Luma Store submission is checked automatically. A security scan and automated validation run after submission, and apps that pass are approved for publishing automatically.
             </p>
           </div>
         </div>

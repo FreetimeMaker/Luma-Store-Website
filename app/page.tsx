@@ -13,7 +13,7 @@ const highlights = [
   },
   {
     title: "Built for developers",
-    description: "Submit and manage apps from the developer dashboard and follow each review from start to finish.",
+    description: "Submit and manage apps from the developer dashboard and follow each automatic security scan through publishing.",
     icon: "code",
   },
 ];
@@ -181,7 +181,7 @@ export default function HomePage() {
               <p className="mt-6 text-xs font-semibold uppercase tracking-[0.16em] text-violet-300">For developers</p>
               <h3 className="mt-2 text-2xl font-bold text-white">Publish and manage apps</h3>
               <p className="mt-3 max-w-lg text-sm leading-6 text-slate-400 sm:text-base">
-                Sign in to submit an app, provide its metadata and releases, then track review status and future updates from your dashboard.
+                Sign in to submit an app, provide its metadata and releases, then track automatic scan status and future updates from your dashboard.
               </p>
               <div className="mt-6 text-sm font-semibold text-violet-300 transition group-hover:text-violet-200">Open developer dashboard <span aria-hidden="true">→</span></div>
             </div>
@@ -228,7 +228,7 @@ export default function HomePage() {
               {[
                 ["01", "Sign in", "Access the protected developer tools."],
                 ["02", "Submit", "Add app information and release metadata."],
-                ["03", "Review", "Follow the submission through its review states."],
+                ["03", "Automatic scan", "Follow the security scan and automatic publishing status."],
                 ["04", "Maintain", "Return to manage updates after publication."],
               ].map(([number, title, description]) => (
                 <li key={number} className="flex gap-4">

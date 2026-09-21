@@ -52,11 +52,11 @@ export async function sendLumaSubmissionStatusNotification(
   const statusCopy: Record<LumaSubmissionNotification["status"], { title: string; body: string }> = {
     Pending: {
       title: "Submission received",
-      body: "Your app submission has been received and is waiting for manual review.",
+      body: "Your app submission has been received and is queued for automatic security scanning and validation.",
     },
     "In Review": {
       title: "Your app is now in review",
-      body: "Your app is currently being reviewed manually by the Luma Store team.",
+      body: "This legacy submission status is still shown for compatibility. New submissions use automatic security scanning and validation.",
     },
     Approved: {
       title: "Your app has been approved",
@@ -64,7 +64,7 @@ export async function sendLumaSubmissionStatusNotification(
     },
     Rejected: {
       title: "Your app submission was rejected",
-      body: "Your app was not approved in its current state. Please review the message below and update your submission if needed.",
+      body: "Your app did not pass the automatic checks in its current state. Check the status details below and update your submission if needed.",
     },
   };
 

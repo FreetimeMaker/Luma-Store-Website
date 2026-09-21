@@ -137,8 +137,8 @@ export default function DeveloperStatusPage() {
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base sm:leading-7">
             {selectedSubmissionId
-              ? "Follow the review history and reviewer messages for this app only."
-              : "Follow review steps, changelogs, reviewer messages, security information and publication decisions for your apps."}
+              ? "Follow the automatic scan, validation and publishing history for this app."
+              : "Follow automatic scans, changelogs, security information and publishing decisions for your apps."}
           </p>
         </div>
         <Link
@@ -205,7 +205,7 @@ export default function DeveloperStatusPage() {
               {submission.status === "Changes Requested" && (
                 <div className="mx-4 mt-4 rounded-xl border border-orange-800/40 bg-orange-950/30 p-4 sm:mx-6 sm:mt-6">
                   <p className="text-[11px] font-bold uppercase tracking-wider text-orange-300 sm:text-xs">Changes requested</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-300">Open app details to review feedback, reply to comments and prepare your resubmission.</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-300">This is a legacy status. Open app details to inspect the existing feedback and prepare a new submission.</p>
                 </div>
               )}
 
@@ -218,7 +218,7 @@ export default function DeveloperStatusPage() {
 
               {submission.review_message && (
                 <div className="mx-4 mt-4 rounded-xl border border-indigo-800/40 bg-indigo-950/30 p-4 sm:mx-6 sm:mt-6">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-300 sm:text-xs">Latest reviewer message</p>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-300 sm:text-xs">Latest status message</p>
                   <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-slate-300">{submission.review_message}</p>
                 </div>
               )}

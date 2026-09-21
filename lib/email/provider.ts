@@ -55,8 +55,8 @@ export async function sendLumaSubmissionStatusNotification(
       body: "Your app submission has been received and is queued for automatic security scanning and validation.",
     },
     "In Review": {
-      title: "Your app is now in review",
-      body: "This legacy submission status is still shown for compatibility. New submissions use automatic security scanning and validation.",
+      title: "Security warning requires review",
+      body: "VirusTotal reported one or more suspicious detections. Automatic publishing has been paused while the submission is reviewed.",
     },
     Approved: {
       title: "Your app has been approved",

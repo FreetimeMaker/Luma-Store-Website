@@ -26,7 +26,7 @@ const scanColors: Record<string, string> = {
   Failed: "border-red-700/50 bg-red-950/30 text-red-300",
   Scanning: "border-blue-700/50 bg-blue-950/30 text-blue-300",
   Queued: "border-indigo-700/50 bg-indigo-950/30 text-indigo-300",
-  "Not Scanned": "border-slate-700 bg-slate-950/30 text-slate-300",
+  Error: "border-red-700/50 bg-red-950/30 text-red-300",\n  "Not Scanned": "border-slate-700 bg-slate-950/30 text-slate-300",
 };
 
 function formatDate(value: string | null | undefined) {
@@ -123,8 +123,8 @@ export default function SecurityScanPanel({ submissionId, initialScan }: { submi
             <div className="mt-2 space-y-2">
               {findings.map((finding, index) => (
                 <div key={index} className="rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-sm text-slate-300">
-                  <p className="font-medium text-white">{String(finding.title ?? finding.name ?? `Finding ${index + 1}`)}</p>
-                  {finding.description ? <p className="mt-1 text-slate-400">{String(finding.description)}</p> : null}
+                  <p className="font-medium text-white">{String(finding.engine_name ?? finding.title ?? finding.name ?? `Finding ${index + 1}`)}</p>
+                  <p className="mt-1 text-slate-400">{[finding.category, finding.result].filter(Boolean).map(String).join(" · ") || String(finding.description ?? "Suspicious or malicious result")}</p>
                 </div>
               ))}
             </div>
@@ -132,7 +132,7 @@ export default function SecurityScanPanel({ submissionId, initialScan }: { submi
         </div>
 
         <div>
-          <h3 className="text-sm font-semibold text-slate-200">Permissions review</h3>
+          <h3 className="text-sm font-semibold text-slate-200">Permission analysis</h3>
           <div className="mt-2 flex flex-wrap gap-2">
             {permissions.length ? permissions.map((permission) => (
               <span key={permission} className="max-w-full break-all rounded-lg border border-slate-700 bg-slate-950/50 px-2.5 py-1 text-xs text-slate-300">{permission}</span>

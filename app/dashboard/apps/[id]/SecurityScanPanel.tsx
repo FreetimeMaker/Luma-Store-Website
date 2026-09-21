@@ -26,7 +26,8 @@ const scanColors: Record<string, string> = {
   Failed: "border-red-700/50 bg-red-950/30 text-red-300",
   Scanning: "border-blue-700/50 bg-blue-950/30 text-blue-300",
   Queued: "border-indigo-700/50 bg-indigo-950/30 text-indigo-300",
-  Error: "border-red-700/50 bg-red-950/30 text-red-300",\n  "Not Scanned": "border-slate-700 bg-slate-950/30 text-slate-300",
+  Error: "border-red-700/50 bg-red-950/30 text-red-300",
+  "Not Scanned": "border-slate-700 bg-slate-950/30 text-slate-300",
 };
 
 function formatDate(value: string | null | undefined) {

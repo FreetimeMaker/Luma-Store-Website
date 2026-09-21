@@ -202,7 +202,14 @@ export default function DeveloperStatusPage() {
                 </div>
               </div>
 
-              {submission.status === "In Review" && (\n                <div className="mx-4 mt-4 rounded-xl border border-amber-700/50 bg-amber-950/30 p-4 sm:mx-6 sm:mt-6">\n                  <p className="text-[11px] font-bold uppercase tracking-wider text-amber-300 sm:text-xs">Security warning · review required</p>\n                  <p className="mt-2 text-sm leading-6 text-slate-300">VirusTotal reported suspicious detections. Automatic publishing is paused until the warning has been reviewed.</p>\n                </div>\n              )}\n\n              {submission.status === "Changes Requested" && (
+              {submission.status === "In Review" && (
+                <div className="mx-4 mt-4 rounded-xl border border-amber-700/50 bg-amber-950/30 p-4 sm:mx-6 sm:mt-6">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-amber-300 sm:text-xs">Security warning · review required</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-300">VirusTotal reported suspicious detections. Automatic publishing is paused until the warning has been reviewed.</p>
+                </div>
+              )}
+
+              {submission.status === "Changes Requested" && (
                 <div className="mx-4 mt-4 rounded-xl border border-orange-800/40 bg-orange-950/30 p-4 sm:mx-6 sm:mt-6">
                   <p className="text-[11px] font-bold uppercase tracking-wider text-orange-300 sm:text-xs">Changes requested</p>
                   <p className="mt-2 text-sm leading-6 text-slate-300">This is a legacy status. Open app details to inspect the existing feedback and prepare a new submission.</p>

@@ -225,7 +225,15 @@ export default function SubmissionDetailsPage() {
 
       {error && <div className="rounded-xl border border-amber-700/50 bg-amber-950/30 p-4 text-sm text-amber-200">{error}</div>}
 
-      {submission.status === "In Review" && (\n        <section className="rounded-2xl border border-amber-700/40 bg-amber-950/20 p-5">\n          <h2 className="font-semibold text-amber-200">Security warning · manual review required</h2>\n          <p className="mt-2 text-sm leading-6 text-amber-100/80">VirusTotal reported suspicious detections. This app will not be published automatically until the warning has been reviewed.</p>\n          {submission.review_message && <p className="mt-3 whitespace-pre-wrap rounded-xl bg-slate-950/40 p-4 text-sm text-slate-300">{submission.review_message}</p>}\n        </section>\n      )}\n\n      {submission.status === "Changes Requested" && (
+      {submission.status === "In Review" && (
+        <section className="rounded-2xl border border-amber-700/40 bg-amber-950/20 p-5">
+          <h2 className="font-semibold text-amber-200">Security warning · manual review required</h2>
+          <p className="mt-2 text-sm leading-6 text-amber-100/80">VirusTotal reported suspicious detections. This app will not be published automatically until the warning has been reviewed.</p>
+          {submission.review_message && <p className="mt-3 whitespace-pre-wrap rounded-xl bg-slate-950/40 p-4 text-sm text-slate-300">{submission.review_message}</p>}
+        </section>
+      )}
+
+      {submission.status === "Changes Requested" && (
         <section className="rounded-2xl border border-orange-700/40 bg-orange-950/20 p-5">
           <h2 className="font-semibold text-orange-200">Changes requested</h2>
           <p className="mt-2 text-sm leading-6 text-orange-100/80">This is a legacy status from the previous manual-review workflow. Check the existing message, update the submission, and resubmit it for automatic scanning.</p>

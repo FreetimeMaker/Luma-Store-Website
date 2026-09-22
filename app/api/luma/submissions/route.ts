@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     if (!submission || typeof submission !== "object") {
       return NextResponse.json({ error: "Invalid submission." }, { status: 400 });
     }
-    const isDraft = body.draft === true;
+    const isDraft = body.draft === true;\n    const rawPlatforms = Array.isArray(submission.platforms) ? submission.platforms : [];\n    const platforms = rawPlatforms.flatMap((entry) => { if (!entry || typeof entry !== "object") return []; const item=entry as Record<string,unknown>; const platform=String(item.platform??""), packageType=String(item.packageType??""); const downloadUrl=String(item.downloadUrl??"").trim(); if (!["Android","Windows","Linux"].includes(platform) || !["apk","exe","msi","deb","rpm"].includes(packageType) || !downloadUrl) return []; try { const url=new URL(downloadUrl); if (url.protocol!=="https:"&&url.protocol!=="http:") return []; } catch { return []; } if(platform==="Android"&&packageType!=="apk")return []; if(platform==="Windows"&&!["exe","msi"].includes(packageType))return []; if(platform==="Linux"&&!["deb","rpm"].includes(packageType))return []; return [{platform,packageType,downloadUrl}]; });\n    if (!isDraft && platforms.length === 0) return NextResponse.json({ error: "At least one valid platform download is required." }, { status: 400 });\n    submission.platforms = platforms;\n    submission.platform = platforms[0]?.platform ?? submission.platform ?? null;\n    submission.download_url = platforms[0]?.downloadUrl ?? submission.download_url ?? null;
 
     if (submission.closed_source === true || submission.license_type === "Proprietary") {
       return NextResponse.json({ error: "Luma Store submissions must be open source." }, { status: 400 });

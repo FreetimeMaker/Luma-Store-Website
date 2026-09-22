@@ -346,6 +346,15 @@ export default function LumaDeveloperPortal() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoadingApps(false); return; }
       setDeveloperId(user.id);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        const statsResponse = await fetch("/api/luma/download-stats", { headers: { Authorization: `Bearer ${session.access_token}` }, cache: "no-store" });
+        if (statsResponse.ok) {
+          const statsPayload = await statsResponse.json() as { stats?: Record<string, DownloadStats>; submissionStoreIds?: Record<string, string> };
+          setDownloadStats(statsPayload.stats ?? {});
+          setSubmissionStoreIds(statsPayload.submissionStoreIds ?? {});
+        }
+      }
       const [{ data, error }, { data: storeApps, error: storeAppsError }] = await Promise.all([
         supabase.from("luma_submissions").select("*").eq("user_id", user.id).order("submitted_at", { ascending: false }),
         supabase.from("store_apps").select("id,luma_submission_id,developer_name").eq("developer_id", user.id).not("luma_submission_id", "is", null),

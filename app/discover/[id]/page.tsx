@@ -209,7 +209,7 @@ export default function DiscoverAppPage() {
               downloadablePlatforms.map((platform) => (
                 <a
                   key={platform.id}
-                  href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-app?app_id=${encodeURIComponent(app.id)}`}
+                  href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-app?app_id=${encodeURIComponent(app.id)}&platform=${encodeURIComponent(platform.platform)}`}
                   className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-indigo-500 px-5 py-3 text-center text-sm font-bold text-white shadow-lg shadow-indigo-950/30 transition hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-300/60"
                 >
                   Download {platform.platform}

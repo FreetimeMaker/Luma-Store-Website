@@ -42,8 +42,8 @@ export async function POST(request: Request) {
   try {
     const authorization = request.headers.get("authorization");
     const githubToken = request.headers.get("x-github-token");
-    if (!authorization?.startsWith("Bearer ") || !githubToken) {
-      return NextResponse.json({ error: "GitHub authentication is required." }, { status: 401 });
+    if (!authorization?.startsWith("Bearer ")) {
+      return NextResponse.json({ error: "Authentication is required." }, { status: 401 });
     }
 
     const supabase = createAdminClient();
@@ -74,6 +74,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ submission: draftResult.data });
     }
 
+    if (!githubToken) return NextResponse.json({ error: "GitHub authentication is required." }, { status: 401 });
     const { owner, repo } = parseGitHubRepository(submission.repo_url ?? submission.link);
     const [githubUser, githubRepo] = await Promise.all([
       githubJson("/user", githubToken),

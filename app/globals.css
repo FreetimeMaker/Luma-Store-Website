@@ -384,3 +384,42 @@ p, a, code, pre, span { overflow-wrap: anywhere; }
 
   .glass-page h2 { line-height: 1.15; }
 }
+
+
+/* Shared Liquid Glass primitives for new and polished pages. */
+.glass-panel {
+  position: relative;
+  border: 1px solid var(--glass-border);
+  border-radius: 1.5rem;
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.07), rgba(255,255,255,.015) 42%, rgba(99,102,241,.035)),
+    var(--glass-fill);
+  -webkit-backdrop-filter: blur(24px) saturate(165%);
+  backdrop-filter: blur(24px) saturate(165%);
+  box-shadow: inset 0 1px 0 var(--glass-highlight), var(--glass-shadow-soft);
+}
+.glass-input {
+  width: 100%;
+  min-height: 3rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 1rem;
+  background: rgba(3,10,24,.42);
+  padding: .75rem 1rem;
+  color: #fff;
+  outline: none;
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+.glass-input:focus { border-color: rgba(165,180,252,.62); box-shadow: 0 0 0 3px rgba(99,102,241,.16); }
+.glass-action {
+  border: 1px solid var(--glass-border);
+  border-radius: 1rem;
+  background: rgba(255,255,255,.045);
+  color: #e2e8f0;
+  -webkit-backdrop-filter: blur(18px) saturate(155%);
+  backdrop-filter: blur(18px) saturate(155%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.07);
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+.glass-action:hover { border-color: rgba(165,180,252,.32); background: rgba(255,255,255,.075); }

@@ -32,7 +32,7 @@ export default function DiscoverDeveloperPage() {
     let cancelled = false;
     async function load() {
       setLoading(true);
-      const result = await supabase.from("store_apps").select("id,name,short_description,description,developer_name,developer_id,icon_url,version,package_name,license_type,categories,updated_at").eq("developer_id", params.id).order("updated_at", { ascending: false });
+      const result = await supabase.from("store_apps").select("id,name,short_description,description,developer_name,developer_id,icon_url,version,package_name,license_type,categories,updated_at").or(`developer_name.eq.${params.id},developer_id.eq.${params.id}`).order("updated_at", { ascending: false });
       if (cancelled) return;
       if (result.error) { setError(result.error.message); setApps([]); }
       else {

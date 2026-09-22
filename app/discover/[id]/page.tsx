@@ -196,7 +196,7 @@ export default function DiscoverAppPage() {
   }, [params.id, supabase]);
 
   if (loading) {
-    return <div className="glass-page mx-auto h-96 max-w-6xl animate-pulse rounded-3xl border border-slate-800 bg-slate-900/60" />;
+    return <div className="glass-page mx-auto max-w-6xl space-y-5 px-3 pb-20 sm:px-4"><div className="h-5 w-32 animate-pulse rounded bg-slate-800/70"/><div className="rounded-[2rem] border border-white/10 bg-slate-900/50 p-5 backdrop-blur-2xl sm:p-8"><div className="flex gap-5"><div className="h-24 w-24 animate-pulse rounded-3xl bg-slate-800/80"/><div className="flex-1 space-y-3 py-2"><div className="h-8 max-w-sm animate-pulse rounded bg-slate-800/80"/><div className="h-4 max-w-xs animate-pulse rounded bg-slate-800/60"/><div className="h-14 max-w-xl animate-pulse rounded-xl bg-slate-800/40"/></div></div></div><div className="h-44 animate-pulse rounded-3xl border border-white/10 bg-slate-900/40"/></div>;
   }
 
   if (error || !app) {
@@ -215,11 +215,11 @@ export default function DiscoverAppPage() {
   const downloadablePlatforms = platforms.filter((platform) => Boolean(platform.download_url));
 
   return (
-    <div className="glass-page mx-auto max-w-6xl space-y-6">
+    <div className="glass-page mx-auto max-w-6xl space-y-5 px-3 pb-20 sm:space-y-6 sm:px-4">
       <Link href="/discover" className="inline-flex text-sm font-medium text-indigo-300 transition hover:text-indigo-200">← Back to Discover</Link>
 
-      <section className="rounded-3xl border border-indigo-400/15 bg-gradient-to-br from-indigo-500/15 via-slate-900 to-violet-500/10 p-6 sm:p-8">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+      <section className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-slate-900/55 p-5 shadow-2xl shadow-black/20 backdrop-blur-2xl sm:p-8">
+        <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-indigo-500/15 blur-3xl"/><div aria-hidden="true" className="pointer-events-none absolute -bottom-24 left-1/3 h-52 w-52 rounded-full bg-violet-500/10 blur-3xl"/><div className="relative flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
             {app.icon_url ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -251,7 +251,7 @@ export default function DiscoverAppPage() {
             </div>
           </div>
 
-          <div className="flex w-full shrink-0 flex-col gap-2 lg:w-auto lg:min-w-56">
+          <div className="flex w-full shrink-0 flex-col gap-2 rounded-2xl border border-white/10 bg-slate-950/25 p-3 backdrop-blur-xl lg:w-72">
             <div className="grid grid-cols-2 gap-2"><button type="button" onClick={shareApp} className="rounded-xl border border-slate-700 bg-slate-950/50 px-3 py-2.5 text-sm font-medium text-slate-200 transition hover:border-indigo-400/40 hover:text-white">Share</button><button type="button" onClick={copyAppLink} className="rounded-xl border border-slate-700 bg-slate-950/50 px-3 py-2.5 text-sm font-medium text-slate-200 transition hover:border-indigo-400/40 hover:text-white">{copied?"Copied!":"Copy link"}</button></div>
             {downloadablePlatforms.length > 0 ? (
               downloadablePlatforms.map((platform) => (
@@ -275,25 +275,25 @@ export default function DiscoverAppPage() {
       </section>
 
       {app.description && (
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+        <section className="rounded-3xl border border-white/10 bg-slate-900/50 p-5 shadow-lg shadow-black/10 backdrop-blur-xl sm:p-6">
           <h2 className="text-xl font-semibold text-white">Description</h2>
           <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-300">{app.description}</p>
         </section>
       )}
 
       {screenshots.length > 0 && (
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+        <section className="rounded-3xl border border-white/10 bg-slate-900/50 p-5 shadow-lg shadow-black/10 backdrop-blur-xl sm:p-6">
           <h2 className="text-xl font-semibold text-white">Screenshots</h2>
-          <div className="mt-4 flex gap-4 overflow-x-auto pb-2">
+          <div className="mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3">
             {screenshots.map((url, index) => (
               // eslint-disable-next-line @next/next/no-img-element
-              <img key={`${url}-${index}`} src={url} alt={`${name} screenshot ${index + 1}`} className="h-96 w-auto shrink-0 rounded-2xl border border-slate-800 bg-slate-950 object-contain" />
+              <img key={`${url}-${index}`} src={url} alt={`${name} screenshot ${index + 1}`} className="h-72 w-auto max-w-[85vw] shrink-0 snap-center rounded-2xl border border-white/10 bg-slate-950 object-contain shadow-lg sm:h-96" />
             ))}
           </div>
         </section>
       )}
 
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+      <section className="rounded-3xl border border-white/10 bg-slate-900/50 p-5 shadow-lg shadow-black/10 backdrop-blur-xl sm:p-6">
         <h2 className="text-xl font-semibold text-white">App details</h2>
         <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <Field label="Package name" value={app.package_name} mono />
@@ -309,7 +309,7 @@ export default function DiscoverAppPage() {
       </section>
 
       {(app.website_url || app.source_code_url || app.issue_tracker_url || app.translation_url || app.changelog_url || app.author_website || app.license_type) && (
-        <section className="rounded-2xl border border-emerald-400/15 bg-gradient-to-br from-emerald-500/10 via-slate-900 to-slate-900 p-6">
+        <section className="rounded-3xl border border-emerald-400/15 bg-emerald-500/5 p-5 shadow-lg shadow-black/10 backdrop-blur-xl sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-300">Open source</p><h2 className="mt-1 text-xl font-semibold text-white">Project & repository</h2></div>{app.license_type&&<span className="rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-200">{app.license_type}</span>}</div>
           <div className="mt-4 flex flex-wrap gap-2">
             <LinkChip href={app.website_url} label="Website" />
@@ -322,16 +322,16 @@ export default function DiscoverAppPage() {
         </section>
       )}
 
-      {versionHistory.length>0&&<section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Releases</p><h2 className="mt-1 text-xl font-semibold text-white">Version history</h2></div><div className="mt-4 space-y-3">{versionHistory.map((item,index)=><div key={`${item.version}-${item.version_code}-${index}`} className="rounded-xl border border-slate-800 bg-slate-950/40 p-4"><div className="flex flex-wrap items-center justify-between gap-2"><div className="flex items-center gap-2"><span className="font-semibold text-white">{item.version?`v${item.version}`:"Version"}</span>{index===0&&<span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-[11px] text-indigo-200">Latest</span>}{item.version_code!==null&&<span className="text-xs text-slate-500">#{item.version_code}</span>}</div><span className="text-xs text-slate-500">{formatDate(item.published_at)}</span></div>{item.changelog&&<p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-400">{item.changelog}</p>}</div>)}</div></section>}
+      {versionHistory.length>0&&<section className="rounded-3xl border border-white/10 bg-slate-900/50 p-5 shadow-lg shadow-black/10 backdrop-blur-xl sm:p-6"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Releases</p><h2 className="mt-1 text-xl font-semibold text-white">Version history</h2></div><div className="mt-4 space-y-3">{versionHistory.map((item,index)=><div key={`${item.version}-${item.version_code}-${index}`} className="rounded-2xl border border-white/10 bg-slate-950/30 p-4 backdrop-blur-lg"><div className="flex flex-wrap items-center justify-between gap-2"><div className="flex items-center gap-2"><span className="font-semibold text-white">{item.version?`v${item.version}`:"Version"}</span>{index===0&&<span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-[11px] text-indigo-200">Latest</span>}{item.version_code!==null&&<span className="text-xs text-slate-500">#{item.version_code}</span>}</div><span className="text-xs text-slate-500">{formatDate(item.published_at)}</span></div>{item.changelog&&<p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-400">{item.changelog}</p>}</div>)}</div></section>}
 
       {app.changelog && (
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+        <section className="rounded-3xl border border-white/10 bg-slate-900/50 p-5 shadow-lg shadow-black/10 backdrop-blur-xl sm:p-6">
           <h2 className="text-xl font-semibold text-white">Changelog</h2>
           <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-300">{app.changelog}</p>
         </section>
       )}
 
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+      <section className="rounded-3xl border border-white/10 bg-slate-900/50 p-5 shadow-lg shadow-black/10 backdrop-blur-xl sm:p-6">
         <h2 className="text-xl font-semibold text-white">Anti-features</h2>
         {antiFeatures.length > 0 ? (
           <div className="mt-4 flex flex-wrap gap-2">
@@ -342,14 +342,14 @@ export default function DiscoverAppPage() {
         )}
       </section>
 
-      {pageUrl&&platforms.some(p=>p.platform.toLowerCase()==="android")&&<section className="rounded-2xl border border-indigo-400/15 bg-gradient-to-br from-indigo-500/10 via-slate-900 to-slate-900 p-6"><div className="grid gap-6 sm:grid-cols-[1fr_auto] sm:items-center"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-300">Continue on Android</p><h2 className="mt-1 text-xl font-semibold text-white">Open this app on your phone</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">Scan the QR code to open this Luma Store app page on Android. Downloads still go through Luma Store, so the download counter stays accurate.</p></div><div className="rounded-2xl bg-white p-3"><img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(pageUrl)}`} alt={`QR code for ${name}`} width={180} height={180} className="h-40 w-40 sm:h-44 sm:w-44"/></div></div></section>}
+      {pageUrl&&platforms.some(p=>p.platform.toLowerCase()==="android")&&<section className="rounded-3xl border border-indigo-400/15 bg-indigo-500/5 p-5 shadow-lg shadow-black/10 backdrop-blur-xl sm:p-6"><div className="grid gap-6 sm:grid-cols-[1fr_auto] sm:items-center"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-300">Continue on Android</p><h2 className="mt-1 text-xl font-semibold text-white">Open this app on your phone</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">Scan the QR code to open this Luma Store app page on Android. Downloads still go through Luma Store, so the download counter stays accurate.</p></div><div className="mx-auto rounded-3xl bg-white p-3 shadow-xl shadow-black/20 sm:mx-0"><img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(pageUrl)}`} alt={`QR code for ${name}`} width={180} height={180} className="h-40 w-40 sm:h-44 sm:w-44"/></div></div></section>}
 
-      {similarApps.length>0&&<section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6"><h2 className="text-xl font-semibold text-white">Similar apps</h2><p className="mt-1 text-sm text-slate-500">Apps with matching categories.</p><div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{similarApps.map((item)=>{const itemName=item.name||item.package_name||"Untitled app";return <Link key={item.id} href={`/discover/${encodeURIComponent(item.package_name||item.id)}`} className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4 transition hover:border-indigo-400/40"><div className="flex items-center gap-3">{item.icon_url?<img src={item.icon_url} alt="" className="h-12 w-12 rounded-xl border border-slate-700 object-cover"/>:<div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-800 font-bold">{itemName[0]}</div>}<div className="min-w-0"><h3 className="truncate font-semibold text-white">{itemName}</h3><p className="text-xs text-slate-500">{item.version?`Version ${item.version}`:"View app"}</p></div></div>{item.short_description&&<p className="mt-3 line-clamp-2 text-sm text-slate-400">{item.short_description}</p>}</Link>})}</div></section>}
+      {similarApps.length>0&&<section className="rounded-3xl border border-white/10 bg-slate-900/50 p-5 shadow-lg shadow-black/10 backdrop-blur-xl sm:p-6"><h2 className="text-xl font-semibold text-white">Similar apps</h2><p className="mt-1 text-sm text-slate-500">Apps with matching categories.</p><div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{similarApps.map((item)=>{const itemName=item.name||item.package_name||"Untitled app";return <Link key={item.id} href={`/discover/${encodeURIComponent(item.package_name||item.id)}`} className="rounded-2xl border border-white/10 bg-slate-950/30 p-4 backdrop-blur-lg transition duration-300 hover:-translate-y-0.5 hover:border-indigo-400/40 hover:bg-slate-900/60"><div className="flex items-center gap-3">{item.icon_url?<img src={item.icon_url} alt="" className="h-12 w-12 rounded-xl border border-slate-700 object-cover"/>:<div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-800 font-bold">{itemName[0]}</div>}<div className="min-w-0"><h3 className="truncate font-semibold text-white">{itemName}</h3><p className="text-xs text-slate-500">{item.version?`Version ${item.version}`:"View app"}</p></div></div>{item.short_description&&<p className="mt-3 line-clamp-2 text-sm text-slate-400">{item.short_description}</p>}</Link>})}</div></section>}
 
-      {relatedDeveloperApps.length>0&&<section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6"><h2 className="text-xl font-semibold text-white">More from {app.developer_name || "this developer"}</h2><div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{relatedDeveloperApps.map((item)=>{const itemName=item.name||item.package_name||"Untitled app";return <Link key={item.id} href={`/discover/${encodeURIComponent(item.package_name||item.id)}`} className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4 transition hover:border-indigo-400/40"><div className="flex items-center gap-3">{item.icon_url?<img src={item.icon_url} alt="" className="h-12 w-12 rounded-xl border border-slate-700 object-cover"/>:<div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-800 font-bold">{itemName[0]}</div>}<div className="min-w-0"><h3 className="truncate font-semibold text-white">{itemName}</h3><p className="text-xs text-slate-500">{item.version?`Version ${item.version}`:"View app"}</p></div></div>{item.short_description&&<p className="mt-3 line-clamp-2 text-sm text-slate-400">{item.short_description}</p>}</Link>})}</div></section>}
+      {relatedDeveloperApps.length>0&&<section className="rounded-3xl border border-white/10 bg-slate-900/50 p-5 shadow-lg shadow-black/10 backdrop-blur-xl sm:p-6"><h2 className="text-xl font-semibold text-white">More from {app.developer_name || "this developer"}</h2><div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{relatedDeveloperApps.map((item)=>{const itemName=item.name||item.package_name||"Untitled app";return <Link key={item.id} href={`/discover/${encodeURIComponent(item.package_name||item.id)}`} className="rounded-2xl border border-white/10 bg-slate-950/30 p-4 backdrop-blur-lg transition duration-300 hover:-translate-y-0.5 hover:border-indigo-400/40 hover:bg-slate-900/60"><div className="flex items-center gap-3">{item.icon_url?<img src={item.icon_url} alt="" className="h-12 w-12 rounded-xl border border-slate-700 object-cover"/>:<div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-800 font-bold">{itemName[0]}</div>}<div className="min-w-0"><h3 className="truncate font-semibold text-white">{itemName}</h3><p className="text-xs text-slate-500">{item.version?`Version ${item.version}`:"View app"}</p></div></div>{item.short_description&&<p className="mt-3 line-clamp-2 text-sm text-slate-400">{item.short_description}</p>}</Link>})}</div></section>}
 
       {funding && (funding.donate_url || funding.liberapay || funding.opencollective || funding.bitcoin || funding.litecoin) && (
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+        <section className="rounded-3xl border border-white/10 bg-slate-900/50 p-5 shadow-lg shadow-black/10 backdrop-blur-xl sm:p-6">
           <h2 className="text-xl font-semibold text-white">Support the developer</h2>
           <p className="mt-1 text-sm text-slate-400">These funding methods belong to {app.developer_name || "this developer"} and apply to all of their apps.</p>
           <div className="mt-4 flex flex-wrap gap-2">

@@ -197,7 +197,8 @@ export default function DiscoverPage() {
 
                   <div className="mt-5 flex flex-wrap gap-2 text-xs">
                     {app.version && <span className="rounded-full border border-slate-700 px-2.5 py-1 text-slate-300">v{app.version}</span>}
-                    {app.license_type && <span className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-indigo-200">{app.license_type}</span>}\n                    <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-emerald-200">Open source</span>
+                    {app.license_type && <span className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-indigo-200">{app.license_type}</span>}
+                    <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-emerald-200">Open source</span>
                   </div>
 
                   <div className="mt-5 border-t border-slate-800 pt-4 text-right text-xs font-medium text-indigo-300 group-hover:text-indigo-200">

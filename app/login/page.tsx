@@ -47,13 +47,13 @@ function LoginContent() {
     supabase.auth.getUser().then(({ data }: UserResponse) => {
       if (data.user) {
         const provider = String(data.user.app_metadata?.provider || "");
-        router.replace(provider === "google" ? "/account" : "/dashboard");
+        router.replace(provider === "google" ? "/dashboard" : "/dashboard");
       }
     });
   }, [router, supabase]);
 
   async function redirectTo(provider: "github" | "gitlab" | "google") {
-    const destination = provider === "google" ? "/account" : "/dashboard";
+    const destination = provider === "google" ? "/dashboard" : "/dashboard";
     const callbackUrl = `${authOrigin()}/auth/callback?next=${encodeURIComponent(destination)}`;
 
     const { error } = await supabase.auth.signInWithOAuth({

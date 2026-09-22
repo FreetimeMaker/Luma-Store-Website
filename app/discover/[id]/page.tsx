@@ -26,7 +26,6 @@ type StoreApp = {
   short_description: string | null;
   screenshots: JsonValue;
   changelog: string | null;
-  repo_url: string | null;
   ant_features: JsonValue;
   author_name: string | null;
   author_email: string | null;
@@ -42,7 +41,6 @@ type StoreApp = {
   bitcoin: string | null;
   litecoin: string | null;
   categories: string[];
-  localized_metadata: JsonValue;
 };
 
 type StoreAppPlatform = {
@@ -265,13 +263,12 @@ export default function DiscoverAppPage() {
         </dl>
       </section>
 
-      {(app.repo_url || app.website_url || app.source_code_url || app.issue_tracker_url || app.translation_url || app.changelog_url || app.author_website) && (
+      {(app.website_url || app.source_code_url || app.issue_tracker_url || app.translation_url || app.changelog_url || app.author_website) && (
         <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
           <h2 className="text-xl font-semibold text-white">Links</h2>
           <div className="mt-4 flex flex-wrap gap-2">
             <LinkChip href={app.website_url} label="Website" />
             <LinkChip href={app.author_website} label="Author website" />
-            <LinkChip href={app.repo_url} label="Repository" />
             <LinkChip href={app.source_code_url} label="Source code" />
             <LinkChip href={app.issue_tracker_url} label="Issue tracker" />
             <LinkChip href={app.translation_url} label="Translations" />
@@ -315,12 +312,6 @@ export default function DiscoverAppPage() {
         </section>
       )}
 
-      {hasJsonValue(app.localized_metadata) && (
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
-          <h2 className="text-xl font-semibold text-white">Localized metadata</h2>
-          <pre className="mt-4 overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/70 p-4 text-xs leading-6 text-slate-300">{JSON.stringify(app.localized_metadata, null, 2)}</pre>
-        </section>
-      )}
     </div>
   );
 }

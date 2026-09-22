@@ -16,9 +16,11 @@ type StoreApp = {
   license_type: string | null;
   subcategory: string | null;
   categories: string[];
+  created_at: string | null;
   updated_at: string | null;
   [key: string]: unknown;
 };
+type DiscoverMetric={app_id:string;total_downloads:number|string;recent_downloads:number|string;platforms:string[]};
 
 function appInitials(name: string) {
   return name
@@ -37,6 +39,9 @@ export default function DiscoverPage() {
   const [license, setLicense] = useState("all");
   const [category, setCategory] = useState("all");
   const [developer, setDeveloper] = useState("all");
+  const [platform, setPlatform] = useState("all");
+  const [sort, setSort] = useState("trending");
+  const [metrics, setMetrics] = useState<Record<string,DiscoverMetric>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,6 +65,8 @@ export default function DiscoverPage() {
         setApps([]);
       } else {
         setApps((data ?? []) as StoreApp[]);
+        const {data:metricRows}=await supabase.rpc("luma_discover_metrics");
+        if(!cancelled)setMetrics(Object.fromEntries(((metricRows??[]) as DiscoverMetric[]).map(row=>[row.app_id,row])));
       }
 
       setLoading(false);
@@ -111,20 +118,24 @@ export default function DiscoverPage() {
     [apps],
   );
 
+  const platforms=useMemo(()=>Array.from(new Set(Object.values(metrics).flatMap(item=>item.platforms||[]))).sort(),[metrics]);
+
   const filteredApps = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    return apps.filter((app) => {
+    const result=apps.filter((app) => {
       const appCategories = Array.isArray(app.categories) ? app.categories : [];
       const matchesLicense = license === "all" || app.license_type === license;
       const matchesCategory = category === "all" || appCategories.includes(category) || app.subcategory === category;
       const matchesDeveloper = developer === "all" || app.developer_name === developer;
-      if (!matchesLicense || !matchesCategory || !matchesDeveloper) return false;
+      const matchesPlatform = platform === "all" || (metrics[app.id]?.platforms||[]).includes(platform);
+      if (!matchesLicense || !matchesCategory || !matchesDeveloper || !matchesPlatform) return false;
       if (!query) return true;
 
       return JSON.stringify(app).toLowerCase().includes(query);
     });
-  }, [apps, category, developer, license, search]);
+    return result.sort((a,b)=>{const am=metrics[a.id],bm=metrics[b.id];if(sort==="trending")return Number(bm?.recent_downloads||0)-Number(am?.recent_downloads||0)||Number(bm?.total_downloads||0)-Number(am?.total_downloads||0);if(sort==="downloads")return Number(bm?.total_downloads||0)-Number(am?.total_downloads||0);if(sort==="new")return new Date(b.created_at||0).getTime()-new Date(a.created_at||0).getTime();if(sort==="updated")return new Date(b.updated_at||0).getTime()-new Date(a.updated_at||0).getTime();return (a.name||"").localeCompare(b.name||"");});
+  }, [apps, category, developer, license, search, platform, sort, metrics]);
 
   return (
     <div className="glass-page mx-auto max-w-6xl space-y-8">
@@ -139,7 +150,7 @@ export default function DiscoverPage() {
           </p>
         </div>
 
-        <div className="mt-7 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
+        <div className="mt-7 grid gap-3 lg:grid-cols-3">
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
@@ -161,6 +172,8 @@ export default function DiscoverPage() {
             <option value="all">All licenses</option>
             {licenses.map((item) => <option key={item} value={item}>{item}</option>)}
           </select>
+          <select value={platform} onChange={(e)=>setPlatform(e.target.value)} className="min-h-12 rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-200"><option value="all">All platforms</option>{platforms.map(item=><option key={item} value={item}>{item}</option>)}</select>
+          <select value={sort} onChange={(e)=>setSort(e.target.value)} className="min-h-12 rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-200"><option value="trending">Trending</option><option value="new">New releases</option><option value="updated">Recently updated</option><option value="downloads">Most downloaded</option><option value="name">Name</option></select>
 
         </div>
       </section>
@@ -180,7 +193,7 @@ export default function DiscoverPage() {
           <div className="mb-4 flex items-end justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Catalog</p>
-              <h2 className="mt-1 text-2xl font-bold text-white">All apps</h2>
+              <h2 className="mt-1 text-2xl font-bold text-white">{sort==="trending"?"Trending":sort==="new"?"New releases":sort==="updated"?"Recently updated":sort==="downloads"?"Most downloaded":"All apps"}</h2>
             </div>
             <span className="text-sm text-slate-500">{filteredApps.length} apps</span>
           </div>
@@ -188,6 +201,7 @@ export default function DiscoverPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredApps.map((app) => {
               const name = app.name?.trim() || app.package_name || "Untitled app";
+              const metric=metrics[app.id]; const ageDays=app.created_at?Math.floor((Date.now()-new Date(app.created_at).getTime())/86400000):9999; const updateDays=app.updated_at?Math.floor((Date.now()-new Date(app.updated_at).getTime())/86400000):9999;
 
               return (
                 <Link
@@ -214,6 +228,9 @@ export default function DiscoverPage() {
                   <p className="mt-4 line-clamp-3 min-h-15 text-sm leading-5 text-slate-400">
                     {app.short_description || app.description || "No description available."}
                   </p>
+
+                  <div className="mt-4 flex flex-wrap gap-2 text-xs">{ageDays<=14&&<span className="rounded-full bg-sky-500/10 px-2.5 py-1 text-sky-200">New</span>}{ageDays>14&&updateDays<=14&&<span className="rounded-full bg-violet-500/10 px-2.5 py-1 text-violet-200">Recently updated</span>}{(metric?.platforms||[]).map(item=><span key={item} className="rounded-full border border-slate-700 px-2.5 py-1 text-slate-300">{item}</span>)}</div>
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs"><span className="rounded-full border border-slate-700 bg-slate-950/40 px-2.5 py-1 text-slate-300">↓ {Number(metric?.total_downloads||0).toLocaleString()}</span>{Number(metric?.recent_downloads||0)>0&&<span className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-indigo-200">↗ {Number(metric.recent_downloads).toLocaleString()} / 30d</span>}</div>
 
                   <div className="mt-5 flex flex-wrap gap-2 text-xs">
                     {app.version && <span className="rounded-full border border-slate-700 px-2.5 py-1 text-slate-300">v{app.version}</span>}

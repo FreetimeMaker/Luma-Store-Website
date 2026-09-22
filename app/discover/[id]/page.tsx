@@ -109,6 +109,7 @@ export default function DiscoverAppPage() {
   const supabase = useMemo(() => createClient(), []);
   const [app, setApp] = useState<StoreApp | null>(null);
   const [platforms, setPlatforms] = useState<StoreAppPlatform[]>([]);
+  const [downloadCount, setDownloadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -139,6 +140,8 @@ export default function DiscoverAppPage() {
         setApp(loadedApp);
         const platformResult = await supabase.from("store_app_platforms").select("id,app_id,platform,linux_package_base,download_url,file_size_mb").eq("app_id", loadedApp.id).order("platform", { ascending: true });
         if (!cancelled) setPlatforms((platformResult.data ?? []) as StoreAppPlatform[]);
+        const { count } = await supabase.from("luma_download_events").select("id", { count: "exact", head: true }).eq("app_id", loadedApp.id);
+        if (!cancelled) setDownloadCount(Number(count ?? 0));
       }
 
       setLoading(false);
@@ -192,6 +195,7 @@ export default function DiscoverAppPage() {
               </div>
               {app.developer_id ? <Link href={`/discover/developers/${encodeURIComponent(app.developer_name || app.developer_id)}`} className="mt-2 inline-flex text-sm text-indigo-300 hover:text-indigo-200">{app.developer_name || app.author_name || "Unknown developer"} →</Link> : <p className="mt-2 text-sm text-slate-400">{app.developer_name || app.author_name || "Unknown developer"}</p>}
               {app.short_description && <p className="mt-4 max-w-3xl text-base leading-7 text-slate-300">{app.short_description}</p>}
+              <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-950/50 px-3 py-1.5 text-sm text-slate-300"><span aria-hidden="true">↓</span><span>{downloadCount.toLocaleString()} downloads</span></div>
 
               <div className="mt-5 flex flex-wrap gap-2">
                 {app.categories?.map((category) => (
@@ -246,7 +250,6 @@ export default function DiscoverAppPage() {
       <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
         <h2 className="text-xl font-semibold text-white">App details</h2>
         <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <Field label="Package name" value={app.package_name} mono />
           <Field label="Package name" value={app.package_name} mono />
           <Field label="Version" value={app.version} />
           <Field label="Version code" value={app.version_code} />

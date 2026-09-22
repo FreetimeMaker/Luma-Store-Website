@@ -536,11 +536,6 @@ export default function LumaDeveloperPortal() {
         author_name: authorName.trim() || null,
         author_email: authorEmail.trim() || null,
         author_website: authorWebsite.trim() || null,
-        donate_url: donateUrl.trim() || null,
-        liberapay: liberapay.trim() || null,
-        opencollective: opencollective.trim() || null,
-        bitcoin: bitcoin.trim() || null,
-        litecoin: litecoin.trim() || null,
       };
 
       const { data: { session } } = await supabase.auth.getSession();

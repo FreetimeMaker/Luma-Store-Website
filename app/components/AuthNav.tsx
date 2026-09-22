@@ -76,6 +76,8 @@ export default function AuthNav() {
           Discover
         </Link>
 
+        {!loading && user && <Link href="/saved" className="inline-flex rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-indigo-500/10 hover:text-indigo-200">Saved Apps</Link>}
+
         {!loading && user && (
           <Link
             href="/dashboard"

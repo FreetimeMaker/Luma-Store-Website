@@ -118,14 +118,13 @@ export default function DiscoverAppPage() {
       setLoading(true);
       setError(null);
 
-      const [appResult, platformsResult] = await Promise.all([
-        supabase
-          .from("store_apps")
-          .select("*")
-          .or(`package_name.eq.${params.id},id.eq.${params.id}`)
-          .single(),
-        Promise.resolve({ data: [], error: null }),
-      ]);
+      const identifier = decodeURIComponent(params.id);
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(identifier);
+      const appResult = await supabase
+        .from("store_apps")
+        .select("*")
+        .eq(isUuid ? "id" : "package_name", identifier)
+        .single();
 
       if (cancelled) return;
 

@@ -252,11 +252,8 @@ export default function DiscoverAppPage() {
           <Field label="Version code" value={app.version_code} />
           <Field label="License" value={app.license_type} />
           <Field label="Developer" value={app.developer_name} />
-          <Field label="Developer ID" value={app.developer_id} mono />
           <Field label="Author" value={app.author_name} />
           <Field label="Author email" value={app.author_email} />
-          <Field label="Category ID" value={app.category_id} mono />
-          <Field label="Submission ID" value={app.luma_submission_id} mono />
           <Field label="Created" value={formatDate(app.created_at)} />
           <Field label="Updated" value={formatDate(app.updated_at)} />
         </dl>

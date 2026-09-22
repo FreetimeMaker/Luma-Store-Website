@@ -41,6 +41,7 @@ export default function AuthNav() {
     user?.email ||
     "User";
   const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
+  const isAccountUser = user?.app_metadata?.provider === "google";
   const initials = String(name)
     .split(" ")
     .map((part: string) => part[0])
@@ -76,9 +77,9 @@ export default function AuthNav() {
           Discover
         </Link>
 
-        {!loading && user && <Link href="/account" className="inline-flex rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-indigo-500/10 hover:text-indigo-200">Account</Link>}
+        {!loading && user && isAccountUser && <Link href="/account" className="inline-flex rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-indigo-500/10 hover:text-indigo-200">Account</Link>}
 
-        {!loading && user && (
+        {!loading && user && !isAccountUser && (
           <Link
             href="/dashboard"
             className="inline-flex rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-indigo-500/10 hover:text-indigo-200"

@@ -280,6 +280,19 @@ export default function DiscoverAppPage() {
         </section>
       )}
 
+      <section className="glass-panel p-5 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[.16em] text-indigo-300">Trust & transparency</p><h2 className="mt-1 text-xl font-semibold text-white">Integrity & privacy</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">Information published by Luma Store for this release. Missing data is shown as unavailable rather than assumed to be safe.</p></div><span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-200">{app.source_code_url||app.repo_url?"Source available":"Source not provided"}</span></div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <TrustItem label="Source code" value={app.source_code_url||app.repo_url?"Repository linked":"Not provided"} tone={app.source_code_url||app.repo_url?"good":"neutral"}/>
+          <TrustItem label="License" value={app.license_type||"Not provided"} tone={app.license_type?"good":"neutral"}/>
+          <TrustItem label="Anti-features" value={hasJsonValue(app.ant_features)?stringArray(app.ant_features).join(", ")||"Declared":"None declared"} tone={hasJsonValue(app.ant_features)?"warn":"good"}/>
+          <TrustItem label="SHA-256" value="Not provided yet" tone="neutral"/>
+          <TrustItem label="Android permissions" value={platforms.some(p=>p.platform.toLowerCase()==="android")?"Not provided yet":"Not applicable"} tone="neutral"/>
+          <TrustItem label="Artifact size" value={platforms.some(p=>p.file_size_mb!=null)?platforms.filter(p=>p.file_size_mb!=null).map(p=>p.platform+": "+Number(p.file_size_mb).toLocaleString(undefined,{maximumFractionDigits:2})+" MB").join(" · "):"Not provided"} tone="neutral"/>
+        </div>
+        {hasJsonValue(app.ant_features)&&<div className="mt-4 rounded-2xl border border-amber-400/20 bg-amber-500/10 p-4"><p className="text-sm font-semibold text-amber-100">Declared anti-features</p><p className="mt-1 text-sm leading-6 text-amber-100/70">{stringArray(app.ant_features).join(", ")||"This app has anti-feature metadata, but it is not stored as a simple list."}</p></div>}
+      </section>
+
       {screenshots.length > 0 && (
         <section className="rounded-3xl border border-white/10 bg-slate-900/50 p-5 shadow-lg shadow-black/10 backdrop-blur-xl sm:p-6">
           <h2 className="text-xl font-semibold text-white">Screenshots</h2>
@@ -365,3 +378,5 @@ export default function DiscoverAppPage() {
     </div>
   );
 }
+
+function TrustItem({label,value,tone}:{label:string;value:string;tone:"good"|"warn"|"neutral"}){const style=tone==="good"?"border-emerald-400/15 bg-emerald-500/5":tone==="warn"?"border-amber-400/20 bg-amber-500/10":"border-white/10 bg-slate-950/25";const dot=tone==="good"?"bg-emerald-400":tone==="warn"?"bg-amber-400":"bg-slate-500";return <div className={"rounded-2xl border p-4 "+style}><div className="flex items-center gap-2"><span className={"h-2 w-2 rounded-full "+dot}/><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p></div><p className="mt-2 break-words text-sm font-medium text-slate-200">{value}</p></div>}

@@ -259,7 +259,7 @@ export default function LumaDeveloperPortal() {
   const [step, setStep] = useState(1);
   const [appName, setAppName] = useState("");
   const [appLink, setAppLink] = useState("");
-  const [appCategories, setAppCategories] = useState<string[]>(["System"]);
+  const [appCategories, setAppCategories] = useState<string[]>([]);
   const [appLicenseType, setAppLicenseType] = useState("MIT");
   const [appIconUrl, setAppIconUrl] = useState("");
   const [iconPreviewError, setIconPreviewError] = useState(false);
@@ -357,7 +357,7 @@ export default function LumaDeveloperPortal() {
   }, [supabase]);
 
   const resetForm = () => {
-    setStep(1); setAppName(""); setAppLink(""); setAppCategories(["System"]); setAppLicenseType("MIT"); setAppIconUrl(""); setIconPreviewError(false);
+    setStep(1); setAppName(""); setAppLink(""); setAppCategories([]); setAppLicenseType("MIT"); setAppIconUrl(""); setIconPreviewError(false);
     setAppVersion(""); setAppPlatform(""); setAppLinuxPackageBase(""); setAppDownloadUrl(""); setAppPackageName(""); setAppVersionCode("");
     setWebsiteUrl(""); setIssueTrackerUrl(""); setTranslationUrl(""); setAuthorName(""); setAuthorEmail(""); setAuthorWebsite("");
     setDonateUrl(""); setLiberapay(""); setOpencollective(""); setBitcoin(""); setLitecoin("");
@@ -544,7 +544,7 @@ export default function LumaDeveloperPortal() {
                   {isLinux && <div><label className="mb-2 block text-sm font-medium text-slate-300">Linux package base</label><select required value={appLinuxPackageBase} onChange={(e)=>setAppLinuxPackageBase(e.target.value as LinuxPackageBase)} className={fieldClass}><option value="">Select package base…</option><option value="Debian-based">Debian-based (.deb)</option><option value="RPM-based">RPM-based (.rpm)</option></select></div>}
                 </div>
                 <div className="grid gap-5 md:grid-cols-2">
-                  <div><label className="mb-2 block text-sm font-medium text-slate-300">F-Droid Categories</label><div className="grid gap-2 sm:grid-cols-2">{FDROID_CATEGORIES.map((category)=><label key={category} className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-200"><input type="checkbox" checked={appCategories.includes(category)} onChange={(e)=>setAppCategories((current)=>e.target.checked ? [...new Set([...current, category])] : current.filter((item)=>item!==category))} className="h-4 w-4 accent-indigo-500"/><span>{category}</span></label>)}</div><p className="mt-2 text-xs text-slate-500">Select all categories that apply.</p></div>
+                  <div><label className="mb-2 block text-sm font-medium text-slate-300">F-Droid Categories</label><div className="max-h-64 overflow-y-auto rounded-xl border border-slate-700 bg-slate-950/70">{FDROID_CATEGORIES.map((category)=><label key={category} className="flex cursor-pointer items-center gap-3 border-b border-slate-800 px-4 py-3 text-sm text-slate-200 last:border-b-0 hover:bg-slate-900/80"><input type="checkbox" checked={appCategories.includes(category)} onChange={(e)=>setAppCategories((current)=>e.target.checked ? [...new Set([...current, category])] : current.filter((item)=>item!==category))} className="h-4 w-4 accent-indigo-500"/><span>{category}</span></label>)}</div><p className="mt-2 text-xs text-slate-500">{appCategories.length ? `${appCategories.length} selected` : "No category selected"} · Select all categories that apply.</p></div>
                   <div><label className="mb-2 block text-sm font-medium text-slate-300">Open-Source License</label><select required value={appLicenseType} onChange={(e)=>setAppLicenseType(e.target.value)} className={fieldClass}>{LICENSE_OPTIONS.map(([value,label])=><option key={value} value={value}>{label} ({value})</option>)}</select></div>
                 </div>
                 <div><label className="mb-2 block text-sm font-medium text-slate-300">App Icon URL</label><div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_180px]"><input type="url" required value={appIconUrl} onChange={(e)=>{setAppIconUrl(e.target.value);setIconPreviewError(false);}} className={fieldClass}/><div className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4 text-center"><div className="mx-auto flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-slate-700 bg-slate-900">{appIconUrl.trim()&&!iconPreviewError?<img src={appIconUrl.trim()} alt="App icon preview" className="h-full w-full object-cover" onError={()=>setIconPreviewError(true)}/>:<span className="text-xs text-slate-500">No icon</span>}</div></div></div></div>

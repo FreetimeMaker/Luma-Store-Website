@@ -5,8 +5,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type SubmissionStatus = "Draft" | "Pending" | "In Review" | "Changes Requested" | "Approved" | "Rejected" | "Archived";
-type AppPlatform = "" | "Android" | "Windows" | "Linux";
-type LinuxPackageBase = "" | "Debian-based" | "RPM-based";
+type AppPlatform = "Android" | "Windows" | "Linux";
+type PlatformArtifact = { platform: AppPlatform; packageType: "apk" | "exe" | "deb" | "rpm"; downloadUrl: string };
 
 type LocalizedMetadata = {
   locale: string;
@@ -33,6 +33,7 @@ type AppSubmission = {
   iconUrl: string;
   version: string;
   platform: string;
+  platforms: PlatformArtifact[];
   linuxPackageBase: string;
   downloadUrl: string;
   changelog: string;
@@ -69,6 +70,7 @@ type LumaSubmissionRow = {
   icon_url: string | null;
   version: string | null;
   platform: string | null;
+  platforms: unknown;
   linux_package_base: string | null;
   download_url: string | null;
   changelog: string | null;
@@ -161,6 +163,20 @@ function parseLocalizedMetadata(value: unknown): LocalizedMetadata[] {
   });
 }
 
+function parsePlatformArtifacts(value: unknown, legacyPlatform: string | null, legacyUrl: string | null, legacyLinuxBase: string | null): PlatformArtifact[] {
+  if (Array.isArray(value)) return value.flatMap((entry) => {
+    if (!entry || typeof entry !== "object") return [];
+    const item=entry as Record<string,unknown>, platform=item.platform;
+    if (platform!=="Android"&&platform!=="Windows"&&platform!=="Linux") return [];
+    const packageType=String(item.packageType??item.package_type??(platform==="Android"?"apk":platform==="Windows"?"exe":legacyLinuxBase==="RPM-based"?"rpm":"deb")) as PlatformArtifact["packageType"];
+    const downloadUrl=String(item.downloadUrl??item.download_url??"");
+    return downloadUrl ? [{platform,packageType,downloadUrl}] : [];
+  });
+  if (!legacyPlatform || !legacyUrl) return [];
+  const platform=legacyPlatform as AppPlatform;
+  return [{platform,packageType:platform==="Android"?"apk":platform==="Windows"?"exe":legacyLinuxBase==="RPM-based"?"rpm":"deb",downloadUrl:legacyUrl}];
+}
+
 function rowToApp(item: LumaSubmissionRow): AppSubmission {
   return {
     id: item.id,
@@ -176,6 +192,7 @@ function rowToApp(item: LumaSubmissionRow): AppSubmission {
     iconUrl: item.icon_url || "",
     version: item.version || "",
     platform: item.platform || "",
+    platforms: parsePlatformArtifacts(item.platforms, item.platform, item.download_url, item.linux_package_base),
     linuxPackageBase: item.linux_package_base || "",
     downloadUrl: item.download_url || "",
     changelog: item.changelog || "",
@@ -264,9 +281,11 @@ export default function LumaDeveloperPortal() {
   const [appIconUrl, setAppIconUrl] = useState("");
   const [iconPreviewError, setIconPreviewError] = useState(false);
   const [appVersion, setAppVersion] = useState("");
-  const [appPlatform, setAppPlatform] = useState<AppPlatform>("");
-  const [appLinuxPackageBase, setAppLinuxPackageBase] = useState<LinuxPackageBase>("");
-  const [appDownloadUrl, setAppDownloadUrl] = useState("");
+  const [appPlatforms, setAppPlatforms] = useState<AppPlatform[]>([]);
+  const [androidDownloadUrl,setAndroidDownloadUrl]=useState("");
+  const [windowsDownloadUrl,setWindowsDownloadUrl]=useState("");
+  const [linuxDebUrl,setLinuxDebUrl]=useState("");
+  const [linuxRpmUrl,setLinuxRpmUrl]=useState("");
   const [appPackageName, setAppPackageName] = useState("");
   const [appVersionCode, setAppVersionCode] = useState("");
   const [websiteUrl, setWebsiteUrl] = useState("");
@@ -303,9 +322,10 @@ export default function LumaDeveloperPortal() {
   const [savingDraft, setSavingDraft] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
 
-  const isAndroid = appPlatform === "Android";
-  const isWindows = appPlatform === "Windows";
-  const isLinux = appPlatform === "Linux";
+  const isAndroid = appPlatforms.includes("Android");
+  const isWindows = appPlatforms.includes("Windows");
+  const isLinux = appPlatforms.includes("Linux");
+  const platformArtifacts: PlatformArtifact[]=[...(isAndroid&&androidDownloadUrl.trim()?[{platform:"Android" as const,packageType:"apk" as const,downloadUrl:androidDownloadUrl.trim()}]:[]),...(isWindows&&windowsDownloadUrl.trim()?[{platform:"Windows" as const,packageType:"exe" as const,downloadUrl:windowsDownloadUrl.trim()}]:[]),...(isLinux&&linuxDebUrl.trim()?[{platform:"Linux" as const,packageType:"deb" as const,downloadUrl:linuxDebUrl.trim()}]:[]),...(isLinux&&linuxRpmUrl.trim()?[{platform:"Linux" as const,packageType:"rpm" as const,downloadUrl:linuxRpmUrl.trim()}]:[])];
   const manualStoreMetadata = isWindows || isLinux;
   const validAndroidMetadata = !isAndroid || (/^([A-Za-z][A-Za-z0-9_]*\.)+[A-Za-z][A-Za-z0-9_]*$/.test(appPackageName.trim()) && /^\d+$/.test(appVersionCode.trim()) && Number(appVersionCode) > 0);
   const invalidateFastlane = () => { setFastlaneMetadata(null); setFastlaneError(null); };
@@ -318,8 +338,7 @@ export default function LumaDeveloperPortal() {
         name: appName.trim() || closedTitle.trim() || "Untitled draft", short_description: closedShortDescription.trim() || null, description: closedFullDescription.trim() || null,
         link: appLink.trim() || null, repo_url: appLink.trim() || null, source_code_url: appLink.trim() || null,
         categories: appCategories, category: appCategories[0] || null, subcategory: null, license_type: appLicenseType || null, closed_source: false,
-        icon_url: appIconUrl.trim() || null, version: appVersion.trim() || null, platform: appPlatform || null, linux_package_base: isLinux ? appLinuxPackageBase || null : null,
-        download_url: appDownloadUrl.trim() || null, package_name: isAndroid ? appPackageName.trim() || null : null,
+        icon_url: appIconUrl.trim() || null, version: appVersion.trim() || null, platform: appPlatforms[0] || null, platforms: platformArtifacts, linux_package_base: null,\n        download_url: platformArtifacts[0]?.downloadUrl || null, package_name: isAndroid ? appPackageName.trim() || null : null,
         version_code: isAndroid && /^\d+$/.test(appVersionCode.trim()) ? Number(appVersionCode) : null,
         website_url: websiteUrl.trim() || null, issue_tracker_url: issueTrackerUrl.trim() || null, translation_url: translationUrl.trim() || null,
         author_name: authorName.trim() || null, author_email: authorEmail.trim() || null, author_website: authorWebsite.trim() || null,
@@ -395,7 +414,7 @@ export default function LumaDeveloperPortal() {
 
   const resetForm = () => {
     setStep(1); setAppName(""); setAppLink(""); setAppCategories([]); setAppLicenseType(""); setAppIconUrl(""); setIconPreviewError(false);
-    setAppVersion(""); setAppPlatform(""); setAppLinuxPackageBase(""); setAppDownloadUrl(""); setAppPackageName(""); setAppVersionCode("");
+    setAppVersion(""); setAppPlatforms([]); setAndroidDownloadUrl(""); setWindowsDownloadUrl(""); setLinuxDebUrl(""); setLinuxRpmUrl(""); setAppPackageName(""); setAppVersionCode("");
     setWebsiteUrl(""); setIssueTrackerUrl(""); setTranslationUrl(""); setAuthorName(""); setAuthorEmail(""); setAuthorWebsite("");
     setDonateUrl(""); setLiberapay(""); setOpencollective(""); setBitcoin(""); setLitecoin("");
     setClosedTitle(""); setClosedShortDescription(""); setClosedFullDescription(""); setClosedChangelog(""); setClosedScreenshotsText(""); setAdditionalClosedMetadata([]);
@@ -407,9 +426,7 @@ export default function LumaDeveloperPortal() {
     setEditingId(app.id); setEditingStatus(app.status); setAppName(app.name); setAppLink(app.repoUrl || app.link);
     setAppCategories((app.categories?.length ? app.categories : [app.category]).filter((category) => FDROID_CATEGORIES.includes(category as typeof FDROID_CATEGORIES[number])));
     setAppLicenseType(app.licenseType || ""); setAppIconUrl(app.iconUrl); setIconPreviewError(false); setAppVersion(app.version);
-    setAppPlatform(app.platform === "Linux" ? "Linux" : app.platform === "Windows" ? "Windows" : app.platform === "Android" ? "Android" : "");
-    setAppLinuxPackageBase(app.linuxPackageBase === "Debian-based" || app.linuxPackageBase === "RPM-based" ? app.linuxPackageBase : "");
-    setAppDownloadUrl(app.downloadUrl); setAppPackageName(app.packageName); setAppVersionCode(app.versionCode);
+    setAppPlatforms(Array.from(new Set(app.platforms.map((item)=>item.platform))));\n    setAndroidDownloadUrl(app.platforms.find((item)=>item.platform==="Android")?.downloadUrl||""); setWindowsDownloadUrl(app.platforms.find((item)=>item.platform==="Windows")?.downloadUrl||"");\n    setLinuxDebUrl(app.platforms.find((item)=>item.packageType==="deb")?.downloadUrl||""); setLinuxRpmUrl(app.platforms.find((item)=>item.packageType==="rpm")?.downloadUrl||""); setAppPackageName(app.packageName); setAppVersionCode(app.versionCode);
     setWebsiteUrl(app.websiteUrl); setIssueTrackerUrl(app.issueTrackerUrl); setTranslationUrl(app.translationUrl);
     setAuthorName(app.authorName); setAuthorEmail(app.authorEmail); setAuthorWebsite(app.authorWebsite);
     setDonateUrl(app.donateUrl); setLiberapay(app.liberapay); setOpencollective(app.opencollective); setBitcoin(app.bitcoin); setLitecoin(app.litecoin);
@@ -463,9 +480,7 @@ export default function LumaDeveloperPortal() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-      if (!appPlatform) throw new Error("Please select a platform.");
-      if (isLinux && !appLinuxPackageBase) throw new Error("Linux submissions must specify Debian-based or RPM-based.");
-      if (!appDownloadUrl.trim()) throw new Error("A download URL is required.");
+      if (!appPlatforms.length) throw new Error("Please select at least one platform.");\n      if (isAndroid && !androidDownloadUrl.trim()) throw new Error("Android requires a download URL.");\n      if (isWindows && !windowsDownloadUrl.trim()) throw new Error("Windows requires a download URL.");\n      if (isLinux && !linuxDebUrl.trim() && !linuxRpmUrl.trim()) throw new Error("Linux requires a .deb and/or .rpm download URL.");
       if (!validAndroidMetadata) throw new Error("Android apps require a valid package name and positive versionCode.");
       if (!appCategories.length || appCategories.some((category) => !FDROID_CATEGORIES.includes(category as typeof FDROID_CATEGORIES[number]))) throw new Error("Please select at least one valid F-Droid category.");
       if (!appLicenseType) throw new Error("Please select an open-source license.");
@@ -503,9 +518,7 @@ export default function LumaDeveloperPortal() {
         localized_metadata: localizedMetadata,
         icon_url: appIconUrl.trim(),
         version: appVersion.trim(),
-        platform: appPlatform,
-        linux_package_base: isLinux ? appLinuxPackageBase : null,
-        download_url: appDownloadUrl.trim(),
+        platform: appPlatforms[0],\n        platforms: platformArtifacts,\n        linux_package_base: null,\n        download_url: platformArtifacts[0]?.downloadUrl || null,
         changelog: currentStoreMetadata.changelog,
         package_name: isAndroid ? appPackageName.trim() : null,
         version_code: isAndroid ? Number(appVersionCode) : null,
@@ -586,8 +599,7 @@ export default function LumaDeveloperPortal() {
               {step === 1 && <div className="space-y-6">
                 
                 <div className="grid gap-5 md:grid-cols-2">
-                  <div><label className="mb-2 block text-sm font-medium text-slate-300">Platform</label><div className="overflow-hidden rounded-xl border border-slate-700 bg-slate-950/70">{(["Android","Windows","Linux"] as AppPlatform[]).map((platform)=><label key={platform} className="flex cursor-pointer items-center gap-3 border-b border-slate-800 px-4 py-3 text-sm text-slate-200 last:border-b-0 hover:bg-slate-900/80"><input type="radio" name="app-platform" value={platform} checked={appPlatform===platform} onChange={()=>{setAppPlatform(platform);if(platform!=="Linux")setAppLinuxPackageBase("");invalidateFastlane();}} className="h-4 w-4 accent-indigo-500"/><span>{platform}</span></label>)}</div></div>
-                  {isLinux && <div><label className="mb-2 block text-sm font-medium text-slate-300">Linux package base</label><select required value={appLinuxPackageBase} onChange={(e)=>setAppLinuxPackageBase(e.target.value as LinuxPackageBase)} className={fieldClass}><option value="">Select package base…</option><option value="Debian-based">Debian-based (.deb)</option><option value="RPM-based">RPM-based (.rpm)</option></select></div>}
+                  <div><label className="mb-2 block text-sm font-medium text-slate-300">Platforms</label><div className="overflow-hidden rounded-xl border border-slate-700 bg-slate-950/70">{(["Android","Windows","Linux"] as AppPlatform[]).map((platform)=><label key={platform} className="flex cursor-pointer items-center gap-3 border-b border-slate-800 px-4 py-3 text-sm text-slate-200 last:border-b-0 hover:bg-slate-900/80"><input type="checkbox" checked={appPlatforms.includes(platform)} onChange={()=>{setAppPlatforms((current)=>current.includes(platform)?current.filter((item)=>item!==platform):[...current,platform]);invalidateFastlane();}} className="h-4 w-4 accent-indigo-500"/><span>{platform}</span></label>)}</div></div>
                 </div>
                 <div className="grid gap-5 md:grid-cols-2">
                   <div><label className="mb-2 block text-sm font-medium text-slate-300">F-Droid Categories</label><div className="max-h-64 overflow-y-auto rounded-xl border border-slate-700 bg-slate-950/70">{FDROID_CATEGORIES.map((category)=><label key={category} className="flex cursor-pointer items-center gap-3 border-b border-slate-800 px-4 py-3 text-sm text-slate-200 last:border-b-0 hover:bg-slate-900/80"><input type="checkbox" checked={appCategories.includes(category)} onChange={(e)=>setAppCategories((current)=>e.target.checked ? [...new Set([...current, category])] : current.filter((item)=>item!==category))} className="h-4 w-4 accent-indigo-500"/><span>{category}</span></label>)}</div><p className="mt-2 text-xs text-slate-500">{appCategories.length ? `${appCategories.length} selected` : "No category selected"} · Select all categories that apply.</p></div>
@@ -608,7 +620,7 @@ export default function LumaDeveloperPortal() {
                 </div>}
 
                 <div className="grid gap-5 md:grid-cols-2">
-                  <div><label className="mb-2 block text-sm text-slate-300">Download URL</label><input type="url" required value={appDownloadUrl} onChange={(e)=>setAppDownloadUrl(e.target.value)} className={fieldClass}/></div>
+                  <div className="space-y-3">{isAndroid&&<div><label className="mb-2 block text-sm text-slate-300">Android APK URL</label><input type="url" required value={androidDownloadUrl} onChange={(e)=>setAndroidDownloadUrl(e.target.value)} className={fieldClass}/></div>}{isWindows&&<div><label className="mb-2 block text-sm text-slate-300">Windows download URL</label><input type="url" required value={windowsDownloadUrl} onChange={(e)=>setWindowsDownloadUrl(e.target.value)} className={fieldClass}/></div>}{isLinux&&<><div><label className="mb-2 block text-sm text-slate-300">Linux .deb URL</label><input type="url" value={linuxDebUrl} onChange={(e)=>setLinuxDebUrl(e.target.value)} className={fieldClass}/></div><div><label className="mb-2 block text-sm text-slate-300">Linux .rpm URL</label><input type="url" value={linuxRpmUrl} onChange={(e)=>setLinuxRpmUrl(e.target.value)} className={fieldClass}/></div></>}</div>
                   <div><label className="mb-2 block text-sm text-slate-300">Version</label><input required value={appVersion} onChange={(e)=>setAppVersion(e.target.value)} className={fieldClass}/></div>
                   {isAndroid && <><div><label className="mb-2 block text-sm text-slate-300">Android Package Name</label><input required value={appPackageName} onChange={(e)=>setAppPackageName(e.target.value)} className={fieldClass}/></div><div><label className="mb-2 block text-sm text-slate-300">Android versionCode</label><input type="number" min={1} required value={appVersionCode} onChange={(e)=>{setAppVersionCode(e.target.value);invalidateFastlane();}} className={fieldClass}/></div></>}
                 </div>

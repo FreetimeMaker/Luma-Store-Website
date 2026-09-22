@@ -72,7 +72,7 @@ function LoginContent() {
         </p>
 
         <div className="mt-6 flex flex-col gap-3">
-          <button onClick={() => redirectTo("github")} className="flex items-start gap-3 rounded-xl border border-slate-700 px-4 py-3 text-left transition hover:border-slate-600 hover:bg-slate-800"><ProviderIcon provider="github" /><span><span className="block font-medium text-slate-200">Sign in with GitHub</span><span className="mt-1 block text-xs font-normal text-slate-400">Developer access · app submissions and developer tools. Opens Developer Dashboard.</span></span></button><button onClick={() => redirectTo("gitlab")} className="flex items-start gap-3 rounded-xl border border-slate-700 px-4 py-3 text-left transition hover:border-slate-600 hover:bg-slate-800"><ProviderIcon provider="gitlab" /><span><span className="block font-medium text-slate-200">Sign in with GitLab</span><span className="mt-1 block text-xs font-normal text-slate-400">Developer access · app submissions and developer tools. Opens Developer Dashboard.</span></span></button>
+          <button onClick={() => redirectTo("github")} className="flex items-center gap-3 rounded-xl border border-slate-700 px-4 py-3 text-left transition hover:border-slate-600 hover:bg-slate-800"><ProviderIcon provider="github" /><span className="font-medium text-slate-200">Sign in with GitHub</span></button><button onClick={() => redirectTo("gitlab")} className="flex items-center gap-3 rounded-xl border border-slate-700 px-4 py-3 text-left transition hover:border-slate-600 hover:bg-slate-800"><ProviderIcon provider="gitlab" /><span className="font-medium text-slate-200">Sign in with GitLab</span></button>
         </div>
       </div>
     </main>

@@ -11,7 +11,7 @@ type Rating={app_id:string;rating:number;updated_at:string;app:AppInfo|null};
 export default function AccountPage(){
  const supabase=useMemo(()=>createClient(),[]),router=useRouter();
  const [saved,setSaved]=useState<Saved[]>([]),[ratings,setRatings]=useState<Rating[]>([]),[loading,setLoading]=useState(true);
- useEffect(()=>{let cancelled=false;(async()=>{const {data:{user}}=await supabase.auth.getUser();if(!user){router.replace("/login?next=/account");return;}
+ useEffect(()=>{let cancelled=false;(async()=>{const {data:{user}}=await supabase.auth.getUser();if(!user){router.replace("/login?next=/account");return;} const provider=String(user.app_metadata?.provider||""); if(provider!=="google"){router.replace("/dashboard");return;}
  const [s,r]=await Promise.all([
   supabase.from("store_saved_apps").select("app_id,created_at,app:store_apps(id,name,package_name,short_description,icon_url,developer_name,version)").eq("user_id",user.id).order("created_at",{ascending:false}),
   supabase.from("store_app_ratings").select("app_id,rating,updated_at,app:store_apps(id,name,package_name,short_description,icon_url,developer_name,version)").eq("user_id",user.id).order("updated_at",{ascending:false})

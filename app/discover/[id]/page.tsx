@@ -123,7 +123,7 @@ export default function DiscoverAppPage() {
   const [ratingCount, setRatingCount] = useState(0);
   const [pageUrl, setPageUrl] = useState("");
   const [copied, setCopied] = useState(false);
-  const [androidQrUrl, setAndroidQrUrl] = useState<string | null>(null);
+  const [androidQrUrl, setAndroidQrUrl] = useState<string | null>(null);\n  const [screenshotIndex, setScreenshotIndex] = useState<number | null>(null);
   const ratingApi = "https://api.free-time.me/lumastore";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -286,7 +286,7 @@ export default function DiscoverAppPage() {
           <div className="mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3">
             {screenshots.map((url, index) => (
               // eslint-disable-next-line @next/next/no-img-element
-              <img key={`${url}-${index}`} src={url} alt={`${name} screenshot ${index + 1}`} className="h-72 w-auto max-w-[85vw] shrink-0 snap-center rounded-2xl border border-white/10 bg-slate-950 object-contain shadow-lg sm:h-96" />
+              <button type="button" key={`${url}-${index}`} onClick={()=>setScreenshotIndex(index)} className="shrink-0 snap-center rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-300/60"><img src={url} alt={`${name} screenshot ${index + 1}`} className="h-72 w-auto max-w-[85vw] rounded-2xl border border-white/10 bg-slate-950 object-contain shadow-lg transition hover:scale-[1.01] sm:h-96" /></button>
             ))}
           </div>
         </section>

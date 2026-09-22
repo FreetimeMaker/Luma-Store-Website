@@ -43,6 +43,8 @@ type StoreApp = {
   categories: string[];
 };
 
+type DeveloperFunding = { donate_url: string | null; liberapay: string | null; opencollective: string | null; bitcoin: string | null; litecoin: string | null; };
+
 type StoreAppPlatform = {
   id: string;
   app_id: string;
@@ -107,6 +109,7 @@ export default function DiscoverAppPage() {
   const supabase = useMemo(() => createClient(), []);
   const [app, setApp] = useState<StoreApp | null>(null);
   const [platforms, setPlatforms] = useState<StoreAppPlatform[]>([]);
+  const [funding, setFunding] = useState<DeveloperFunding | null>(null);
   const [downloadCount, setDownloadCount] = useState(0);
   const [ratingAverage, setRatingAverage] = useState(0);
   const [ratingCount, setRatingCount] = useState(0);
@@ -142,6 +145,10 @@ export default function DiscoverAppPage() {
       } else {
         const loadedApp = appResult.data as StoreApp;
         setApp(loadedApp);
+        if (loadedApp.developer_id) {
+          const fundingResult = await supabase.from("luma_developer_funding").select("donate_url,liberapay,opencollective,bitcoin,litecoin").eq("developer_id", loadedApp.developer_id).maybeSingle();
+          if (!cancelled) setFunding((fundingResult.data as DeveloperFunding | null) ?? null);
+        } else if (!cancelled) setFunding(null);
         const platformResult = await supabase.from("store_app_platforms").select("id,app_id,platform,linux_package_base,download_url,file_size_mb").eq("app_id", loadedApp.id).order("platform", { ascending: true });
         if (!cancelled) setPlatforms((platformResult.data ?? []) as StoreAppPlatform[]);
         const { count } = await supabase.from("luma_download_events").select("id", { count: "exact", head: true }).eq("app_id", loadedApp.id);
@@ -334,20 +341,16 @@ export default function DiscoverAppPage() {
         )}
       </section>
 
-      {(app.donate_url || app.liberapay || app.opencollective || app.bitcoin || app.litecoin) && (
+      {funding && (funding.donate_url || funding.liberapay || funding.opencollective || funding.bitcoin || funding.litecoin) && (
         <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
           <h2 className="text-xl font-semibold text-white">Support the developer</h2>
+          <p className="mt-1 text-sm text-slate-400">These funding methods belong to {app.developer_name || "this developer"} and apply to all of their apps.</p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <LinkChip href={app.donate_url} label="Donate" />
-            <LinkChip href={app.liberapay} label="Liberapay" />
-            <LinkChip href={app.opencollective} label="OpenCollective" />
+            <LinkChip href={funding.donate_url} label="Donate" />
+            <LinkChip href={funding.liberapay} label="Liberapay" />
+            <LinkChip href={funding.opencollective} label="OpenCollective" />
           </div>
-          {(app.bitcoin || app.litecoin) && (
-            <dl className="mt-4 grid gap-3 sm:grid-cols-2">
-              <Field label="Bitcoin" value={app.bitcoin} mono />
-              <Field label="Litecoin" value={app.litecoin} mono />
-            </dl>
-          )}
+          {(funding.bitcoin || funding.litecoin) && <dl className="mt-4 grid gap-3 sm:grid-cols-2"><Field label="Bitcoin" value={funding.bitcoin} mono /><Field label="Litecoin" value={funding.litecoin} mono /></dl>}
         </section>
       )}
 

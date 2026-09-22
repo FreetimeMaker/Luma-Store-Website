@@ -27,13 +27,6 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const provider = String(data.user.app_metadata?.provider || "");
-      if (!["github", "gitlab"].includes(provider)) {
-        router.replace("/account");
-        setUser(null);
-        setLoading(false);
-        return;
-      }
 
       setUser(data.user);
       setLoading(false);
@@ -52,13 +45,6 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const provider = String(session.user.app_metadata?.provider || "");
-      if (!["github", "gitlab"].includes(provider)) {
-        router.replace("/account");
-        setUser(null);
-        setLoading(false);
-        return;
-      }
 
       setUser(session.user);
       setLoading(false);

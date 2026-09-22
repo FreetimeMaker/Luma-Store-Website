@@ -41,17 +41,20 @@ function LoginContent() {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = safeNext(searchParams.get("next"));
-  const developerLogin = next.startsWith("/dashboard");
+  safeNext(searchParams.get("next"));
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }: UserResponse) => {
-      if (data.user) router.replace(next);
+      if (data.user) {
+        const provider = String(data.user.app_metadata?.provider || "");
+        router.replace(provider === "google" ? "/account" : "/dashboard");
+      }
     });
-  }, [next, router, supabase]);
+  }, [router, supabase]);
 
   async function redirectTo(provider: "github" | "gitlab" | "google") {
-    const callbackUrl = `${authOrigin()}/auth/callback?next=${encodeURIComponent(next)}`;
+    const destination = provider === "google" ? "/account" : "/dashboard";
+    const callbackUrl = `${authOrigin()}/auth/callback?next=${encodeURIComponent(destination)}`;
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
@@ -65,15 +68,15 @@ function LoginContent() {
     <main className="glass-page flex min-h-[70vh] items-center justify-center p-6">
       <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-xl">
         <div className="mb-6 inline-flex rounded-full border border-indigo-500/30 bg-indigo-950/40 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-indigo-300">
-          {developerLogin ? "Developer access" : "Luma Store account"}
+          Choose your login
         </div>
         <h1 className="text-2xl font-semibold text-white">Sign in to Luma Store</h1>
         <p className="mt-2 text-sm leading-6 text-slate-400">
-          {developerLogin ? "Sign in with your source-code account to access app submissions and developer tools." : "Sign in with Google to manage saved apps and ratings across devices."}
+          Choose how you want to use Luma Store. Google opens your personal account; GitHub and GitLab open the Developer Dashboard.
         </p>
 
         <div className="mt-6 flex flex-col gap-3">
-          {developerLogin ? <><button onClick={() => redirectTo("github")} className="flex items-center gap-3 rounded-xl border border-slate-700 px-4 py-3 text-left font-medium text-slate-200 transition hover:border-slate-600 hover:bg-slate-800"><ProviderIcon provider="github" /><span>Sign in with GitHub</span></button><button onClick={() => redirectTo("gitlab")} className="flex items-center gap-3 rounded-xl border border-slate-700 px-4 py-3 text-left font-medium text-slate-200 transition hover:border-slate-600 hover:bg-slate-800"><ProviderIcon provider="gitlab" /><span>Sign in with GitLab</span></button></> : <button onClick={() => redirectTo("google")} className="flex items-center gap-3 rounded-xl border border-slate-700 px-4 py-3 text-left font-medium text-slate-200 transition hover:border-slate-600 hover:bg-slate-800"><ProviderIcon provider="google" /><span>Sign in with Google</span></button>}
+          <button onClick={() => redirectTo("google")} className="flex items-start gap-3 rounded-xl border border-slate-700 px-4 py-3 text-left transition hover:border-slate-600 hover:bg-slate-800"><ProviderIcon provider="google" /><span><span className="block font-medium text-slate-200">Sign in with Google</span><span className="mt-1 block text-xs font-normal text-slate-400">Personal account · saved apps and ratings. Opens Account.</span></span></button><button onClick={() => redirectTo("github")} className="flex items-start gap-3 rounded-xl border border-slate-700 px-4 py-3 text-left transition hover:border-slate-600 hover:bg-slate-800"><ProviderIcon provider="github" /><span><span className="block font-medium text-slate-200">Sign in with GitHub</span><span className="mt-1 block text-xs font-normal text-slate-400">Developer access · app submissions and developer tools. Opens Developer Dashboard.</span></span></button><button onClick={() => redirectTo("gitlab")} className="flex items-start gap-3 rounded-xl border border-slate-700 px-4 py-3 text-left transition hover:border-slate-600 hover:bg-slate-800"><ProviderIcon provider="gitlab" /><span><span className="block font-medium text-slate-200">Sign in with GitLab</span><span className="mt-1 block text-xs font-normal text-slate-400">Developer access · app submissions and developer tools. Opens Developer Dashboard.</span></span></button>
         </div>
       </div>
     </main>

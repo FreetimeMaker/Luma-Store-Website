@@ -146,7 +146,7 @@ export default function DiscoverAppPage() {
         const { count } = await supabase.from("luma_download_events").select("id", { count: "exact", head: true }).eq("app_id", loadedApp.id);
         if (!cancelled) setDownloadCount(Number(count ?? 0));
         const { data: ratings } = await supabase.from("store_app_ratings").select("user_id,rating").eq("app_id", loadedApp.id);
-        const values = (ratings ?? []).map((row: { rating: number }) => Number(row.rating));
+        const values: number[] = (ratings ?? []).map((row: { rating: number }) => Number(row.rating));
         if (!cancelled) { setRatingCount(values.length); setRatingAverage(values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0); }
         const { data: { user } } = await supabase.auth.getUser();
         if (!cancelled) setUserId(user?.id ?? null);
@@ -173,7 +173,7 @@ export default function DiscoverAppPage() {
     const { error } = await supabase.from("store_app_ratings").upsert({ app_id: app.id, user_id: userId, rating, updated_at: new Date().toISOString() }, { onConflict: "app_id,user_id" });
     if (!error) {
       const { data } = await supabase.from("store_app_ratings").select("user_id,rating").eq("app_id", app.id);
-      const values = (data ?? []).map((row: { rating: number }) => Number(row.rating));
+      const values: number[] = (data ?? []).map((row: { rating: number }) => Number(row.rating));
       setMyRating(rating); setRatingCount(values.length); setRatingAverage(values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0);
     } else alert(error.message);
     setAccountBusy(false);

@@ -56,6 +56,10 @@ type StoreAppPlatform = {
   linux_package_base: string | null;
   download_url: string | null;
   file_size_mb: number | null;
+  sha256: string | null;
+  artifact_verified_at: string | null;
+  artifact_size_bytes: number | string | null;
+  permissions: JsonValue;
 };
 
 function formatDate(value: string | null) {
@@ -162,7 +166,7 @@ export default function DiscoverAppPage() {
           const fundingResult = await supabase.from("luma_developer_funding").select("donate_url,liberapay,opencollective,bitcoin,litecoin").eq("developer_id", loadedApp.developer_id).maybeSingle();
           if (!cancelled) setFunding((fundingResult.data as DeveloperFunding | null) ?? null);
         } else if (!cancelled) setFunding(null);
-        const platformResult = await supabase.from("store_app_platforms").select("id,app_id,platform,linux_package_base,download_url,file_size_mb").eq("app_id", loadedApp.id).order("platform", { ascending: true });
+        const platformResult = await supabase.from("store_app_platforms").select("id,app_id,platform,linux_package_base,download_url,file_size_mb,sha256,artifact_verified_at,artifact_size_bytes,permissions").eq("app_id", loadedApp.id).order("platform", { ascending: true });
         if (!cancelled) setPlatforms((platformResult.data ?? []) as StoreAppPlatform[]);
         const { data: totalDownloads } = await supabase.rpc("luma_app_download_count", { target_app_id: loadedApp.id });
         if (!cancelled) setDownloadCount(Number(totalDownloads ?? 0));
@@ -286,9 +290,10 @@ export default function DiscoverAppPage() {
           <TrustItem label="Source code" value={app.source_code_url||app.repo_url?"Repository linked":"Not provided"} tone={app.source_code_url||app.repo_url?"good":"neutral"}/>
           <TrustItem label="License" value={app.license_type||"Not provided"} tone={app.license_type?"good":"neutral"}/>
           <TrustItem label="Anti-features" value={hasJsonValue(app.ant_features)?stringArray(app.ant_features).join(", ")||"Declared":"None declared"} tone={hasJsonValue(app.ant_features)?"warn":"good"}/>
-          <TrustItem label="SHA-256" value="Not provided yet" tone="neutral"/>
-          <TrustItem label="Android permissions" value={platforms.some(p=>p.platform.toLowerCase()==="android")?"Not provided yet":"Not applicable"} tone="neutral"/>
-          <TrustItem label="Artifact size" value={platforms.some(p=>p.file_size_mb!=null)?platforms.filter(p=>p.file_size_mb!=null).map(p=>p.platform+": "+Number(p.file_size_mb).toLocaleString(undefined,{maximumFractionDigits:2})+" MB").join(" · "):"Not provided"} tone="neutral"/>
+          <TrustItem label="SHA-256" value={platforms.some(p=>p.sha256)?platforms.filter(p=>p.sha256).map(p=>p.platform+": "+p.sha256).join(" · "):"Not provided yet"} tone={platforms.some(p=>p.sha256)?"good":"neutral"}/>
+          <TrustItem label="Android permissions" value={(()=>{const android=platforms.find(p=>p.platform.toLowerCase()==="android");return android?(hasJsonValue(android.permissions)?stringArray(android.permissions).join(", ")||"Metadata available":"Not provided yet"):"Not applicable"})()} tone="neutral"/>
+          <TrustItem label="Artifact size" value={platforms.some(p=>p.artifact_size_bytes!=null||p.file_size_mb!=null)?platforms.filter(p=>p.artifact_size_bytes!=null||p.file_size_mb!=null).map(p=>p.platform+": "+(p.artifact_size_bytes!=null?(Number(p.artifact_size_bytes)/1024/1024).toLocaleString(undefined,{maximumFractionDigits:2}):Number(p.file_size_mb).toLocaleString(undefined,{maximumFractionDigits:2}))+" MB").join(" · "):"Not provided"} tone="neutral"/>
+          <TrustItem label="Artifact verification" value={platforms.some(p=>p.artifact_verified_at)?"SHA-256 calculated by Luma Store during publishing":"Not verified yet"} tone={platforms.some(p=>p.artifact_verified_at)?"good":"neutral"}/>
         </div>
         {hasJsonValue(app.ant_features)&&<div className="mt-4 rounded-2xl border border-amber-400/20 bg-amber-500/10 p-4"><p className="text-sm font-semibold text-amber-100">Declared anti-features</p><p className="mt-1 text-sm leading-6 text-amber-100/70">{stringArray(app.ant_features).join(", ")||"This app has anti-feature metadata, but it is not stored as a simple list."}</p></div>}
       </section>

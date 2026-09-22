@@ -90,6 +90,8 @@ function Field({ label, value, mono = false }: { label: string; value: string | 
   );
 }
 
+function fundingHref(value: string | null, provider: "liberapay" | "opencollective") { if (!value) return null; if (/^https?:\/\//i.test(value)) return value; return provider === "liberapay" ? `https://liberapay.com/${value.replace(/^@/, "")}/` : `https://opencollective.com/${value.replace(/^@/, "")}`; }
+
 function LinkChip({ href, label }: { href: string | null; label: string }) {
   if (!href) return null;
   return (
@@ -347,8 +349,8 @@ export default function DiscoverAppPage() {
           <p className="mt-1 text-sm text-slate-400">These funding methods belong to {app.developer_name || "this developer"} and apply to all of their apps.</p>
           <div className="mt-4 flex flex-wrap gap-2">
             <LinkChip href={funding.donate_url} label="Donate" />
-            <LinkChip href={funding.liberapay} label="Liberapay" />
-            <LinkChip href={funding.opencollective} label="OpenCollective" />
+            <LinkChip href={fundingHref(funding.liberapay, "liberapay")} label="Liberapay" />
+            <LinkChip href={fundingHref(funding.opencollective, "opencollective")} label="OpenCollective" />
           </div>
           {(funding.bitcoin || funding.litecoin) && <dl className="mt-4 grid gap-3 sm:grid-cols-2"><Field label="Bitcoin" value={funding.bitcoin} mono /><Field label="Litecoin" value={funding.litecoin} mono /></dl>}
         </section>

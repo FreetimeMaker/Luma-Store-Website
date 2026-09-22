@@ -260,7 +260,7 @@ export default function LumaDeveloperPortal() {
   const [appName, setAppName] = useState("");
   const [appLink, setAppLink] = useState("");
   const [appCategories, setAppCategories] = useState<string[]>([]);
-  const [appLicenseType, setAppLicenseType] = useState("MIT");
+  const [appLicenseType, setAppLicenseType] = useState("");
   const [appIconUrl, setAppIconUrl] = useState("");
   const [iconPreviewError, setIconPreviewError] = useState(false);
   const [appVersion, setAppVersion] = useState("");
@@ -357,7 +357,7 @@ export default function LumaDeveloperPortal() {
   }, [supabase]);
 
   const resetForm = () => {
-    setStep(1); setAppName(""); setAppLink(""); setAppCategories([]); setAppLicenseType("MIT"); setAppIconUrl(""); setIconPreviewError(false);
+    setStep(1); setAppName(""); setAppLink(""); setAppCategories([]); setAppLicenseType(""); setAppIconUrl(""); setIconPreviewError(false);
     setAppVersion(""); setAppPlatform(""); setAppLinuxPackageBase(""); setAppDownloadUrl(""); setAppPackageName(""); setAppVersionCode("");
     setWebsiteUrl(""); setIssueTrackerUrl(""); setTranslationUrl(""); setAuthorName(""); setAuthorEmail(""); setAuthorWebsite("");
     setDonateUrl(""); setLiberapay(""); setOpencollective(""); setBitcoin(""); setLitecoin("");
@@ -369,7 +369,7 @@ export default function LumaDeveloperPortal() {
     if (!(["Rejected", "Approved", "Changes Requested"] as SubmissionStatus[]).includes(app.status)) return;
     setEditingId(app.id); setEditingStatus(app.status); setAppName(app.name); setAppLink(app.repoUrl || app.link);
     setAppCategories((app.categories?.length ? app.categories : [app.category]).filter((category) => FDROID_CATEGORIES.includes(category as typeof FDROID_CATEGORIES[number])));
-    setAppLicenseType(app.licenseType || "MIT"); setAppIconUrl(app.iconUrl); setIconPreviewError(false); setAppVersion(app.version);
+    setAppLicenseType(app.licenseType || ""); setAppIconUrl(app.iconUrl); setIconPreviewError(false); setAppVersion(app.version);
     setAppPlatform(app.platform === "Linux" ? "Linux" : app.platform === "Windows" ? "Windows" : app.platform === "Android" ? "Android" : "");
     setAppLinuxPackageBase(app.linuxPackageBase === "Debian-based" || app.linuxPackageBase === "RPM-based" ? app.linuxPackageBase : "");
     setAppDownloadUrl(app.downloadUrl); setAppPackageName(app.packageName); setAppVersionCode(app.versionCode);
@@ -545,7 +545,7 @@ export default function LumaDeveloperPortal() {
                 </div>
                 <div className="grid gap-5 md:grid-cols-2">
                   <div><label className="mb-2 block text-sm font-medium text-slate-300">F-Droid Categories</label><div className="max-h-64 overflow-y-auto rounded-xl border border-slate-700 bg-slate-950/70">{FDROID_CATEGORIES.map((category)=><label key={category} className="flex cursor-pointer items-center gap-3 border-b border-slate-800 px-4 py-3 text-sm text-slate-200 last:border-b-0 hover:bg-slate-900/80"><input type="checkbox" checked={appCategories.includes(category)} onChange={(e)=>setAppCategories((current)=>e.target.checked ? [...new Set([...current, category])] : current.filter((item)=>item!==category))} className="h-4 w-4 accent-indigo-500"/><span>{category}</span></label>)}</div><p className="mt-2 text-xs text-slate-500">{appCategories.length ? `${appCategories.length} selected` : "No category selected"} · Select all categories that apply.</p></div>
-                  <div><label className="mb-2 block text-sm font-medium text-slate-300">Open-Source License</label><select required value={appLicenseType} onChange={(e)=>setAppLicenseType(e.target.value)} className={fieldClass}>{LICENSE_OPTIONS.map(([value,label])=><option key={value} value={value}>{label} ({value})</option>)}</select></div>
+                  <div><label className="mb-2 block text-sm font-medium text-slate-300">Open-Source License</label><div className="max-h-64 overflow-y-auto rounded-xl border border-slate-700 bg-slate-950/70">{LICENSE_OPTIONS.map(([value,label])=><label key={value} className="flex cursor-pointer items-center gap-3 border-b border-slate-800 px-4 py-3 text-sm text-slate-200 last:border-b-0 hover:bg-slate-900/80"><input type="radio" name="app-license" value={value} checked={appLicenseType===value} onChange={()=>setAppLicenseType(value)} className="h-4 w-4 accent-indigo-500"/><span>{label} <span className="text-slate-500">({value})</span></span></label>)}</div><p className="mt-2 text-xs text-slate-500">{appLicenseType ? `Selected: ${LICENSE_OPTIONS.find(([value])=>value===appLicenseType)?.[1] || appLicenseType}` : "No license selected"} · Select one license.</p></div>
                 </div>
                 <div><label className="mb-2 block text-sm font-medium text-slate-300">App Icon URL</label><div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_180px]"><input type="url" required value={appIconUrl} onChange={(e)=>{setAppIconUrl(e.target.value);setIconPreviewError(false);}} className={fieldClass}/><div className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4 text-center"><div className="mx-auto flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-slate-700 bg-slate-900">{appIconUrl.trim()&&!iconPreviewError?<img src={appIconUrl.trim()} alt="App icon preview" className="h-full w-full object-cover" onError={()=>setIconPreviewError(true)}/>:<span className="text-xs text-slate-500">No icon</span>}</div></div></div></div>
                 <div className="rounded-2xl border border-slate-800 bg-slate-950/30 p-5"><h3 className="font-semibold text-white">Author</h3><div className="mt-4 grid gap-4 md:grid-cols-2"><div><label className="mb-2 block text-sm text-slate-300">Author name</label><input value={authorName} onChange={(e)=>setAuthorName(e.target.value)} className={fieldClass}/></div><div><label className="mb-2 block text-sm text-slate-300">Author email</label><input type="email" value={authorEmail} onChange={(e)=>setAuthorEmail(e.target.value)} className={fieldClass}/></div><div className="md:col-span-2"><label className="mb-2 block text-sm text-slate-300">Author website</label><input type="url" value={authorWebsite} onChange={(e)=>setAuthorWebsite(e.target.value)} className={fieldClass}/></div></div></div>

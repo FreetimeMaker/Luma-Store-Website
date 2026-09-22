@@ -114,6 +114,7 @@ export default function DiscoverAppPage() {
   const [saved, setSaved] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [accountBusy, setAccountBusy] = useState(false);
+  const ratingApi = "https://api.free-time.me/lumastore";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -145,14 +146,14 @@ export default function DiscoverAppPage() {
         if (!cancelled) setPlatforms((platformResult.data ?? []) as StoreAppPlatform[]);
         const { count } = await supabase.from("luma_download_events").select("id", { count: "exact", head: true }).eq("app_id", loadedApp.id);
         if (!cancelled) setDownloadCount(Number(count ?? 0));
-        const { data: ratings } = await supabase.from("store_app_ratings").select("user_id,rating").eq("app_id", loadedApp.id);
-        const values: number[] = (ratings ?? []).map((row: { rating: number }) => Number(row.rating));
-        if (!cancelled) { setRatingCount(values.length); setRatingAverage(values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0); }
+        const ratingResponse = await fetch(`${ratingApi}/apps/${encodeURIComponent(loadedApp.package_name || loadedApp.id)}/ratings`);
+        if (ratingResponse.ok) { const summary = await ratingResponse.json(); if (!cancelled) { setRatingCount(Number(summary.count || 0)); setRatingAverage(Number(summary.average || 0)); } }
         const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
         if (!cancelled) setUserId(user?.id ?? null);
-        if (user) {
-          const own = (ratings ?? []).find((row: { user_id: string }) => row.user_id === user.id) as { rating?: number } | undefined;
-          if (!cancelled) setMyRating(own?.rating ? Number(own.rating) : null);
+        if (user && session?.access_token) {
+          const ownResponse = await fetch(`${ratingApi}/apps/${encodeURIComponent(loadedApp.package_name || loadedApp.id)}/rating/me`, { headers: { Authorization: `Bearer ${session.access_token}` } });
+          if (ownResponse.ok) { const own = await ownResponse.json(); if (!cancelled) setMyRating(own.rating ? Number(own.rating) : null); }
           const { data: savedRow } = await supabase.from("store_saved_apps").select("app_id").eq("app_id", loadedApp.id).eq("user_id", user.id).maybeSingle();
           if (!cancelled) setSaved(Boolean(savedRow));
         }
@@ -170,12 +171,14 @@ export default function DiscoverAppPage() {
   const rateApp = async (rating: number) => {
     if (!app || !userId) return;
     setAccountBusy(true);
-    const { error } = await supabase.from("store_app_ratings").upsert({ app_id: app.id, user_id: userId, rating, updated_at: new Date().toISOString() }, { onConflict: "app_id,user_id" });
-    if (!error) {
-      const { data } = await supabase.from("store_app_ratings").select("user_id,rating").eq("app_id", app.id);
-      const values: number[] = (data ?? []).map((row: { rating: number }) => Number(row.rating));
-      setMyRating(rating); setRatingCount(values.length); setRatingAverage(values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0);
-    } else alert(error.message);
+    const { data: { session } } = await supabase.auth.getSession();
+    const identifier = app.package_name || app.id;
+    const response = await fetch(`${ratingApi}/apps/${encodeURIComponent(identifier)}/rating/me`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token || ""}` }, body: JSON.stringify({ rating }) });
+    if (response.ok) {
+      setMyRating(rating);
+      const summaryResponse = await fetch(`${ratingApi}/apps/${encodeURIComponent(identifier)}/ratings`);
+      if (summaryResponse.ok) { const summary = await summaryResponse.json(); setRatingCount(Number(summary.count || 0)); setRatingAverage(Number(summary.average || 0)); }
+    } else { const body = await response.json().catch(() => ({})); alert(body.message || "Unable to save rating"); }
     setAccountBusy(false);
   };
 

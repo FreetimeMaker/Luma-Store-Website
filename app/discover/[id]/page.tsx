@@ -108,6 +108,12 @@ export default function DiscoverAppPage() {
   const [app, setApp] = useState<StoreApp | null>(null);
   const [platforms, setPlatforms] = useState<StoreAppPlatform[]>([]);
   const [downloadCount, setDownloadCount] = useState(0);
+  const [ratingAverage, setRatingAverage] = useState(0);
+  const [ratingCount, setRatingCount] = useState(0);
+  const [myRating, setMyRating] = useState<number | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [accountBusy, setAccountBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -139,6 +145,17 @@ export default function DiscoverAppPage() {
         if (!cancelled) setPlatforms((platformResult.data ?? []) as StoreAppPlatform[]);
         const { count } = await supabase.from("luma_download_events").select("id", { count: "exact", head: true }).eq("app_id", loadedApp.id);
         if (!cancelled) setDownloadCount(Number(count ?? 0));
+        const { data: ratings } = await supabase.from("store_app_ratings").select("user_id,rating").eq("app_id", loadedApp.id);
+        const values = (ratings ?? []).map((row: { rating: number }) => Number(row.rating));
+        if (!cancelled) { setRatingCount(values.length); setRatingAverage(values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0); }
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!cancelled) setUserId(user?.id ?? null);
+        if (user) {
+          const own = (ratings ?? []).find((row: { user_id: string }) => row.user_id === user.id) as { rating?: number } | undefined;
+          if (!cancelled) setMyRating(own?.rating ? Number(own.rating) : null);
+          const { data: savedRow } = await supabase.from("store_saved_apps").select("app_id").eq("app_id", loadedApp.id).eq("user_id", user.id).maybeSingle();
+          if (!cancelled) setSaved(Boolean(savedRow));
+        }
       }
 
       setLoading(false);
@@ -149,6 +166,28 @@ export default function DiscoverAppPage() {
       cancelled = true;
     };
   }, [params.id, supabase]);
+
+  const rateApp = async (rating: number) => {
+    if (!app || !userId) return;
+    setAccountBusy(true);
+    const { error } = await supabase.from("store_app_ratings").upsert({ app_id: app.id, user_id: userId, rating, updated_at: new Date().toISOString() }, { onConflict: "app_id,user_id" });
+    if (!error) {
+      const { data } = await supabase.from("store_app_ratings").select("user_id,rating").eq("app_id", app.id);
+      const values = (data ?? []).map((row: { rating: number }) => Number(row.rating));
+      setMyRating(rating); setRatingCount(values.length); setRatingAverage(values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0);
+    } else alert(error.message);
+    setAccountBusy(false);
+  };
+
+  const toggleSaved = async () => {
+    if (!app || !userId) return;
+    setAccountBusy(true);
+    const result = saved
+      ? await supabase.from("store_saved_apps").delete().eq("app_id", app.id).eq("user_id", userId)
+      : await supabase.from("store_saved_apps").insert({ app_id: app.id, user_id: userId });
+    if (!result.error) setSaved(!saved); else alert(result.error.message);
+    setAccountBusy(false);
+  };
 
   if (loading) {
     return <div className="glass-page mx-auto h-96 max-w-6xl animate-pulse rounded-3xl border border-slate-800 bg-slate-900/60" />;
@@ -192,7 +231,8 @@ export default function DiscoverAppPage() {
               </div>
               {app.developer_id ? <Link href={`/discover/developers/${encodeURIComponent(app.developer_name || app.developer_id)}`} className="mt-2 inline-flex text-sm text-indigo-300 hover:text-indigo-200">{app.developer_name || app.author_name || "Unknown developer"} →</Link> : <p className="mt-2 text-sm text-slate-400">{app.developer_name || app.author_name || "Unknown developer"}</p>}
               {app.short_description && <p className="mt-4 max-w-3xl text-base leading-7 text-slate-300">{app.short_description}</p>}
-              <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-950/50 px-3 py-1.5 text-sm text-slate-300"><span aria-hidden="true">↓</span><span>{downloadCount.toLocaleString()} downloads</span></div>
+              <div className="mt-4 flex flex-wrap items-center gap-2"><div className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-950/50 px-3 py-1.5 text-sm text-slate-300"><span aria-hidden="true">↓</span><span>{downloadCount.toLocaleString()} downloads</span></div><div className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-950/50 px-3 py-1.5 text-sm text-slate-300"><span className="text-amber-300">★</span><span>{ratingCount ? ratingAverage.toFixed(1) : "No ratings"}{ratingCount ? ` · ${ratingCount}` : ""}</span></div></div>
+              <div className="mt-4 flex flex-wrap items-center gap-3">{userId ? <><div className="flex items-center gap-1" aria-label="Rate this app">{[1,2,3,4,5].map((rating)=><button key={rating} type="button" disabled={accountBusy || userId===app.developer_id} onClick={()=>void rateApp(rating)} className={`text-2xl transition ${rating <= (myRating ?? 0) ? "text-amber-300" : "text-slate-600 hover:text-amber-200"} disabled:cursor-not-allowed disabled:opacity-50`} aria-label={`Rate ${rating} stars`}>★</button>)}</div><button type="button" disabled={accountBusy} onClick={()=>void toggleSaved()} className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-medium text-slate-200 hover:text-white disabled:opacity-50">{saved ? "Saved ✓" : "Save app"}</button>{userId===app.developer_id&&<span className="text-xs text-slate-500">You cannot rate your own app.</span>}</> : <span className="text-sm text-slate-500">Sign in to rate or save this app.</span>}</div>
 
               <div className="mt-5 flex flex-wrap gap-2">
                 {app.categories?.map((category) => (

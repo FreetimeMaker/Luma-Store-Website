@@ -3,7 +3,7 @@
 import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import AccountPage from "@/app/account/page";
+import GoogleDashboard from "./GoogleDashboard";
 
 type SubmissionStatus = "Draft" | "Pending" | "In Review" | "Changes Requested" | "Approved" | "Rejected" | "Archived";
 type AppPlatform = "" | "Android" | "Windows" | "Linux";
@@ -576,7 +576,7 @@ export default function LumaDeveloperPortal() {
   );
 
   if (authProvider === null) return <div className="p-8 text-slate-400">Loading dashboard…</div>;
-  if (authProvider === "google") return <AccountPage />;
+  if (authProvider === "google") return <GoogleDashboard />;
 
   return (
     <div className="glass-page mx-auto max-w-6xl space-y-8 pb-20">

@@ -45,6 +45,7 @@ type StoreApp = {
 
 type RelatedApp = { id:string; name:string|null; package_name:string|null; short_description:string|null; icon_url:string|null; version:string|null; };
 type PlatformDownloadCount = { platform:string; downloads:number|string; };
+type VersionHistoryItem = { version:string|null; version_code:number|string|null; changelog:string|null; published_at:string|null; };
 
 type DeveloperFunding = { donate_url: string | null; liberapay: string | null; opencollective: string | null; bitcoin: string | null; litecoin: string | null; };
 
@@ -89,6 +90,8 @@ function Field({ label, value, mono = false }: { label: string; value: string | 
     <div className="rounded-xl border border-slate-800 bg-slate-950/45 p-3">
       <dt className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{label}</dt>
       <dd className={`mt-1 break-words text-sm text-slate-200 ${mono ? "font-mono text-xs" : ""}`}>{String(value)}</dd>
+      {similarApps.length>0&&<section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6"><h2 className="text-xl font-semibold text-white">Similar apps</h2><p className="mt-1 text-sm text-slate-500">Apps with matching categories.</p><div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{similarApps.map((item)=>{const itemName=item.name||item.package_name||"Untitled app";return <Link key={item.id} href={`/discover/${encodeURIComponent(item.package_name||item.id)}`} className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4 transition hover:border-indigo-400/40"><div className="flex items-center gap-3">{item.icon_url?<img src={item.icon_url} alt="" className="h-12 w-12 rounded-xl border border-slate-700 object-cover"/>:<div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-800 font-bold">{itemName[0]}</div>}<div className="min-w-0"><h3 className="truncate font-semibold text-white">{itemName}</h3><p className="text-xs text-slate-500">{item.version?`Version ${item.version}`:"View app"}</p></div></div>{item.short_description&&<p className="mt-3 line-clamp-2 text-sm text-slate-400">{item.short_description}</p>}</Link>})}</div></section>}
+
       {relatedDeveloperApps.length>0&&<section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6"><h2 className="text-xl font-semibold text-white">More from {app.developer_name || "this developer"}</h2><div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{relatedDeveloperApps.map((item)=>{const itemName=item.name||item.package_name||"Untitled app";return <Link key={item.id} href={`/discover/${encodeURIComponent(item.package_name||item.id)}`} className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4 transition hover:border-indigo-400/40"><div className="flex items-center gap-3">{item.icon_url?<img src={item.icon_url} alt="" className="h-12 w-12 rounded-xl border border-slate-700 object-cover"/>:<div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-800 font-bold">{itemName[0]}</div>}<div className="min-w-0"><h3 className="truncate font-semibold text-white">{itemName}</h3><p className="text-xs text-slate-500">{item.version?`Version ${item.version}`:"View app"}</p></div></div>{item.short_description&&<p className="mt-3 line-clamp-2 text-sm text-slate-400">{item.short_description}</p>}</Link>})}</div></section>}
 
     </div>
@@ -120,6 +123,8 @@ export default function DiscoverAppPage() {
   const [downloadCount, setDownloadCount] = useState(0);
   const [platformDownloadCounts, setPlatformDownloadCounts] = useState<PlatformDownloadCount[]>([]);
   const [relatedDeveloperApps, setRelatedDeveloperApps] = useState<RelatedApp[]>([]);
+  const [similarApps, setSimilarApps] = useState<RelatedApp[]>([]);
+  const [versionHistory, setVersionHistory] = useState<VersionHistoryItem[]>([]);
   const [ratingAverage, setRatingAverage] = useState(0);
   const [ratingCount, setRatingCount] = useState(0);
   const ratingApi = "https://api.free-time.me/lumastore";
@@ -164,6 +169,9 @@ export default function DiscoverAppPage() {
           const related = await supabase.from("store_apps").select("id,name,package_name,short_description,icon_url,version").eq("developer_id", loadedApp.developer_id).is("archived_at", null).neq("id", loadedApp.id).order("updated_at",{ascending:false}).limit(3);
           if (!cancelled) setRelatedDeveloperApps((related.data ?? []) as RelatedApp[]);
         }
+        if (loadedApp.package_name) { const {data:versions}=await supabase.rpc("luma_public_version_history",{target_package_name:loadedApp.package_name}); if(!cancelled)setVersionHistory((versions??[]) as VersionHistoryItem[]); }
+        const appCategories=Array.isArray(loadedApp.categories)?loadedApp.categories:[];
+        if(appCategories.length){const similar=await supabase.from("store_apps").select("id,name,package_name,short_description,icon_url,version,categories").is("archived_at",null).neq("id",loadedApp.id).overlaps("categories",appCategories).limit(6);if(!cancelled)setSimilarApps(((similar.data??[]) as (RelatedApp & {categories?:string[]})[]).sort((a,b)=>((b.categories||[]).filter(x=>appCategories.includes(x)).length)-((a.categories||[]).filter(x=>appCategories.includes(x)).length)).slice(0,3));}
         const ratingResponse = await fetch(`${ratingApi}/apps/${encodeURIComponent(loadedApp.package_name || loadedApp.id)}/ratings`);
         if (ratingResponse.ok) {
           const summary = await ratingResponse.json();
@@ -295,9 +303,9 @@ export default function DiscoverAppPage() {
         </dl>
       </section>
 
-      {(app.website_url || app.source_code_url || app.issue_tracker_url || app.translation_url || app.changelog_url || app.author_website) && (
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
-          <h2 className="text-xl font-semibold text-white">Links</h2>
+      {(app.website_url || app.source_code_url || app.issue_tracker_url || app.translation_url || app.changelog_url || app.author_website || app.license_type) && (
+        <section className="rounded-2xl border border-emerald-400/15 bg-gradient-to-br from-emerald-500/10 via-slate-900 to-slate-900 p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-300">Open source</p><h2 className="mt-1 text-xl font-semibold text-white">Project & repository</h2></div>{app.license_type&&<span className="rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-200">{app.license_type}</span>}</div>
           <div className="mt-4 flex flex-wrap gap-2">
             <LinkChip href={app.website_url} label="Website" />
             <LinkChip href={app.author_website} label="Author website" />
@@ -308,6 +316,8 @@ export default function DiscoverAppPage() {
           </div>
         </section>
       )}
+
+      {versionHistory.length>0&&<section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Releases</p><h2 className="mt-1 text-xl font-semibold text-white">Version history</h2></div><div className="mt-4 space-y-3">{versionHistory.map((item,index)=><div key={`${item.version}-${item.version_code}-${index}`} className="rounded-xl border border-slate-800 bg-slate-950/40 p-4"><div className="flex flex-wrap items-center justify-between gap-2"><div className="flex items-center gap-2"><span className="font-semibold text-white">{item.version?`v${item.version}`:"Version"}</span>{index===0&&<span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-[11px] text-indigo-200">Latest</span>}{item.version_code!==null&&<span className="text-xs text-slate-500">#{item.version_code}</span>}</div><span className="text-xs text-slate-500">{formatDate(item.published_at)}</span></div>{item.changelog&&<p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-400">{item.changelog}</p>}</div>)}</div></section>}
 
       {app.changelog && (
         <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">

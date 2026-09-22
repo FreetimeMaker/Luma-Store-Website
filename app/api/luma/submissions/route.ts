@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-type SubmissionStatus = "Pending" | "In Review" | "Changes Requested" | "Approved" | "Rejected";
+type SubmissionStatus = "Draft" | "Pending" | "In Review" | "Changes Requested" | "Approved" | "Rejected";
 
 type SubmissionBody = {
   submission?: Record<string, unknown>;

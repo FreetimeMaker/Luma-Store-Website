@@ -7,10 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 
 const PRODUCTION_ORIGIN = "https://luma.free-time.me";
 
-function ProviderIcon({ provider }: { provider: "github" | "gitlab" | "google" }) {
-  if (provider === "google") {
-    return <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.92h5.38a4.6 4.6 0 0 1-2 3.02v2.54h3.24c1.9-1.75 2.98-4.33 2.98-7.41Z"/><path fill="#34A853" d="M12 22c2.7 0 4.97-.9 6.62-2.36l-3.24-2.54c-.9.6-2.05.96-3.38.96-2.61 0-4.82-1.76-5.61-4.13H3.04v2.62A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.39 13.93A6 6 0 0 1 6.08 12c0-.67.11-1.32.31-1.93V7.45H3.04A10 10 0 0 0 2 12c0 1.61.39 3.14 1.04 4.55l3.35-2.62Z"/><path fill="#EA4335" d="M12 5.94c1.47 0 2.79.5 3.82 1.49l2.87-2.87A9.63 9.63 0 0 0 12 2a10 10 0 0 0-8.96 5.45l3.35 2.62C7.18 7.7 9.39 5.94 12 5.94Z"/></svg>;
-  }
+function ProviderIcon({ provider }: { provider: "github" | "gitlab" }) {
   if (provider === "github") {
     return (
       <svg width="18" height="18" viewBox="0 0 16 16" fill="#e2e8f0" aria-hidden>
@@ -46,19 +43,18 @@ function LoginContent() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data }: UserResponse) => {
       if (data.user) {
-        const provider = String(data.user.app_metadata?.provider || "");
-        router.replace(provider === "google" ? "/dashboard" : "/dashboard");
+        router.replace("/dashboard");
       }
     });
   }, [router, supabase]);
 
-  async function redirectTo(provider: "github" | "gitlab" | "google") {
-    const destination = provider === "google" ? "/dashboard" : "/dashboard";
+  async function redirectTo(provider: "github" | "gitlab") {
+    const destination = "/dashboard";
     const callbackUrl = `${authOrigin()}/auth/callback?next=${encodeURIComponent(destination)}`;
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: callbackUrl, scopes: provider === "github" ? "read:user public_repo" : provider === "google" ? "openid email profile" : undefined },
+      options: { redirectTo: callbackUrl, scopes: provider === "github" ? "read:user public_repo" : undefined },
     });
 
     if (error) console.error("Login error:", error.message);
@@ -72,11 +68,11 @@ function LoginContent() {
         </div>
         <h1 className="text-2xl font-semibold text-white">Sign in to Luma Store</h1>
         <p className="mt-2 text-sm leading-6 text-slate-400">
-          Choose how you want to use Luma Store. Google opens your personal account; GitHub and GitLab open the Developer Dashboard.
+          Sign in with GitHub or GitLab to access the Developer Dashboard.
         </p>
 
         <div className="mt-6 flex flex-col gap-3">
-          <button onClick={() => redirectTo("google")} className="flex items-start gap-3 rounded-xl border border-slate-700 px-4 py-3 text-left transition hover:border-slate-600 hover:bg-slate-800"><ProviderIcon provider="google" /><span><span className="block font-medium text-slate-200">Sign in with Google</span><span className="mt-1 block text-xs font-normal text-slate-400">Personal account · saved apps and ratings. Opens Account.</span></span></button><button onClick={() => redirectTo("github")} className="flex items-start gap-3 rounded-xl border border-slate-700 px-4 py-3 text-left transition hover:border-slate-600 hover:bg-slate-800"><ProviderIcon provider="github" /><span><span className="block font-medium text-slate-200">Sign in with GitHub</span><span className="mt-1 block text-xs font-normal text-slate-400">Developer access · app submissions and developer tools. Opens Developer Dashboard.</span></span></button><button onClick={() => redirectTo("gitlab")} className="flex items-start gap-3 rounded-xl border border-slate-700 px-4 py-3 text-left transition hover:border-slate-600 hover:bg-slate-800"><ProviderIcon provider="gitlab" /><span><span className="block font-medium text-slate-200">Sign in with GitLab</span><span className="mt-1 block text-xs font-normal text-slate-400">Developer access · app submissions and developer tools. Opens Developer Dashboard.</span></span></button>
+          <button onClick={() => redirectTo("github")} className="flex items-start gap-3 rounded-xl border border-slate-700 px-4 py-3 text-left transition hover:border-slate-600 hover:bg-slate-800"><ProviderIcon provider="github" /><span><span className="block font-medium text-slate-200">Sign in with GitHub</span><span className="mt-1 block text-xs font-normal text-slate-400">Developer access · app submissions and developer tools. Opens Developer Dashboard.</span></span></button><button onClick={() => redirectTo("gitlab")} className="flex items-start gap-3 rounded-xl border border-slate-700 px-4 py-3 text-left transition hover:border-slate-600 hover:bg-slate-800"><ProviderIcon provider="gitlab" /><span><span className="block font-medium text-slate-200">Sign in with GitLab</span><span className="mt-1 block text-xs font-normal text-slate-400">Developer access · app submissions and developer tools. Opens Developer Dashboard.</span></span></button>
         </div>
       </div>
     </main>

@@ -120,6 +120,9 @@ export default function DiscoverPage() {
 
   const platforms=useMemo(()=>Array.from(new Set(Object.values(metrics).flatMap(item=>item.platforms||[]))).sort(),[metrics]);
 
+  const hasFilters = Boolean(search.trim()) || license !== "all" || category !== "all" || developer !== "all" || platform !== "all";
+  const resetFilters = () => { setSearch(""); setLicense("all"); setCategory("all"); setDeveloper("all"); setPlatform("all"); };
+
   const filteredApps = useMemo(() => {
     const query = search.trim().toLowerCase();
 
@@ -138,9 +141,9 @@ export default function DiscoverPage() {
   }, [apps, category, developer, license, search, platform, sort, metrics]);
 
   return (
-    <div className="glass-page mx-auto max-w-6xl space-y-8">
-      <section className="rounded-3xl border border-indigo-400/15 bg-gradient-to-br from-indigo-500/15 via-slate-900 to-violet-500/10 p-6 shadow-2xl shadow-indigo-950/20 sm:p-8 lg:p-10">
-        <div className="max-w-3xl">
+    <div className="glass-page mx-auto max-w-6xl space-y-6 px-3 pb-20 sm:space-y-8 sm:px-4">
+      <section className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-slate-900/55 p-5 shadow-2xl shadow-black/20 backdrop-blur-2xl sm:p-8 lg:p-10">
+        <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-indigo-500/15 blur-3xl" /><div aria-hidden="true" className="pointer-events-none absolute -bottom-28 left-1/3 h-56 w-56 rounded-full bg-violet-500/10 blur-3xl" /><div className="relative max-w-3xl">
           <div className="mb-4 inline-flex items-center rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-200">
             Luma Store Discover
           </div>
@@ -150,12 +153,16 @@ export default function DiscoverPage() {
           </p>
         </div>
 
-        <div className="mt-7 grid gap-3 lg:grid-cols-3">
+        <div className="relative mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search apps..."
-            className="min-h-12 w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/20"
+            aria-label="Search apps"
+            className="sm:col-span-2 lg:col-span-3 min-h-12 w-full rounded-2xl border border-white/10 bg-slate-950/45 px-4 py-3 text-sm text-white shadow-inner shadow-black/10 backdrop-blur-xl outline-none placeholder:text-slate-500 transition focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/20"
+          />
+          <div className="hidden" aria-hidden="true"
+            "min-h-12 w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/20"
           />
 
           <select value={category} onChange={(event) => setCategory(event.target.value)} className="min-h-12 rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-200">
@@ -174,20 +181,20 @@ export default function DiscoverPage() {
           </select>
           <select value={platform} onChange={(e)=>setPlatform(e.target.value)} className="min-h-12 rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-200"><option value="all">All platforms</option>{platforms.map(item=><option key={item} value={item}>{item}</option>)}</select>
           <select value={sort} onChange={(e)=>setSort(e.target.value)} className="min-h-12 rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-200"><option value="trending">Trending</option><option value="new">New releases</option><option value="updated">Recently updated</option><option value="downloads">Most downloaded</option><option value="name">Name</option></select>
-
+          {hasFilters && <button type="button" onClick={resetFilters} className="min-h-12 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-slate-300 backdrop-blur-xl transition hover:bg-white/10 hover:text-white">Clear filters</button>}
         </div>
       </section>
 
       {loading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, index) => (
-            <div key={index} className="h-48 animate-pulse rounded-2xl border border-slate-800 bg-slate-900/60" />
+            <div key={index} className="rounded-3xl border border-white/10 bg-slate-900/45 p-5 backdrop-blur-xl"><div className="flex gap-4"><div className="h-14 w-14 animate-pulse rounded-2xl bg-slate-800/80"/><div className="flex-1 space-y-2 pt-1"><div className="h-5 w-2/3 animate-pulse rounded bg-slate-800/80"/><div className="h-3 w-1/2 animate-pulse rounded bg-slate-800/60"/></div></div><div className="mt-5 h-14 animate-pulse rounded-xl bg-slate-800/50"/><div className="mt-5 h-8 animate-pulse rounded-xl bg-slate-800/40"/></div>
           ))}
         </div>
       ) : error ? (
         <div className="rounded-2xl border border-rose-500/25 bg-rose-950/20 p-6 text-rose-200">{error}</div>
       ) : filteredApps.length === 0 ? (
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-8 text-center text-slate-400">No apps found.</div>
+        <div className="rounded-3xl border border-white/10 bg-slate-900/50 p-8 text-center backdrop-blur-xl sm:p-12"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-2xl">⌕</div><h2 className="mt-4 text-lg font-semibold text-white">No apps found</h2><p className="mt-2 text-sm text-slate-400">Try another search or clear the active filters.</p>{hasFilters&&<button type="button" onClick={resetFilters} className="mt-5 rounded-xl bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-400">Clear filters</button>}</div>
       ) : (
         <section>
           <div className="mb-4 flex items-end justify-between gap-4">
@@ -207,7 +214,7 @@ export default function DiscoverPage() {
                 <Link
                   key={app.id}
                   href={`/discover/${encodeURIComponent(app.package_name || app.id)}`}
-                  className="group rounded-2xl border border-slate-800 bg-slate-900/60 p-5 transition hover:-translate-y-0.5 hover:border-indigo-400/30 hover:bg-slate-900/90"
+                  className="group relative overflow-hidden rounded-3xl border border-white/10 bg-slate-900/50 p-5 shadow-lg shadow-black/10 backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-indigo-400/30 hover:bg-slate-900/70 hover:shadow-xl hover:shadow-indigo-950/20"
                 >
                   <div className="flex items-start gap-4">
                     {app.icon_url ? (

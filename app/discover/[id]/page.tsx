@@ -113,6 +113,9 @@ export default function DiscoverAppPage() {
   const [platforms, setPlatforms] = useState<StoreAppPlatform[]>([]);
   const [funding, setFunding] = useState<DeveloperFunding | null>(null);
   const [downloadCount, setDownloadCount] = useState(0);
+  const [ratingAverage, setRatingAverage] = useState(0);
+  const [ratingCount, setRatingCount] = useState(0);
+  const ratingApi = "https://api.free-time.me/lumastore";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -148,6 +151,14 @@ export default function DiscoverAppPage() {
         if (!cancelled) setPlatforms((platformResult.data ?? []) as StoreAppPlatform[]);
         const { count } = await supabase.from("luma_download_events").select("id", { count: "exact", head: true }).eq("app_id", loadedApp.id);
         if (!cancelled) setDownloadCount(Number(count ?? 0));
+        const ratingResponse = await fetch(`${ratingApi}/apps/${encodeURIComponent(loadedApp.package_name || loadedApp.id)}/ratings`);
+        if (ratingResponse.ok) {
+          const summary = await ratingResponse.json();
+          if (!cancelled) {
+            setRatingCount(Number(summary.count || 0));
+            setRatingAverage(Number(summary.average || 0));
+          }
+        }
       }
 
       setLoading(false);
@@ -201,7 +212,7 @@ export default function DiscoverAppPage() {
               </div>
               {app.developer_id ? <Link href={`/discover/developers/${encodeURIComponent(app.developer_name || app.developer_id)}`} className="mt-2 inline-flex text-sm text-indigo-300 hover:text-indigo-200">{app.developer_name || app.author_name || "Unknown developer"} →</Link> : <p className="mt-2 text-sm text-slate-400">{app.developer_name || app.author_name || "Unknown developer"}</p>}
               {app.short_description && <p className="mt-4 max-w-3xl text-base leading-7 text-slate-300">{app.short_description}</p>}
-              <div className="mt-4 flex flex-wrap items-center gap-2"><div className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-950/50 px-3 py-1.5 text-sm text-slate-300"><span aria-hidden="true">↓</span><span>{downloadCount.toLocaleString()} downloads</span></div></div>
+              <div className="mt-4 flex flex-wrap items-center gap-2"><div className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-950/50 px-3 py-1.5 text-sm text-slate-300"><span aria-hidden="true">↓</span><span>{downloadCount.toLocaleString()} downloads</span></div><div className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-950/50 px-3 py-1.5 text-sm text-slate-300"><span className="text-amber-300">★</span><span>{ratingCount ? ratingAverage.toFixed(1) : "No ratings"}{ratingCount ? ` · ${ratingCount}` : ""}</span></div></div>
 
               <div className="mt-5 flex flex-wrap gap-2">
                 {app.categories?.map((category) => (

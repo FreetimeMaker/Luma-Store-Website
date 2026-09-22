@@ -50,7 +50,7 @@ export default function AuthNav() {
     .toUpperCase();
 
   return (
-    <nav className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
+    <nav className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 sm:gap-3">
       <Link href="/" className="group flex min-w-0 items-center gap-3">
         <Image
           src="/android-chrome-192x192.png"
@@ -88,7 +88,7 @@ export default function AuthNav() {
         {loading ? (
           <span className="inline text-sm text-slate-500">Checking login...</span>
         ) : user ? (
-          <div className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/50 p-1.5 pl-2 sm:gap-3">
+          <div className="glass-action flex items-center gap-2 p-1.5 pl-2 sm:gap-3">
             {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -118,7 +118,7 @@ export default function AuthNav() {
         ) : (
           <Link
             href="/login"
-            className="rounded-lg border border-indigo-400/20 bg-indigo-500/10 px-3 py-2 text-sm font-medium text-indigo-200 transition hover:border-indigo-400/30 hover:bg-indigo-500/15 hover:text-white"
+            className="glass-action rounded-xl px-3 py-2 text-sm font-medium text-indigo-200 hover:text-white"
           >
             Sign in
           </Link>

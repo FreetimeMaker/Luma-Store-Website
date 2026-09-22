@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import DeveloperDashboard from "@/app/dashboard/page";
 
 type AppInfo={id:string;name:string|null;package_name:string|null;short_description:string|null;icon_url:string|null;developer_name:string|null;version:string|null};
 type Saved={app_id:string;created_at:string;app:AppInfo|null};
@@ -23,5 +24,7 @@ export default function AccountPage(){
  return <div className="glass-page mx-auto max-w-5xl space-y-6"><header className="rounded-3xl border border-indigo-400/15 bg-gradient-to-br from-indigo-500/15 via-slate-900 to-violet-500/10 p-6 sm:p-8"><p className="text-sm font-medium text-indigo-300">Luma Store account</p><h1 className="mt-2 text-3xl font-bold text-white">Account</h1><p className="mt-2 text-slate-400">Manage your saved apps and ratings across devices.</p></header>
  {loading?<div className="rounded-3xl border border-slate-800 bg-slate-900/55 p-8 text-slate-400">Loading account…</div>:<>
  <section className="overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/55"><div className="border-b border-slate-800 p-5"><h2 className="text-xl font-semibold text-white">Saved Apps</h2></div>{saved.length?<div className="divide-y divide-slate-800">{saved.map(i=><div key={i.app_id}>{row(i.app,<button onClick={()=>void removeSaved(i.app_id)} className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-300">Remove</button>)}</div>)}</div>:<p className="p-6 text-slate-400">No saved apps yet.</p>}</section>
- <section className="overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/55"><div className="border-b border-slate-800 p-5"><h2 className="text-xl font-semibold text-white">Your ratings</h2><p className="mt-1 text-sm text-slate-500">Manage the ratings you have submitted.</p></div>{ratings.length?<div className="divide-y divide-slate-800">{ratings.map(i=><div key={i.app_id}>{row(i.app,<><span className="px-2 text-amber-300">{"★".repeat(i.rating)}<span className="text-slate-700">{"★".repeat(5-i.rating)}</span></span><button onClick={()=>void removeRating(i.app_id)} className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-300">Delete rating</button></>)}</div>)}</div>:<p className="p-6 text-slate-400">You have not rated any apps yet.</p>}</section></>}</div>
+ <section className="overflow-hidden rounded-3xl border border-slate-800 bg-slate-900/55"><div className="border-b border-slate-800 p-5"><h2 className="text-xl font-semibold text-white">Your ratings</h2><p className="mt-1 text-sm text-slate-500">Manage the ratings you have submitted.</p></div>{ratings.length?<div className="divide-y divide-slate-800">{ratings.map(i=><div key={i.app_id}>{row(i.app,<><span className="px-2 text-amber-300">{"★".repeat(i.rating)}<span className="text-slate-700">{"★".repeat(5-i.rating)}</span></span><button onClick={()=>void removeRating(i.app_id)} className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-300">Delete rating</button></>)}</div>)}</div>:<p className="p-6 text-slate-400">You have not rated any apps yet.</p>}</section></>}
+ <section className="pt-2"><DeveloperDashboard /></section>
+ </div>
 }

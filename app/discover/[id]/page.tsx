@@ -130,7 +130,7 @@ export default function DiscoverAppPage() {
       const appResult = await supabase
         .from("store_apps")
         .select("*")
-        .eq(isUuid ? "id" : "package_name", identifier)
+        .is("archived_at", null).eq(isUuid ? "id" : "package_name", identifier)
         .single();
 
       if (cancelled) return;

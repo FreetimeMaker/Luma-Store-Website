@@ -190,9 +190,7 @@ export default function DiscoverAppPage() {
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">{name}</h1>
-                <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${app.closed_source ? "bg-amber-500/10 text-amber-200" : "bg-emerald-500/10 text-emerald-200"}`}>
-                  {app.closed_source ? "Closed source" : "Open source"}
-                </span>
+                <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-200">Open source</span>
               </div>
               <p className="mt-2 text-sm text-slate-400">{app.developer_name || app.author_name || "Unknown developer"}</p>
               {app.short_description && <p className="mt-4 max-w-3xl text-base leading-7 text-slate-300">{app.short_description}</p>}

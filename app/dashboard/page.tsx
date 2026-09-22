@@ -88,7 +88,7 @@ type LumaSubmissionRow = {
   litecoin: string | null;
 };
 
-type FastlaneMetadata = {
+type DownloadStats = { app_id: string; total: number; today: number; this_month: number; this_year: number };\n\ntype FastlaneMetadata = {
   title: string;
   shortDescription: string;
   fullDescription: string;
@@ -289,7 +289,7 @@ export default function LumaDeveloperPortal() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingStatus, setEditingStatus] = useState<SubmissionStatus | null>(null);
   const [myApps, setMyApps] = useState<AppSubmission[]>([]);
-  const [loadingApps, setLoadingApps] = useState(true);
+  const [loadingApps, setLoadingApps] = useState(true);\n  const [downloadStats, setDownloadStats] = useState<Record<string, DownloadStats>>({});\n  const [submissionStoreIds, setSubmissionStoreIds] = useState<Record<string, string>>({});
 
   const isAndroid = appPlatform === "Android";
   const isWindows = appPlatform === "Windows";
@@ -310,7 +310,7 @@ export default function LumaDeveloperPortal() {
       if (!user) { setLoadingApps(false); return; }
       const [{ data, error }, { data: storeApps, error: storeAppsError }] = await Promise.all([
         supabase.from("luma_submissions").select("*").eq("user_id", user.id).order("submitted_at", { ascending: false }),
-        supabase.from("store_apps").select("luma_submission_id").not("luma_submission_id", "is", null),
+        supabase.from("store_apps").select("id,luma_submission_id").eq("developer_id", user.id).not("luma_submission_id", "is", null),
       ]);
 
       if (!error && data) {
@@ -517,6 +517,8 @@ export default function LumaDeveloperPortal() {
         <p className="mt-2 max-w-2xl text-slate-400">Submit and maintain Android, Windows and Linux apps.</p>
       </header>
 
+      <section className={cardClass}><div className="border-b border-slate-800 px-6 py-5"><h2 className="font-semibold text-white">Luma Store downloads</h2><p className="mt-1 text-xs text-slate-500">Only downloads of files hosted by Luma Store are counted.</p></div><div className="grid grid-cols-2 gap-3 p-6 sm:grid-cols-4">{(["today","this_month","this_year","total"] as const).map((key)=><div key={key} className="rounded-xl border border-slate-800 bg-slate-950/45 p-4"><p className="text-xs uppercase tracking-wider text-slate-500">{key==="today"?"Today":key==="this_month"?"This month":key==="this_year"?"This year":"Total"}</p><p className="mt-2 text-2xl font-bold text-white">{Object.values(downloadStats).reduce((sum,row)=>sum+Number(row[key]||0),0).toLocaleString()}</p></div>)}</div></section>
+
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
         <main className="space-y-8">
           <section className={cardClass}>
@@ -565,7 +567,7 @@ export default function LumaDeveloperPortal() {
             </form>
           </section>
 
-          <section className={cardClass}><div className="border-b border-slate-800 px-6 py-5"><h2 className="font-semibold text-white">My submissions</h2></div><div className="divide-y divide-slate-800">{loadingApps?<div className="p-6 text-slate-400">Loading…</div>:myApps.length===0?<div className="p-6 text-slate-400">No submissions yet.</div>:myApps.map((app)=><div key={app.id} className="grid gap-4 p-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center"><div><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold text-white">{app.name}</h3><span className={`rounded-full border px-2 py-0.5 text-xs ${getStatusColor(app.status)}`}>{app.status}</span></div><p className="mt-1 line-clamp-2 text-sm text-slate-400">{app.shortDescription||app.description}</p><p className="mt-2 text-xs text-slate-500">{app.category} · {app.platform}{app.platform==="Linux"&&app.linuxPackageBase?` (${app.linuxPackageBase})`:""} · {app.version||"No version"}</p></div><div className="flex gap-2"><Link href={`/dashboard/apps/${app.id}`} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm text-white">Details</Link>{(["Rejected","Approved","Changes Requested"] as SubmissionStatus[]).includes(app.status)&&<button type="button" onClick={()=>beginEdit(app)} className="rounded-xl bg-slate-800 px-4 py-2 text-sm text-white">{app.status==="Approved"?"Submit update":app.status==="Changes Requested"?"Fix changes":"Edit & resubmit"}</button>}</div></div>)}</div></section>
+          <section className={cardClass}><div className="border-b border-slate-800 px-6 py-5"><h2 className="font-semibold text-white">My submissions</h2></div><div className="divide-y divide-slate-800">{loadingApps?<div className="p-6 text-slate-400">Loading…</div>:myApps.length===0?<div className="p-6 text-slate-400">No submissions yet.</div>:myApps.map((app)=><div key={app.id} className="grid gap-4 p-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center"><div><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold text-white">{app.name}</h3><span className={`rounded-full border px-2 py-0.5 text-xs ${getStatusColor(app.status)}`}>{app.status}</span></div><p className="mt-1 line-clamp-2 text-sm text-slate-400">{app.shortDescription||app.description}</p><p className="mt-2 text-xs text-slate-500">{app.category} · {app.platform}{app.platform==="Linux"&&app.linuxPackageBase?` (${app.linuxPackageBase})`:""} · {app.version||"No version"}</p>{submissionStoreIds[app.id]&&downloadStats[submissionStoreIds[app.id]]&&<div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-300"><span>Today: {downloadStats[submissionStoreIds[app.id]].today}</span><span>· Month: {downloadStats[submissionStoreIds[app.id]].this_month}</span><span>· Year: {downloadStats[submissionStoreIds[app.id]].this_year}</span><span>· Total: {downloadStats[submissionStoreIds[app.id]].total}</span></div>}</div><div className="flex gap-2"><Link href={`/dashboard/apps/${app.id}`} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm text-white">Details</Link>{(["Rejected","Approved","Changes Requested"] as SubmissionStatus[]).includes(app.status)&&<button type="button" onClick={()=>beginEdit(app)} className="rounded-xl bg-slate-800 px-4 py-2 text-sm text-white">{app.status==="Approved"?"Submit update":app.status==="Changes Requested"?"Fix changes":"Edit & resubmit"}</button>}</div></div>)}</div></section>
         </main>
 
         <aside className="space-y-4"><div className={`${cardClass} p-5`}><h3 className="font-semibold text-white">Platform rules</h3><p className="mt-2 text-sm leading-6 text-slate-400">Every submission needs a platform. Android, Windows and Linux are supported. Linux submissions additionally require either Debian-based or RPM-based packaging.</p></div><div className={`${cardClass} p-5`}><h3 className="font-semibold text-white">Android Fastlane requirements</h3><ul className="mt-4 space-y-2 text-sm text-slate-400"><li>• title.txt</li><li>• short_description.txt</li><li>• full_description.txt</li><li>• changelogs/&lt;versionCode&gt;.txt or default.txt</li><li>• images/phoneScreenshots/*</li></ul></div></aside>

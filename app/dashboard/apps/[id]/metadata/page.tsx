@@ -80,7 +80,7 @@ export default function AppMetadataPage() {
       const [{ data, error: loadError }, { data: categoryData, error: categoryError }] = await Promise.all([
         supabase
           .from("luma_submissions")
-          .select("id,name,status,category,categories,author_name,author_email,author_website,website_url,source_code_url,issue_tracker_url,translation_url,changelog_url,donate_url,liberapay,opencollective,bitcoin,litecoin")
+          .select("id,name,status,category,categories,author_name,author_email,author_website,website_url,source_code_url,issue_tracker_url,translation_url,changelog_url")
           .eq("id", id)
           .eq("user_id", user.id)
           .single(),
@@ -235,19 +235,10 @@ export default function AppMetadataPage() {
             <div><label className="mb-2 block text-sm text-slate-300">Issue tracker</label><input type="url" value={form.issue_tracker_url} onChange={(e) => setField("issue_tracker_url", e.target.value)} className={fieldClass} /></div>
             <div><label className="mb-2 block text-sm text-slate-300">Translation</label><input type="url" value={form.translation_url} onChange={(e) => setField("translation_url", e.target.value)} className={fieldClass} /></div>
             <div><label className="mb-2 block text-sm text-slate-300">Changelog URL</label><input type="url" value={form.changelog_url} onChange={(e) => setField("changelog_url", e.target.value)} className={fieldClass} /></div>
-            <div><label className="mb-2 block text-sm text-slate-300">Donate URL</label><input type="url" value={form.donate_url} onChange={(e) => setField("donate_url", e.target.value)} className={fieldClass} /></div>
           </div>
         </section>
 
-        <section>
-          <h2 className="text-lg font-semibold text-white">Donations</h2>
-          <div className="mt-4 grid gap-5 md:grid-cols-2">
-            <div><label className="mb-2 block text-sm text-slate-300">Liberapay</label><input value={form.liberapay} onChange={(e) => setField("liberapay", e.target.value)} className={fieldClass} placeholder="username" /></div>
-            <div><label className="mb-2 block text-sm text-slate-300">OpenCollective</label><input value={form.opencollective} onChange={(e) => setField("opencollective", e.target.value)} className={fieldClass} placeholder="project-name" /></div>
-            <div><label className="mb-2 block text-sm text-slate-300">Bitcoin address</label><input value={form.bitcoin} onChange={(e) => setField("bitcoin", e.target.value)} className={fieldClass} /></div>
-            <div><label className="mb-2 block text-sm text-slate-300">Litecoin address</label><input value={form.litecoin} onChange={(e) => setField("litecoin", e.target.value)} className={fieldClass} /></div>
-          </div>
-        </section>
+        <section className="rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-4"><h2 className="font-semibold text-white">Developer funding</h2><p className="mt-1 text-sm text-slate-400">Donation methods are managed once for your developer profile, not per app.</p><Link href="/dashboard/funding" className="mt-3 inline-flex rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white">Manage developer funding</Link></section>
 
         <div className="flex justify-end"><button type="submit" disabled={saving || form.categories.length === 0} className="rounded-xl bg-indigo-600 px-5 py-2.5 font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40">{saving ? "Saving…" : "Save app metadata"}</button></div>
       </form>

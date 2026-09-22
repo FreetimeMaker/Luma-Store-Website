@@ -3,7 +3,6 @@
 import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import GoogleDashboard from "./GoogleDashboard";
 
 type SubmissionStatus = "Draft" | "Pending" | "In Review" | "Changes Requested" | "Approved" | "Rejected" | "Archived";
 type AppPlatform = "" | "Android" | "Windows" | "Linux";
@@ -257,7 +256,6 @@ async function fetchFastlaneMetadata(projectUrl: string, versionCode: string): P
 
 export default function LumaDeveloperPortal() {
   const supabase = useMemo(() => createClient(), []);
-  const [isGoogleUser, setIsGoogleUser] = useState<boolean | null>(null);
   const [step, setStep] = useState(1);
   const [appName, setAppName] = useState("");
   const [appLink, setAppLink] = useState("");
@@ -342,24 +340,6 @@ export default function LumaDeveloperPortal() {
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
   };
-
-  useEffect(() => {
-    void supabase.auth.getUser().then(({ data }) => {
-      const user = data.user;
-      if (!user) {
-        setIsGoogleUser(false);
-        return;
-      }
-      const primaryProvider = String(user.app_metadata?.provider || "").toLowerCase();
-      const providers = Array.isArray(user.app_metadata?.providers)
-        ? user.app_metadata.providers.map((provider: unknown) => String(provider).toLowerCase())
-        : [];
-      const identityProviders = Array.isArray(user.identities)
-        ? user.identities.map((identity) => String(identity.provider || "").toLowerCase())
-        : [];
-      setIsGoogleUser(primaryProvider === "google" || providers.includes("google") || identityProviders.includes("google"));
-    });
-  }, [supabase]);
 
   useEffect(() => {
     async function fetchApps() {
@@ -585,9 +565,6 @@ export default function LumaDeveloperPortal() {
       <button onClick={() => { setSubmitted(false); resetForm(); }} className="mt-8 rounded-xl bg-indigo-600 px-5 py-2.5 font-medium text-white hover:bg-indigo-500">Back to apps</button>
     </div></div>
   );
-
-  if (isGoogleUser === null) return <div className="p-8 text-slate-400">Loading dashboard…</div>;
-  if (isGoogleUser) return <GoogleDashboard />;
 
   return (
     <div className="glass-page mx-auto max-w-6xl space-y-8 pb-20">

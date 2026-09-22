@@ -43,6 +43,9 @@ type StoreApp = {
   categories: string[];
 };
 
+type RelatedApp = { id:string; name:string|null; package_name:string|null; short_description:string|null; icon_url:string|null; version:string|null; };
+type PlatformDownloadCount = { platform:string; downloads:number|string; };
+
 type DeveloperFunding = { donate_url: string | null; liberapay: string | null; opencollective: string | null; bitcoin: string | null; litecoin: string | null; };
 
 type StoreAppPlatform = {
@@ -86,6 +89,8 @@ function Field({ label, value, mono = false }: { label: string; value: string | 
     <div className="rounded-xl border border-slate-800 bg-slate-950/45 p-3">
       <dt className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{label}</dt>
       <dd className={`mt-1 break-words text-sm text-slate-200 ${mono ? "font-mono text-xs" : ""}`}>{String(value)}</dd>
+      {relatedDeveloperApps.length>0&&<section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6"><h2 className="text-xl font-semibold text-white">More from {app.developer_name || "this developer"}</h2><div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{relatedDeveloperApps.map((item)=>{const itemName=item.name||item.package_name||"Untitled app";return <Link key={item.id} href={`/discover/${encodeURIComponent(item.package_name||item.id)}`} className="rounded-2xl border border-slate-800 bg-slate-950/40 p-4 transition hover:border-indigo-400/40"><div className="flex items-center gap-3">{item.icon_url?<img src={item.icon_url} alt="" className="h-12 w-12 rounded-xl border border-slate-700 object-cover"/>:<div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-800 font-bold">{itemName[0]}</div>}<div className="min-w-0"><h3 className="truncate font-semibold text-white">{itemName}</h3><p className="text-xs text-slate-500">{item.version?`Version ${item.version}`:"View app"}</p></div></div>{item.short_description&&<p className="mt-3 line-clamp-2 text-sm text-slate-400">{item.short_description}</p>}</Link>})}</div></section>}
+
     </div>
   );
 }
@@ -113,6 +118,8 @@ export default function DiscoverAppPage() {
   const [platforms, setPlatforms] = useState<StoreAppPlatform[]>([]);
   const [funding, setFunding] = useState<DeveloperFunding | null>(null);
   const [downloadCount, setDownloadCount] = useState(0);
+  const [platformDownloadCounts, setPlatformDownloadCounts] = useState<PlatformDownloadCount[]>([]);
+  const [relatedDeveloperApps, setRelatedDeveloperApps] = useState<RelatedApp[]>([]);
   const [ratingAverage, setRatingAverage] = useState(0);
   const [ratingCount, setRatingCount] = useState(0);
   const ratingApi = "https://api.free-time.me/lumastore";
@@ -151,6 +158,12 @@ export default function DiscoverAppPage() {
         if (!cancelled) setPlatforms((platformResult.data ?? []) as StoreAppPlatform[]);
         const { data: totalDownloads } = await supabase.rpc("luma_app_download_count", { target_app_id: loadedApp.id });
         if (!cancelled) setDownloadCount(Number(totalDownloads ?? 0));
+        const { data: platformCounts } = await supabase.rpc("luma_app_platform_download_counts", { target_app_id: loadedApp.id });
+        if (!cancelled) setPlatformDownloadCounts((platformCounts ?? []) as PlatformDownloadCount[]);
+        if (loadedApp.developer_id) {
+          const related = await supabase.from("store_apps").select("id,name,package_name,short_description,icon_url,version").eq("developer_id", loadedApp.developer_id).is("archived_at", null).neq("id", loadedApp.id).order("updated_at",{ascending:false}).limit(3);
+          if (!cancelled) setRelatedDeveloperApps((related.data ?? []) as RelatedApp[]);
+        }
         const ratingResponse = await fetch(`${ratingApi}/apps/${encodeURIComponent(loadedApp.package_name || loadedApp.id)}/ratings`);
         if (ratingResponse.ok) {
           const summary = await ratingResponse.json();
@@ -213,6 +226,9 @@ export default function DiscoverAppPage() {
               {app.developer_id ? <Link href={`/discover/developers/${encodeURIComponent(app.developer_name || app.developer_id)}`} className="mt-2 inline-flex text-sm text-indigo-300 hover:text-indigo-200">{app.developer_name || app.author_name || "Unknown developer"} →</Link> : <p className="mt-2 text-sm text-slate-400">{app.developer_name || app.author_name || "Unknown developer"}</p>}
               {app.short_description && <p className="mt-4 max-w-3xl text-base leading-7 text-slate-300">{app.short_description}</p>}
               <div className="mt-4 flex flex-wrap items-center gap-2"><div className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-950/50 px-3 py-1.5 text-sm text-slate-300"><span aria-hidden="true">↓</span><span>{downloadCount.toLocaleString()} downloads</span></div><div className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-950/50 px-3 py-1.5 text-sm text-slate-300"><span className="text-amber-300">★</span><span>{ratingCount ? ratingAverage.toFixed(1) : "No ratings"}{ratingCount ? ` · ${ratingCount}` : ""}</span></div></div>
+
+              <div className="mt-3 flex flex-wrap gap-2">{platforms.map((platform)=><span key={platform.id} className="rounded-full border border-slate-700 bg-slate-950/40 px-2.5 py-1 text-xs text-slate-300">{platform.platform}{platform.platform.toLowerCase()==="linux"&&platform.linux_package_base?` · ${platform.linux_package_base}`:""}</span>)}</div>
+              {platformDownloadCounts.length>0&&<div className="mt-3 flex flex-wrap gap-2">{platformDownloadCounts.map((item)=><span key={item.platform} className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-xs text-indigo-200">{item.platform}: {Number(item.downloads).toLocaleString()} downloads</span>)}</div>}
 
               <div className="mt-5 flex flex-wrap gap-2">
                 {app.categories?.map((category) => (

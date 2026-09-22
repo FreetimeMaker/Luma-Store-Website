@@ -294,6 +294,7 @@ export default function LumaDeveloperPortal() {
   const [loadingApps, setLoadingApps] = useState(true);
   const [downloadStats, setDownloadStats] = useState<Record<string, DownloadStats>>({});
   const [submissionStoreIds, setSubmissionStoreIds] = useState<Record<string, string>>({});
+  const [developerId, setDeveloperId] = useState<string | null>(null);
 
   const isAndroid = appPlatform === "Android";
   const isWindows = appPlatform === "Windows";
@@ -312,6 +313,7 @@ export default function LumaDeveloperPortal() {
     async function fetchApps() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoadingApps(false); return; }
+      setDeveloperId(user.id);
       const [{ data, error }, { data: storeApps, error: storeAppsError }] = await Promise.all([
         supabase.from("luma_submissions").select("*").eq("user_id", user.id).order("submitted_at", { ascending: false }),
         supabase.from("store_apps").select("id,luma_submission_id").eq("developer_id", user.id).not("luma_submission_id", "is", null),
@@ -521,7 +523,7 @@ export default function LumaDeveloperPortal() {
         <p className="mt-2 max-w-2xl text-slate-400">Submit and maintain Android, Windows and Linux apps.</p>
       </header>
 
-      <section className={cardClass}><div className="border-b border-slate-800 px-6 py-5"><h2 className="font-semibold text-white">Luma Store downloads</h2><p className="mt-1 text-xs text-slate-500">Only downloads of files hosted by Luma Store are counted.</p></div><div className="grid grid-cols-2 gap-3 p-6 sm:grid-cols-4">{(["today","this_month","this_year","total"] as const).map((key)=><div key={key} className="rounded-xl border border-slate-800 bg-slate-950/45 p-4"><p className="text-xs uppercase tracking-wider text-slate-500">{key==="today"?"Today":key==="this_month"?"This month":key==="this_year"?"This year":"Total"}</p><p className="mt-2 text-2xl font-bold text-white">{Object.values(downloadStats).reduce((sum,row)=>sum+Number(row[key]||0),0).toLocaleString()}</p></div>)}</div></section>
+      <section className={cardClass}><div className="border-b border-slate-800 px-6 py-5"><h2 className="font-semibold text-white">Luma Store downloads</h2><p className="mt-1 text-xs text-slate-500">Combined across all of your published apps and all versions. Only files hosted by Luma Store are counted.</p></div><div className="grid grid-cols-2 gap-3 p-6 sm:grid-cols-4">{(["today","this_month","this_year","total"] as const).map((key)=><div key={key} className="rounded-xl border border-slate-800 bg-slate-950/45 p-4"><p className="text-xs uppercase tracking-wider text-slate-500">{key==="today"?"Today":key==="this_month"?"This month":key==="this_year"?"This year":"Total"}</p><p className="mt-2 text-2xl font-bold text-white">{Object.values(downloadStats).reduce((sum,row)=>sum+Number(row[key]||0),0).toLocaleString()}</p></div>)}</div>{developerId&&<div className="border-t border-slate-800 px-6 py-5"><p className="mb-3 text-xs uppercase tracking-wide text-slate-500">README badge · all apps</p><div className="flex flex-wrap items-center gap-3"><img src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-badge?developer_id=${encodeURIComponent(developerId)}`} alt="Luma Store total downloads" className="h-5 w-auto"/><button type="button" onClick={()=>navigator.clipboard.writeText(`![Luma Store total downloads](${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-badge?developer_id=${developerId})`)} className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-slate-300 hover:text-white">Copy badge Markdown</button></div></div>}</section>
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
         <main className="space-y-8">

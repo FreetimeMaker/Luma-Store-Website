@@ -157,7 +157,7 @@ export default function DiscoverAppPage() {
         setPlatforms([]);
       } else {
         const loadedApp = appResult.data as StoreApp;
-        setApp(loadedApp);
+        setApp(loadedApp);\n        try {\n          const key = "luma-recent-apps";\n          const current = JSON.parse(localStorage.getItem(key) || "[]") as Array<{id:string;name:string;package_name:string|null;icon_url:string|null}>;\n          const next = [{id:loadedApp.id,name:loadedApp.name || loadedApp.package_name || "Untitled app",package_name:loadedApp.package_name,icon_url:loadedApp.icon_url}, ...current.filter(item=>item.id!==loadedApp.id)].slice(0,6);\n          localStorage.setItem(key, JSON.stringify(next));\n        } catch {}
         if (loadedApp.developer_id) {
           const fundingResult = await supabase.from("luma_developer_funding").select("donate_url,liberapay,opencollective,bitcoin,litecoin").eq("developer_id", loadedApp.developer_id).maybeSingle();
           if (!cancelled) setFunding((fundingResult.data as DeveloperFunding | null) ?? null);

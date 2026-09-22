@@ -123,13 +123,9 @@ export default function DiscoverAppPage() {
         supabase
           .from("store_apps")
           .select("*")
-          .eq("id", params.id)
+          .or(`package_name.eq.${params.id},id.eq.${params.id}`)
           .single(),
-        supabase
-          .from("store_app_platforms")
-          .select("id,app_id,platform,linux_package_base,download_url,file_size_mb")
-          .eq("app_id", params.id)
-          .order("platform", { ascending: true }),
+        Promise.resolve({ data: [], error: null }),
       ]);
 
       if (cancelled) return;
@@ -139,8 +135,10 @@ export default function DiscoverAppPage() {
         setApp(null);
         setPlatforms([]);
       } else {
-        setApp(appResult.data as StoreApp);
-        setPlatforms((platformsResult.data ?? []) as StoreAppPlatform[]);
+        const loadedApp = appResult.data as StoreApp;
+        setApp(loadedApp);
+        const platformResult = await supabase.from("store_app_platforms").select("id,app_id,platform,linux_package_base,download_url,file_size_mb").eq("app_id", loadedApp.id).order("platform", { ascending: true });
+        if (!cancelled) setPlatforms((platformResult.data ?? []) as StoreAppPlatform[]);
       }
 
       setLoading(false);
@@ -209,7 +207,7 @@ export default function DiscoverAppPage() {
               downloadablePlatforms.map((platform) => (
                 <a
                   key={platform.id}
-                  href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-app?app_id=${encodeURIComponent(app.id)}&platform=${encodeURIComponent(platform.platform)}`}
+                  href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-app?package_name=${encodeURIComponent(app.package_name || "")}&platform=${encodeURIComponent(platform.platform)}`}
                   className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-indigo-500 px-5 py-3 text-center text-sm font-bold text-white shadow-lg shadow-indigo-950/30 transition hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-300/60"
                 >
                   Download {platform.platform}
@@ -248,7 +246,7 @@ export default function DiscoverAppPage() {
       <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
         <h2 className="text-xl font-semibold text-white">App details</h2>
         <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <Field label="ID" value={app.id} mono />
+          <Field label="Package name" value={app.package_name} mono />
           <Field label="Package name" value={app.package_name} mono />
           <Field label="Version" value={app.version} />
           <Field label="Version code" value={app.version_code} />

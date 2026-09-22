@@ -149,8 +149,8 @@ export default function DiscoverAppPage() {
         } else if (!cancelled) setFunding(null);
         const platformResult = await supabase.from("store_app_platforms").select("id,app_id,platform,linux_package_base,download_url,file_size_mb").eq("app_id", loadedApp.id).order("platform", { ascending: true });
         if (!cancelled) setPlatforms((platformResult.data ?? []) as StoreAppPlatform[]);
-        const { count } = await supabase.from("luma_download_events").select("id", { count: "exact", head: true }).eq("app_id", loadedApp.id);
-        if (!cancelled) setDownloadCount(Number(count ?? 0));
+        const { data: totalDownloads } = await supabase.rpc("luma_app_download_count", { target_app_id: loadedApp.id });
+        if (!cancelled) setDownloadCount(Number(totalDownloads ?? 0));
         const ratingResponse = await fetch(`${ratingApi}/apps/${encodeURIComponent(loadedApp.package_name || loadedApp.id)}/ratings`);
         if (ratingResponse.ok) {
           const summary = await ratingResponse.json();

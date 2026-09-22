@@ -94,8 +94,12 @@ function Field({ label, value, mono = false }: { label: string; value: string | 
     <div className="rounded-xl border border-slate-800 bg-slate-950/45 p-3">
       <dt className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{label}</dt>
       <dd className={`mt-1 break-words text-sm text-slate-200 ${mono ? "font-mono text-xs" : ""}`}>{String(value)}</dd>
-    </div>\n  );\n}
-function fundingRedirect(appId:string,provider:"donate"|"liberapay"|"opencollective"){const base=process.env.NEXT_PUBLIC_SUPABASE_URL;if(!base)return null;return `${base}/functions/v1/funding-click?app=${encodeURIComponent(appId)}&provider=${provider}`;}\n\nfunction LinkChip({ href, label, onClick }: { href: string | null; label: string; onClick?:()=>void }) {
+    </div>
+  );
+}
+function fundingRedirect(appId:string,provider:"donate"|"liberapay"|"opencollective"){const base=process.env.NEXT_PUBLIC_SUPABASE_URL;if(!base)return null;return `${base}/functions/v1/funding-click?app=${encodeURIComponent(appId)}&provider=${provider}`;}
+
+function LinkChip({ href, label, onClick }: { href: string | null; label: string; onClick?:()=>void }) {
   if (!href) return null;
   return (
     <a
@@ -125,15 +129,22 @@ export default function DiscoverAppPage() {
   const [ratingCount, setRatingCount] = useState(0);
   const [pageUrl, setPageUrl] = useState("");
   const [copied, setCopied] = useState(false);
-  const [androidQrUrl, setAndroidQrUrl] = useState<string | null>(null);\n  const [screenshotIndex, setScreenshotIndex] = useState<number | null>(null);
+  const [androidQrUrl, setAndroidQrUrl] = useState<string | null>(null);
+  const [screenshotIndex, setScreenshotIndex] = useState<number | null>(null);
   const ratingApi = "https://api.free-time.me/lumastore";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {\n    setPageUrl(window.location.href);\n    window.scrollTo({ top: 0, left: 0, behavior: "auto" });\n    requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: "auto" }));\n  }, [params.id]);
+  useEffect(() => {
+    setPageUrl(window.location.href);
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: "auto" }));
+  }, [params.id]);
 
   async function shareApp() { if (!pageUrl || !app) return; const data={title:app.name || "Luma Store app",text:app.short_description || "View this app on Luma Store",url:pageUrl}; if(navigator.share){try{await navigator.share(data);return}catch(error){if(error instanceof DOMException&&error.name==="AbortError")return}} await navigator.clipboard.writeText(pageUrl);setCopied(true);window.setTimeout(()=>setCopied(false),1800); }
-  async function copyAppLink(){if(!pageUrl)return;await navigator.clipboard.writeText(pageUrl);setCopied(true);window.setTimeout(()=>setCopied(false),1800);}\n  function handleDownload(event: React.MouseEvent<HTMLAnchorElement>, platform: StoreAppPlatform, downloadUrl: string){if(platform.platform.toLowerCase()!=="android")return;const isDesktop=window.matchMedia("(hover: hover) and (pointer: fine)").matches;if(!isDesktop)return;event.preventDefault();setAndroidQrUrl(downloadUrl);}\n  useEffect(()=>{if(!androidQrUrl)return;const close=(event:KeyboardEvent)=>{if(event.key==="Escape")setAndroidQrUrl(null)};window.addEventListener("keydown",close);return()=>window.removeEventListener("keydown",close)},[androidQrUrl]);
+  async function copyAppLink(){if(!pageUrl)return;await navigator.clipboard.writeText(pageUrl);setCopied(true);window.setTimeout(()=>setCopied(false),1800);}
+  function handleDownload(event: React.MouseEvent<HTMLAnchorElement>, platform: StoreAppPlatform, downloadUrl: string){if(platform.platform.toLowerCase()!=="android")return;const isDesktop=window.matchMedia("(hover: hover) and (pointer: fine)").matches;if(!isDesktop)return;event.preventDefault();setAndroidQrUrl(downloadUrl);}
+  useEffect(()=>{if(!androidQrUrl)return;const close=(event:KeyboardEvent)=>{if(event.key==="Escape")setAndroidQrUrl(null)};window.addEventListener("keydown",close);return()=>window.removeEventListener("keydown",close)},[androidQrUrl]);
 
   useEffect(() => {
     let cancelled = false;
@@ -158,7 +169,13 @@ export default function DiscoverAppPage() {
         setPlatforms([]);
       } else {
         const loadedApp = appResult.data as StoreApp;
-        setApp(loadedApp);\n        try {\n          const key = "luma-recent-apps";\n          const current = JSON.parse(localStorage.getItem(key) || "[]") as Array<{id:string;name:string;package_name:string|null;icon_url:string|null}>;\n          const next = [{id:loadedApp.id,name:loadedApp.name || loadedApp.package_name || "Untitled app",package_name:loadedApp.package_name,icon_url:loadedApp.icon_url}, ...current.filter(item=>item.id!==loadedApp.id)].slice(0,6);\n          localStorage.setItem(key, JSON.stringify(next));\n        } catch {}
+        setApp(loadedApp);
+        try {
+          const key = "luma-recent-apps";
+          const current = JSON.parse(localStorage.getItem(key) || "[]") as Array<{id:string;name:string;package_name:string|null;icon_url:string|null}>;
+          const next = [{id:loadedApp.id,name:loadedApp.name || loadedApp.package_name || "Untitled app",package_name:loadedApp.package_name,icon_url:loadedApp.icon_url}, ...current.filter(item=>item.id!==loadedApp.id)].slice(0,6);
+          localStorage.setItem(key, JSON.stringify(next));
+        } catch {}
         if (loadedApp.developer_id) {
           const fundingResult = await supabase.from("luma_developer_funding").select("donate_url,liberapay,opencollective,bitcoin,litecoin").eq("developer_id", loadedApp.developer_id).maybeSingle();
           if (!cancelled) setFunding((fundingResult.data as DeveloperFunding | null) ?? null);
@@ -257,7 +274,8 @@ export default function DiscoverAppPage() {
               downloadablePlatforms.map((platform) => (
                 <a
                   key={platform.id}
-                  href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-app?${app.package_name ? `package_name=${encodeURIComponent(app.package_name)}` : `app_id=${encodeURIComponent(app.id)}`}&platform=${encodeURIComponent(platform.platform)}`}\n                  onClick={(event)=>handleDownload(event,platform,`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-app?${app.package_name ? `package_name=${encodeURIComponent(app.package_name)}` : `app_id=${encodeURIComponent(app.id)}`}&platform=${encodeURIComponent(platform.platform)}`)}
+                  href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-app?${app.package_name ? `package_name=${encodeURIComponent(app.package_name)}` : `app_id=${encodeURIComponent(app.id)}`}&platform=${encodeURIComponent(platform.platform)}`}
+                  onClick={(event)=>handleDownload(event,platform,`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-app?${app.package_name ? `package_name=${encodeURIComponent(app.package_name)}` : `app_id=${encodeURIComponent(app.id)}`}&platform=${encodeURIComponent(platform.platform)}`)}
                   className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-indigo-500 px-5 py-3 text-center text-sm font-bold text-white shadow-lg shadow-indigo-950/30 transition hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-300/60"
                 >
                   Download {platform.platform}

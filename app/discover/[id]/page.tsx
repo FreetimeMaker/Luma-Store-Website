@@ -131,7 +131,7 @@ export default function DiscoverAppPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => { setPageUrl(window.location.href); }, [params.id]);
+  useEffect(() => {\n    setPageUrl(window.location.href);\n    window.scrollTo({ top: 0, left: 0, behavior: "auto" });\n    requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: "auto" }));\n  }, [params.id]);
 
   async function shareApp() { if (!pageUrl || !app) return; const data={title:app.name || "Luma Store app",text:app.short_description || "View this app on Luma Store",url:pageUrl}; if(navigator.share){try{await navigator.share(data);return}catch(error){if(error instanceof DOMException&&error.name==="AbortError")return}} await navigator.clipboard.writeText(pageUrl);setCopied(true);window.setTimeout(()=>setCopied(false),1800); }
   function trackFunding(provider:"donate"|"liberapay"|"opencollective"|"bitcoin"|"litecoin"){if(!app?.developer_id)return;void supabase.from("luma_funding_clicks").insert({developer_id:app.developer_id,app_id:app.id,provider});}

@@ -20,7 +20,8 @@ type StoreApp = {
   updated_at: string | null;
   [key: string]: unknown;
 };
-type DiscoverMetric={app_id:string;total_downloads:number|string;recent_downloads:number|string;platforms:string[]};\ntype RecentApp={id:string;name:string;package_name:string|null;icon_url:string|null};
+type DiscoverMetric={app_id:string;total_downloads:number|string;recent_downloads:number|string;platforms:string[]};
+type RecentApp={id:string;name:string;package_name:string|null;icon_url:string|null};
 
 function appInitials(name: string) {
   return name
@@ -43,7 +44,11 @@ export default function DiscoverPage() {
   const [sort, setSort] = useState("trending");
   const [metrics, setMetrics] = useState<Record<string,DiscoverMetric>>({});
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);\n  const [recentApps,setRecentApps]=useState<RecentApp[]>([]);\n  const searchRef=useRef<HTMLInputElement>(null);\n\n  useEffect(()=>{try{setRecentApps(JSON.parse(localStorage.getItem("luma-recent-apps")||"[]"))}catch{}const keys=(event:KeyboardEvent)=>{const target=event.target as HTMLElement|null;if(target?.matches("input, textarea, select, [contenteditable=true]"))return;if(event.key==="/"||((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="k")){event.preventDefault();searchRef.current?.focus()}};window.addEventListener("keydown",keys);return()=>window.removeEventListener("keydown",keys)},[]);
+  const [error, setError] = useState<string | null>(null);
+  const [recentApps,setRecentApps]=useState<RecentApp[]>([]);
+  const searchRef=useRef<HTMLInputElement>(null);
+
+  useEffect(()=>{try{setRecentApps(JSON.parse(localStorage.getItem("luma-recent-apps")||"[]"))}catch{}const keys=(event:KeyboardEvent)=>{const target=event.target as HTMLElement|null;if(target?.matches("input, textarea, select, [contenteditable=true]"))return;if(event.key==="/"||((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="k")){event.preventDefault();searchRef.current?.focus()}};window.addEventListener("keydown",keys);return()=>window.removeEventListener("keydown",keys)},[]);
 
   useEffect(() => {
     let cancelled = false;
@@ -123,7 +128,12 @@ export default function DiscoverPage() {
   const hasFilters = Boolean(search.trim()) || license !== "all" || category !== "all" || developer !== "all" || platform !== "all";
   const resetFilters = () => { setSearch(""); setLicense("all"); setCategory("all"); setDeveloper("all"); setPlatform("all"); };
 
-  const suggestions=useMemo(()=>{const q=search.trim().toLowerCase();if(!q)return [];return apps.filter(app=>(app.name||"").toLowerCase().includes(q)||(app.package_name||"").toLowerCase().includes(q)||(app.developer_name||"").toLowerCase().includes(q)).slice(0,5)},[apps,search]);\n  const trending=useMemo(()=>[...apps].sort((a,b)=>Number(metrics[b.id]?.recent_downloads||0)-Number(metrics[a.id]?.recent_downloads||0)).slice(0,5),[apps,metrics]);\n  const newThisWeek=useMemo(()=>apps.filter(a=>a.created_at&&Date.now()-new Date(a.created_at).getTime()<=7*86400000).slice(0,5),[apps]);\n  const recentlyUpdated=useMemo(()=>[...apps].sort((a,b)=>new Date(b.updated_at||0).getTime()-new Date(a.updated_at||0).getTime()).slice(0,5),[apps]);\n\n  const filteredApps = useMemo(() => {
+  const suggestions=useMemo(()=>{const q=search.trim().toLowerCase();if(!q)return [];return apps.filter(app=>(app.name||"").toLowerCase().includes(q)||(app.package_name||"").toLowerCase().includes(q)||(app.developer_name||"").toLowerCase().includes(q)).slice(0,5)},[apps,search]);
+  const trending=useMemo(()=>[...apps].sort((a,b)=>Number(metrics[b.id]?.recent_downloads||0)-Number(metrics[a.id]?.recent_downloads||0)).slice(0,5),[apps,metrics]);
+  const newThisWeek=useMemo(()=>apps.filter(a=>a.created_at&&Date.now()-new Date(a.created_at).getTime()<=7*86400000).slice(0,5),[apps]);
+  const recentlyUpdated=useMemo(()=>[...apps].sort((a,b)=>new Date(b.updated_at||0).getTime()-new Date(a.updated_at||0).getTime()).slice(0,5),[apps]);
+
+  const filteredApps = useMemo(() => {
     const query = search.trim().toLowerCase();
 
     const result=apps.filter((app) => {
@@ -181,7 +191,9 @@ export default function DiscoverPage() {
         </div>
       </section>
 
-      {!loading&&!error&&<div className="space-y-5"><Collection title="Trending now" apps={trending}/><Collection title="New this week" apps={newThisWeek}/><Collection title="Recently updated" apps={recentlyUpdated}/>{recentApps.length>0&&<section><div className="mb-3 flex items-center justify-between"><h2 className="text-lg font-semibold text-white">Recently viewed</h2><button type="button" onClick={()=>{localStorage.removeItem("luma-recent-apps");setRecentApps([])}} className="text-xs text-slate-500 hover:text-white">Clear</button></div><div className="flex gap-3 overflow-x-auto pb-2">{recentApps.map(item=><Link key={item.id} href={`/discover/${encodeURIComponent(item.package_name||item.id)}`} className="glass-action flex min-w-48 items-center gap-3 p-3">{item.icon_url?<img src={item.icon_url} alt="" className="h-10 w-10 rounded-xl object-cover"/>:<span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/10">{appInitials(item.name)}</span>}<span className="truncate text-sm font-medium">{item.name}</span></Link>)}</div></section>}</div>}\n\n      {loading ? (
+      {!loading&&!error&&<div className="space-y-5"><Collection title="Trending now" apps={trending}/><Collection title="New this week" apps={newThisWeek}/><Collection title="Recently updated" apps={recentlyUpdated}/>{recentApps.length>0&&<section><div className="mb-3 flex items-center justify-between"><h2 className="text-lg font-semibold text-white">Recently viewed</h2><button type="button" onClick={()=>{localStorage.removeItem("luma-recent-apps");setRecentApps([])}} className="text-xs text-slate-500 hover:text-white">Clear</button></div><div className="flex gap-3 overflow-x-auto pb-2">{recentApps.map(item=><Link key={item.id} href={`/discover/${encodeURIComponent(item.package_name||item.id)}`} className="glass-action flex min-w-48 items-center gap-3 p-3">{item.icon_url?<img src={item.icon_url} alt="" className="h-10 w-10 rounded-xl object-cover"/>:<span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/10">{appInitials(item.name)}</span>}<span className="truncate text-sm font-medium">{item.name}</span></Link>)}</div></section>}</div>}
+
+      {loading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, index) => (
             <div key={index} className="rounded-3xl border border-white/10 bg-slate-900/45 p-5 backdrop-blur-xl"><div className="flex gap-4"><div className="h-14 w-14 animate-pulse rounded-2xl bg-slate-800/80"/><div className="flex-1 space-y-2 pt-1"><div className="h-5 w-2/3 animate-pulse rounded bg-slate-800/80"/><div className="h-3 w-1/2 animate-pulse rounded bg-slate-800/60"/></div></div><div className="mt-5 h-14 animate-pulse rounded-xl bg-slate-800/50"/><div className="mt-5 h-8 animate-pulse rounded-xl bg-slate-800/40"/></div>
@@ -253,4 +265,5 @@ export default function DiscoverPage() {
     </div>
   );
 }
-\nfunction Collection({title,apps}:{title:string;apps:StoreApp[]}){if(!apps.length)return null;return <section><h2 className="mb-3 text-lg font-semibold text-white">{title}</h2><div className="flex snap-x gap-3 overflow-x-auto pb-2">{apps.map(app=>{const name=app.name||app.package_name||"Untitled app";return <Link key={app.id} href={`/discover/${encodeURIComponent(app.package_name||app.id)}`} className="glass-action flex min-w-56 snap-start items-center gap-3 p-3"><div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-slate-900">{app.icon_url?<img src={app.icon_url} alt="" className="h-full w-full object-cover"/>:<span className="flex h-full items-center justify-center text-xs font-bold text-indigo-200">{appInitials(name)}</span>}</div><div className="min-w-0"><strong className="block truncate text-sm text-white">{name}</strong><span className="block truncate text-xs text-slate-500">{app.developer_name||app.package_name||"Unknown developer"}</span></div></Link>})}</div></section>}
+
+function Collection({title,apps}:{title:string;apps:StoreApp[]}){if(!apps.length)return null;return <section><h2 className="mb-3 text-lg font-semibold text-white">{title}</h2><div className="flex snap-x gap-3 overflow-x-auto pb-2">{apps.map(app=>{const name=app.name||app.package_name||"Untitled app";return <Link key={app.id} href={`/discover/${encodeURIComponent(app.package_name||app.id)}`} className="glass-action flex min-w-56 snap-start items-center gap-3 p-3"><div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-slate-900">{app.icon_url?<img src={app.icon_url} alt="" className="h-full w-full object-cover"/>:<span className="flex h-full items-center justify-center text-xs font-bold text-indigo-200">{appInitials(name)}</span>}</div><div className="min-w-0"><strong className="block truncate text-sm text-white">{name}</strong><span className="block truncate text-xs text-slate-500">{app.developer_name||app.package_name||"Unknown developer"}</span></div></Link>})}</div></section>}

@@ -4,7 +4,7 @@ import Link from "next/link";
 import React, { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-type SubmissionStatus = "Pending" | "In Review" | "Changes Requested" | "Approved" | "Rejected";
+type SubmissionStatus = "Draft" | "Pending" | "In Review" | "Changes Requested" | "Approved" | "Rejected";
 type AppPlatform = "" | "Android" | "Windows" | "Linux";
 type LinuxPackageBase = "" | "Debian-based" | "RPM-based";
 
@@ -299,6 +299,9 @@ export default function LumaDeveloperPortal() {
   const [submissionStoreIds, setSubmissionStoreIds] = useState<Record<string, string>>({});
   const [developerId, setDeveloperId] = useState<string | null>(null);
   const [developerName, setDeveloperName] = useState<string | null>(null);
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
 
   const isAndroid = appPlatform === "Android";
   const isWindows = appPlatform === "Windows";
@@ -306,7 +309,32 @@ export default function LumaDeveloperPortal() {
   const manualStoreMetadata = isWindows || isLinux;
   const validAndroidMetadata = !isAndroid || (/^([A-Za-z][A-Za-z0-9_]*\.)+[A-Za-z][A-Za-z0-9_]*$/.test(appPackageName.trim()) && /^\d+$/.test(appVersionCode.trim()) && Number(appVersionCode) > 0);
   const invalidateFastlane = () => { setFastlaneMetadata(null); setFastlaneError(null); };
+  const saveDraft = async (draftStep = step) => {
+    setSavingDraft(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Your login session expired. Please sign in again.");
+      const submission = {
+        name: appName.trim() || closedTitle.trim() || "Untitled draft", short_description: closedShortDescription.trim() || null, description: closedFullDescription.trim() || null,
+        link: appLink.trim() || null, repo_url: appLink.trim() || null, source_code_url: appLink.trim() || null,
+        categories: appCategories, category: appCategories[0] || null, subcategory: null, license_type: appLicenseType || null, closed_source: false,
+        icon_url: appIconUrl.trim() || null, version: appVersion.trim() || null, platform: appPlatform || null, linux_package_base: isLinux ? appLinuxPackageBase || null : null,
+        download_url: appDownloadUrl.trim() || null, package_name: isAndroid ? appPackageName.trim() || null : null,
+        version_code: isAndroid && /^\d+$/.test(appVersionCode.trim()) ? Number(appVersionCode) : null,
+        website_url: websiteUrl.trim() || null, issue_tracker_url: issueTrackerUrl.trim() || null, translation_url: translationUrl.trim() || null,
+        author_name: authorName.trim() || null, author_email: authorEmail.trim() || null, author_website: authorWebsite.trim() || null,
+        donate_url: donateUrl.trim() || null, liberapay: liberapay.trim() || null, opencollective: opencollective.trim() || null, bitcoin: bitcoin.trim() || null, litecoin: litecoin.trim() || null,
+      };
+      const response = await fetch("/api/luma/submissions", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify({ submission, editingId: draftId, draft: true, draftStep }) });
+      const result = await response.json() as { submission?: LumaSubmissionRow; error?: string };
+      if (!response.ok || !result.submission) throw new Error(result.error || "Draft could not be saved");
+      setDraftId(result.submission.id); setEditingId(result.submission.id); setEditingStatus("Draft"); setDraftSavedAt(new Date().toLocaleTimeString());
+    } catch (error) { alert(error instanceof Error ? `Failed to save draft: ${error.message}` : "Failed to save draft."); }
+    finally { setSavingDraft(false); }
+  };
+
   const goToStep = (nextStep: number) => {
+    void saveDraft(nextStep);
     setStep(nextStep);
     requestAnimationFrame(() => {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -362,7 +390,7 @@ export default function LumaDeveloperPortal() {
     setWebsiteUrl(""); setIssueTrackerUrl(""); setTranslationUrl(""); setAuthorName(""); setAuthorEmail(""); setAuthorWebsite("");
     setDonateUrl(""); setLiberapay(""); setOpencollective(""); setBitcoin(""); setLitecoin("");
     setClosedTitle(""); setClosedShortDescription(""); setClosedFullDescription(""); setClosedChangelog(""); setClosedScreenshotsText(""); setAdditionalClosedMetadata([]);
-    setFastlaneMetadata(null); setFastlaneError(null); setEditingId(null); setEditingStatus(null);
+    setFastlaneMetadata(null); setFastlaneError(null); setEditingId(null); setEditingStatus(null); setDraftId(null); setDraftSavedAt(null);
   };
 
   const beginEdit = (app: AppSubmission) => {
@@ -487,7 +515,7 @@ export default function LumaDeveloperPortal() {
           Authorization: `Bearer ${session.access_token}`,
           "X-GitHub-Token": session.provider_token,
         },
-        body: JSON.stringify({ submission: appMetadata, editingId, editingStatus }),
+        body: JSON.stringify({ submission: appMetadata, editingId: draftId || editingId, editingStatus: draftId ? "Draft" : editingStatus }),
       });
       const result = await response.json() as { submission?: LumaSubmissionRow; error?: string };
       if (!response.ok) throw new Error(result.error || "Submission could not be saved");
@@ -506,6 +534,7 @@ export default function LumaDeveloperPortal() {
 
   const getStatusColor = (status: SubmissionStatus) => {
     switch (status) {
+      case "Draft": return "border-slate-600/50 bg-slate-800/50 text-slate-300";
       case "Pending": return "border-yellow-700/50 bg-yellow-900/30 text-yellow-300";
       case "In Review": return "border-blue-700/50 bg-blue-900/30 text-blue-300";
       case "Changes Requested": return "border-orange-700/50 bg-orange-900/30 text-orange-300";
@@ -537,6 +566,7 @@ export default function LumaDeveloperPortal() {
           <section className={cardClass}>
             <div className="flex items-center justify-between border-b border-slate-800 px-6 py-5"><div><h2 className="font-semibold text-white">{isApprovedUpdate ? "Submit App Update" : isRequestedChange ? "Fix Requested Changes" : editingId ? "Edit Rejected Submission" : "New App Submission"}</h2><p className="mt-1 text-xs text-slate-500">Step {step} of 3</p></div><div className="flex gap-1.5">{[1,2,3].map((item)=><div key={item} className={`h-1.5 w-9 rounded-full ${item<=step?"bg-indigo-500":"bg-slate-700"}`}/>)}</div></div>
             <form onSubmit={handleSubmit} className="p-6 md:p-8">
+              <div className="mb-5 flex flex-wrap items-center justify-end gap-3"><span className="text-xs text-slate-500">{draftSavedAt ? `Draft saved ${draftSavedAt}` : "Not saved yet"}</span><button type="button" onClick={()=>void saveDraft()} disabled={savingDraft} className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-slate-200 hover:text-white disabled:opacity-40">{savingDraft ? "Saving…" : "Save draft"}</button></div>
               {step === 1 && <div className="space-y-6">
                 
                 <div className="grid gap-5 md:grid-cols-2">

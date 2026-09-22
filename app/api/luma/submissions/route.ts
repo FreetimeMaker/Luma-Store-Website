@@ -7,6 +7,8 @@ type SubmissionBody = {
   submission?: Record<string, unknown>;
   editingId?: string | null;
   editingStatus?: SubmissionStatus | null;
+  draft?: boolean;
+  draftStep?: number;
 };
 
 function parseGitHubRepository(value: unknown) {
@@ -56,8 +58,20 @@ export async function POST(request: Request) {
     if (!submission || typeof submission !== "object") {
       return NextResponse.json({ error: "Invalid submission." }, { status: 400 });
     }
+    const isDraft = body.draft === true;
+
     if (submission.closed_source === true || submission.license_type === "Proprietary") {
       return NextResponse.json({ error: "Luma Store submissions must be open source." }, { status: 400 });
+    }
+
+    if (isDraft) {
+      const draftStep = Math.max(1, Math.min(3, Number(body.draftStep) || 1));
+      const safeDraft = { ...submission, name: typeof submission.name === "string" && submission.name.trim() ? submission.name : "Untitled draft", platform: typeof submission.platform === "string" && submission.platform.trim() ? submission.platform : null, link: typeof submission.link === "string" && submission.link.trim() ? submission.link.trim() : null, repo_url: typeof submission.repo_url === "string" && submission.repo_url.trim() ? submission.repo_url.trim() : null, source_code_url: typeof submission.source_code_url === "string" && submission.source_code_url.trim() ? submission.source_code_url.trim() : null, closed_source: false, status: "Draft", draft_step: draftStep, draft_updated_at: new Date().toISOString(), status_updated_at: new Date().toISOString() };
+      const draftResult = body.editingId
+        ? await supabase.from("luma_submissions").update(safeDraft).eq("id", body.editingId).eq("user_id", authData.user.id).eq("status", "Draft").select().single()
+        : await supabase.from("luma_submissions").insert([{ ...safeDraft, user_id: authData.user.id, submitted_at: new Date().toISOString() }]).select().single();
+      if (draftResult.error) throw draftResult.error;
+      return NextResponse.json({ submission: draftResult.data });
     }
 
     const { owner, repo } = parseGitHubRepository(submission.repo_url ?? submission.link);
@@ -96,7 +110,7 @@ export async function POST(request: Request) {
 
     let result;
     if (body.editingId && body.editingStatus) {
-      if (!["Rejected", "Approved", "Changes Requested"].includes(body.editingStatus)) {
+      if (!["Draft", "Rejected", "Approved", "Changes Requested"].includes(body.editingStatus)) {
         return NextResponse.json({ error: "This submission cannot be edited in its current state." }, { status: 409 });
       }
       result = await supabase

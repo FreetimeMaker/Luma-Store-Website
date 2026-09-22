@@ -88,7 +88,9 @@ type LumaSubmissionRow = {
   litecoin: string | null;
 };
 
-type DownloadStats = { app_id: string; total: number; today: number; this_month: number; this_year: number };\n\ntype FastlaneMetadata = {
+type DownloadStats = { app_id: string; total: number; today: number; this_month: number; this_year: number };
+
+type FastlaneMetadata = {
   title: string;
   shortDescription: string;
   fullDescription: string;
@@ -289,7 +291,9 @@ export default function LumaDeveloperPortal() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingStatus, setEditingStatus] = useState<SubmissionStatus | null>(null);
   const [myApps, setMyApps] = useState<AppSubmission[]>([]);
-  const [loadingApps, setLoadingApps] = useState(true);\n  const [downloadStats, setDownloadStats] = useState<Record<string, DownloadStats>>({});\n  const [submissionStoreIds, setSubmissionStoreIds] = useState<Record<string, string>>({});
+  const [loadingApps, setLoadingApps] = useState(true);
+  const [downloadStats, setDownloadStats] = useState<Record<string, DownloadStats>>({});
+  const [submissionStoreIds, setSubmissionStoreIds] = useState<Record<string, string>>({});
 
   const isAndroid = appPlatform === "Android";
   const isWindows = appPlatform === "Windows";

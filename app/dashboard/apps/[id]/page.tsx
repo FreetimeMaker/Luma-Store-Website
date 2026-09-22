@@ -50,7 +50,9 @@ type SecurityScan = {
   created_at: string;
 };
 
-type DownloadStats = { app_id: string; total: number; today: number; this_month: number; this_year: number };\n\ntype PublishedApp = {
+type DownloadStats = { app_id: string; total: number; today: number; this_month: number; this_year: number };
+
+type PublishedApp = {
   id: string;
   name: string;
   short_description: string | null;
@@ -91,7 +93,8 @@ export default function SubmissionDetailsPage() {
   const [submission, setSubmission] = useState<Submission | null>(null);
   const [versions, setVersions] = useState<VersionRow[]>([]);
   const [scan, setScan] = useState<SecurityScan | null>(null);
-  const [publishedApp, setPublishedApp] = useState<PublishedApp | null>(null);\n  const [downloadStats, setDownloadStats] = useState<DownloadStats | null>(null);
+  const [publishedApp, setPublishedApp] = useState<PublishedApp | null>(null);
+  const [downloadStats, setDownloadStats] = useState<DownloadStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -152,7 +155,15 @@ export default function SubmissionDetailsPage() {
           .eq("package_name", currentSubmission.package_name)
           .maybeSingle();
       }
-      if (!publishedResult.error) {\n        const published = (publishedResult.data as PublishedApp | null) ?? null;\n        setPublishedApp(published);\n        if (published?.id) {\n          const { data: statsRows } = await supabase.rpc("get_my_luma_download_stats");\n          const stats = ((statsRows ?? []) as DownloadStats[]).find((row) => row.app_id === published.id) ?? null;\n          setDownloadStats(stats);\n        }\n      }
+      if (!publishedResult.error) {
+        const published = (publishedResult.data as PublishedApp | null) ?? null;
+        setPublishedApp(published);
+        if (published?.id) {
+          const { data: statsRows } = await supabase.rpc("get_my_luma_download_stats");
+          const stats = ((statsRows ?? []) as DownloadStats[]).find((row) => row.app_id === published.id) ?? null;
+          setDownloadStats(stats);
+        }
+      }
     }
 
     setLoading(false);
@@ -162,7 +173,8 @@ export default function SubmissionDetailsPage() {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submissionId, supabase]);
-\n  if (loading) return <div className={`${cardClass} mx-auto max-w-6xl p-8 text-center text-slate-400`}>Loading app details…</div>;
+
+  if (loading) return <div className={`${cardClass} mx-auto max-w-6xl p-8 text-center text-slate-400`}>Loading app details…</div>;
   if (error && !submission) return <div className={`${cardClass} mx-auto max-w-6xl p-8`}><p className="text-red-300">{error}</p><Link href="/dashboard" className="mt-5 inline-flex rounded-xl bg-slate-800 px-4 py-2 text-sm text-white">Back to dashboard</Link></div>;
   if (!submission) return null;
 
@@ -216,7 +228,8 @@ export default function SubmissionDetailsPage() {
               <div><p className="text-xs uppercase tracking-wide text-slate-500">Published version</p><p className="mt-1 text-lg font-semibold text-white">{publishedApp.version || "—"} {publishedApp.version_code ? `(code ${publishedApp.version_code})` : ""}</p></div>
               <div><p className="text-xs uppercase tracking-wide text-slate-500">License</p><p className="mt-1 text-slate-200">{publishedApp.license_type || submission.license_type || "—"}</p></div>
               <div><p className="text-xs uppercase tracking-wide text-slate-500">Repository</p>{repoUrl ? <a href={repoUrl} target="_blank" rel="noopener noreferrer" className="mt-1 block break-all text-indigo-300 hover:text-indigo-200">{repoUrl}</a> : <p className="mt-1 text-slate-400">—</p>}</div>
-              <div><p className="text-xs uppercase tracking-wide text-slate-500">Last published update</p><p className="mt-1 text-slate-200">{formatDate(publishedApp.updated_at)}</p></div>\n              {downloadStats && <div className="md:col-span-2"><p className="text-xs uppercase tracking-wide text-slate-500">Luma Store downloads · all versions</p><div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">{([["Today",downloadStats.today],["This month",downloadStats.this_month],["This year",downloadStats.this_year],["Total",downloadStats.total]] as const).map(([label,value])=><div key={label} className="rounded-xl border border-slate-800 bg-slate-950/45 p-3"><p className="text-xs text-slate-500">{label}</p><p className="mt-1 text-xl font-bold text-white">{Number(value).toLocaleString()}</p></div>)}</div></div>}
+              <div><p className="text-xs uppercase tracking-wide text-slate-500">Last published update</p><p className="mt-1 text-slate-200">{formatDate(publishedApp.updated_at)}</p></div>
+              {downloadStats && <div className="md:col-span-2"><p className="text-xs uppercase tracking-wide text-slate-500">Luma Store downloads · all versions</p><div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">{([["Today",downloadStats.today],["This month",downloadStats.this_month],["This year",downloadStats.this_year],["Total",downloadStats.total]] as const).map(([label,value])=><div key={label} className="rounded-xl border border-slate-800 bg-slate-950/45 p-3"><p className="text-xs text-slate-500">{label}</p><p className="mt-1 text-xl font-bold text-white">{Number(value).toLocaleString()}</p></div>)}</div></div>}
               <div className="md:col-span-2"><p className="text-xs uppercase tracking-wide text-slate-500">Anti-Features</p><div className="mt-2 flex flex-wrap gap-2">{antiFeatures.length ? antiFeatures.map((item) => <span key={item} className="rounded-full border border-amber-700/50 bg-amber-950/30 px-2.5 py-1 text-xs text-amber-200">{item}</span>) : <span className="text-sm text-slate-400">No Anti-Features detected or recorded.</span>}</div></div>
             </div>
           ) : <p className="p-5 text-sm text-slate-400">The submission is approved, but no matching published store record was found yet.</p>}
@@ -239,6 +252,7 @@ export default function SubmissionDetailsPage() {
           </div>
         </section>
       </div>
-\n    </div>
+
+    </div>
   );
 }

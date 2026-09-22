@@ -77,7 +77,7 @@ export default function AuthNav() {
           Discover
         </Link>
 
-        {!loading && user && isAccountUser && <Link href="/account" className="inline-flex rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-indigo-500/10 hover:text-indigo-200">Account</Link>}
+        {!loading && user && isAccountUser && <Link href="/dashboard" className="inline-flex rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-indigo-500/10 hover:text-indigo-200">Dashboard</Link>}
 
         {!loading && user && !isAccountUser && (
           <Link

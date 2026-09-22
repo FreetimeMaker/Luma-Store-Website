@@ -92,7 +92,7 @@ export default function HomePage() {
 
             <div className="mt-7 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-400">
               <span className="inline-flex items-center gap-2"><span className="text-emerald-300">✓</span> Android apps</span>
-              <span className="inline-flex items-center gap-2"><span className="text-emerald-300">✓</span> Open & closed source</span>
+              <span className="inline-flex items-center gap-2"><span className="text-emerald-300">✓</span> Open-source apps</span>
               <span className="inline-flex items-center gap-2"><span className="text-emerald-300">✓</span> Detailed app pages</span>
             </div>
           </div>

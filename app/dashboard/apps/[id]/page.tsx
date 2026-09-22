@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import React, { FormEvent, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import SecurityScanPanel from "./SecurityScanPanel";
 
@@ -29,14 +29,6 @@ type Submission = {
   ant_features: unknown;
 };
 
-type ReviewComment = {
-  id: string;
-  submission_id: string;
-  user_id: string;
-  body: string;
-  created_at: string;
-};
-
 type VersionRow = {
   id: string;
   version: string | null;
@@ -58,7 +50,7 @@ type SecurityScan = {
   created_at: string;
 };
 
-type PublishedApp = {
+type DownloadStats = { app_id: string; total: number; today: number; this_month: number; this_year: number };\n\ntype PublishedApp = {
   id: string;
   name: string;
   short_description: string | null;
@@ -96,14 +88,10 @@ export default function SubmissionDetailsPage() {
   const params = useParams<{ id: string }>();
   const submissionId = params.id;
   const supabase = useMemo(() => createClient(), []);
-  const [userId, setUserId] = useState<string | null>(null);
   const [submission, setSubmission] = useState<Submission | null>(null);
-  const [comments, setComments] = useState<ReviewComment[]>([]);
   const [versions, setVersions] = useState<VersionRow[]>([]);
   const [scan, setScan] = useState<SecurityScan | null>(null);
-  const [publishedApp, setPublishedApp] = useState<PublishedApp | null>(null);
-  const [comment, setComment] = useState("");
-  const [sendingComment, setSendingComment] = useState(false);
+  const [publishedApp, setPublishedApp] = useState<PublishedApp | null>(null);\n  const [downloadStats, setDownloadStats] = useState<DownloadStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -116,7 +104,6 @@ export default function SubmissionDetailsPage() {
       setLoading(false);
       return;
     }
-    setUserId(user.id);
 
     const { data: submissionData, error: submissionError } = await supabase
       .from("luma_submissions")
@@ -165,7 +152,7 @@ export default function SubmissionDetailsPage() {
           .eq("package_name", currentSubmission.package_name)
           .maybeSingle();
       }
-      if (!publishedResult.error) setPublishedApp((publishedResult.data as PublishedApp | null) ?? null);
+      if (!publishedResult.error) {\n        const published = (publishedResult.data as PublishedApp | null) ?? null;\n        setPublishedApp(published);\n        if (published?.id) {\n          const { data: statsRows } = await supabase.rpc("get_my_luma_download_stats");\n          const stats = ((statsRows ?? []) as DownloadStats[]).find((row) => row.app_id === published.id) ?? null;\n          setDownloadStats(stats);\n        }\n      }
     }
 
     setLoading(false);
@@ -175,27 +162,7 @@ export default function SubmissionDetailsPage() {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submissionId, supabase]);
-
-  async function submitComment(event: FormEvent) {
-    event.preventDefault();
-    const body = comment.trim();
-    if (!body || !userId) return;
-    setSendingComment(true);
-    const { data, error: insertError } = await supabase
-      .from("luma_review_comments")
-      .insert({ submission_id: submissionId, user_id: userId, body })
-      .select("id,submission_id,user_id,body,created_at")
-      .single();
-    if (insertError) {
-      setError(`Comment could not be sent: ${insertError.message}`);
-    } else if (data) {
-      setComments((items) => [...items, data as ReviewComment]);
-      setComment("");
-    }
-    setSendingComment(false);
-  }
-
-  if (loading) return <div className={`${cardClass} mx-auto max-w-6xl p-8 text-center text-slate-400`}>Loading app details…</div>;
+\n  if (loading) return <div className={`${cardClass} mx-auto max-w-6xl p-8 text-center text-slate-400`}>Loading app details…</div>;
   if (error && !submission) return <div className={`${cardClass} mx-auto max-w-6xl p-8`}><p className="text-red-300">{error}</p><Link href="/dashboard" className="mt-5 inline-flex rounded-xl bg-slate-800 px-4 py-2 text-sm text-white">Back to dashboard</Link></div>;
   if (!submission) return null;
 
@@ -249,7 +216,7 @@ export default function SubmissionDetailsPage() {
               <div><p className="text-xs uppercase tracking-wide text-slate-500">Published version</p><p className="mt-1 text-lg font-semibold text-white">{publishedApp.version || "—"} {publishedApp.version_code ? `(code ${publishedApp.version_code})` : ""}</p></div>
               <div><p className="text-xs uppercase tracking-wide text-slate-500">License</p><p className="mt-1 text-slate-200">{publishedApp.license_type || submission.license_type || "—"}</p></div>
               <div><p className="text-xs uppercase tracking-wide text-slate-500">Repository</p>{repoUrl ? <a href={repoUrl} target="_blank" rel="noopener noreferrer" className="mt-1 block break-all text-indigo-300 hover:text-indigo-200">{repoUrl}</a> : <p className="mt-1 text-slate-400">—</p>}</div>
-              <div><p className="text-xs uppercase tracking-wide text-slate-500">Last published update</p><p className="mt-1 text-slate-200">{formatDate(publishedApp.updated_at)}</p></div>
+              <div><p className="text-xs uppercase tracking-wide text-slate-500">Last published update</p><p className="mt-1 text-slate-200">{formatDate(publishedApp.updated_at)}</p></div>\n              {downloadStats && <div className="md:col-span-2"><p className="text-xs uppercase tracking-wide text-slate-500">Luma Store downloads · all versions</p><div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">{([["Today",downloadStats.today],["This month",downloadStats.this_month],["This year",downloadStats.this_year],["Total",downloadStats.total]] as const).map(([label,value])=><div key={label} className="rounded-xl border border-slate-800 bg-slate-950/45 p-3"><p className="text-xs text-slate-500">{label}</p><p className="mt-1 text-xl font-bold text-white">{Number(value).toLocaleString()}</p></div>)}</div></div>}
               <div className="md:col-span-2"><p className="text-xs uppercase tracking-wide text-slate-500">Anti-Features</p><div className="mt-2 flex flex-wrap gap-2">{antiFeatures.length ? antiFeatures.map((item) => <span key={item} className="rounded-full border border-amber-700/50 bg-amber-950/30 px-2.5 py-1 text-xs text-amber-200">{item}</span>) : <span className="text-sm text-slate-400">No Anti-Features detected or recorded.</span>}</div></div>
             </div>
           ) : <p className="p-5 text-sm text-slate-400">The submission is approved, but no matching published store record was found yet.</p>}
@@ -272,23 +239,6 @@ export default function SubmissionDetailsPage() {
           </div>
         </section>
       </div>
-
-      <section className={`${cardClass} overflow-hidden`}>
-        <div className="border-b border-slate-800 px-5 py-4"><h2 className="font-semibold text-white">Legacy review comments</h2><p className="mt-1 text-xs text-slate-500">Comments from the previous manual-review workflow are kept as legacy history.</p></div>
-        <div className="space-y-3 p-5">
-          {comments.length === 0 ? <p className="rounded-xl border border-dashed border-slate-800 bg-slate-950/30 p-4 text-sm text-slate-500">No legacy review comments.</p> : comments.map((item) => (
-            <div key={item.id} className={`rounded-xl border p-4 ${item.user_id === userId ? "border-indigo-800/40 bg-indigo-950/20" : "border-slate-800 bg-slate-950/40"}`}>
-              <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{item.user_id === userId ? "You" : "Reviewer"}</p><p className="text-xs text-slate-600">{formatDate(item.created_at)}</p></div>
-              <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-slate-300">{item.body}</p>
-            </div>
-          ))}
-          <form onSubmit={submitComment} className="pt-2">
-            <label className="mb-2 block text-sm font-medium text-slate-300">Add comment</label>
-            <textarea value={comment} onChange={(event) => setComment(event.target.value)} rows={4} maxLength={4000} placeholder="Add a note to the legacy review thread…" className="w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" />
-            <div className="mt-3 flex justify-end"><button type="submit" disabled={sendingComment || !comment.trim()} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40">{sendingComment ? "Sending…" : "Send comment"}</button></div>
-          </form>
-        </div>
-      </section>
-    </div>
+\n    </div>
   );
 }

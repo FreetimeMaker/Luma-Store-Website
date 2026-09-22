@@ -41,7 +41,6 @@ type StoreApp = {
   opencollective: string | null;
   bitcoin: string | null;
   litecoin: string | null;
-  closed_source: boolean;
   categories: string[];
   localized_metadata: JsonValue;
 };

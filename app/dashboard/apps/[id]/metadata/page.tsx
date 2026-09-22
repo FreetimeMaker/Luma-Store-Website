@@ -13,7 +13,6 @@ type AppMetadata = {
   status: SubmissionStatus;
   category: string | null;
   categories: string[] | null;
-  closed_source: boolean | null;
   author_name: string | null;
   author_email: string | null;
   author_website: string | null;
@@ -52,7 +51,6 @@ export default function AppMetadataPage() {
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
     categories: [] as string[],
-    closed_source: false,
     author_name: "",
     author_email: "",
     author_website: "",
@@ -82,7 +80,7 @@ export default function AppMetadataPage() {
       const [{ data, error: loadError }, { data: categoryData, error: categoryError }] = await Promise.all([
         supabase
           .from("luma_submissions")
-          .select("id,name,status,category,categories,closed_source,author_name,author_email,author_website,website_url,source_code_url,issue_tracker_url,translation_url,changelog_url,donate_url,liberapay,opencollective,bitcoin,litecoin")
+          .select("id,name,status,category,categories,author_name,author_email,author_website,website_url,source_code_url,issue_tracker_url,translation_url,changelog_url,donate_url,liberapay,opencollective,bitcoin,litecoin")
           .eq("id", id)
           .eq("user_id", user.id)
           .single(),
@@ -111,7 +109,6 @@ export default function AppMetadataPage() {
       setApp(row);
       setForm({
         categories: selectedCategories,
-        closed_source: Boolean(row.closed_source),
         author_name: row.author_name || "",
         author_email: row.author_email || "",
         author_website: row.author_website || "",
@@ -131,7 +128,7 @@ export default function AppMetadataPage() {
     void load();
   }, [id, supabase]);
 
-  function setField(field: Exclude<keyof typeof form, "categories">, value: string | boolean) {
+  function setField(field: Exclude<keyof typeof form, "categories">, value: string) {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
@@ -158,14 +155,13 @@ export default function AppMetadataPage() {
       .update({
         category: form.categories[0],
         categories: form.categories,
-        closed_source: form.closed_source,
         author_name: clean(form.author_name),
         author_email: clean(form.author_email),
         author_website: clean(form.author_website),
         website_url: clean(form.website_url),
-        source_code_url: form.closed_source ? null : clean(form.source_code_url),
-        repo_url: form.closed_source ? null : clean(form.source_code_url),
-        license_type: form.closed_source ? "Proprietary" : undefined,
+        source_code_url: clean(form.source_code_url),
+        repo_url: clean(form.source_code_url),
+        closed_source: false,
         issue_tracker_url: clean(form.issue_tracker_url),
         translation_url: clean(form.translation_url),
         changelog_url: clean(form.changelog_url),
@@ -223,21 +219,13 @@ export default function AppMetadataPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-white">Source model</h2>
-          <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-slate-700 bg-slate-950/40 p-4">
-            <input type="checkbox" checked={form.closed_source} onChange={(e) => setField("closed_source", e.target.checked)} className="mt-1 h-4 w-4" />
-            <span><span className="block font-medium text-white">Closed-source app</span><span className="mt-1 block text-sm text-slate-400">When enabled, Luma Store does not publish a source-code or repository URL for this app.</span></span>
-          </label>
-        </section>
-
-        <section>
           <h2 className="text-lg font-semibold text-white">Author & project</h2>
           <div className="mt-4 grid gap-5 md:grid-cols-2">
             <div><label className="mb-2 block text-sm text-slate-300">Author name</label><input value={form.author_name} onChange={(e) => setField("author_name", e.target.value)} className={fieldClass} /></div>
             <div><label className="mb-2 block text-sm text-slate-300">Author email</label><input type="email" value={form.author_email} onChange={(e) => setField("author_email", e.target.value)} className={fieldClass} /></div>
             <div><label className="mb-2 block text-sm text-slate-300">Author website</label><input type="url" value={form.author_website} onChange={(e) => setField("author_website", e.target.value)} className={fieldClass} /></div>
             <div><label className="mb-2 block text-sm text-slate-300">App website</label><input type="url" value={form.website_url} onChange={(e) => setField("website_url", e.target.value)} className={fieldClass} /></div>
-            {!form.closed_source && <div className="md:col-span-2"><label className="mb-2 block text-sm text-slate-300">Source code URL</label><input type="url" value={form.source_code_url} onChange={(e) => setField("source_code_url", e.target.value)} className={fieldClass} placeholder="https://github.com/owner/repo" /></div>}
+            <div className="md:col-span-2"><label className="mb-2 block text-sm text-slate-300">Source code URL</label><input type="url" required value={form.source_code_url} onChange={(e) => setField("source_code_url", e.target.value)} className={fieldClass} placeholder="https://github.com/owner/repo" /></div>
           </div>
         </section>
 

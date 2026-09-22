@@ -16,7 +16,6 @@ type StoreApp = {
   license_type: string | null;
   subcategory: string | null;
   categories: string[];
-  closed_source: boolean;
   updated_at: string | null;
   [key: string]: unknown;
 };
@@ -37,7 +36,6 @@ export default function DiscoverPage() {
   const [search, setSearch] = useState("");
   const [license, setLicense] = useState("all");
   const [category, setCategory] = useState("all");
-  const [sourceType, setSourceType] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -106,17 +104,12 @@ export default function DiscoverPage() {
       const appCategories = Array.isArray(app.categories) ? app.categories : [];
       const matchesLicense = license === "all" || app.license_type === license;
       const matchesCategory = category === "all" || appCategories.includes(category) || app.subcategory === category;
-      const matchesSource =
-        sourceType === "all" ||
-        (sourceType === "open" && !app.closed_source) ||
-        (sourceType === "closed" && app.closed_source);
-
-      if (!matchesLicense || !matchesCategory || !matchesSource) return false;
+      if (!matchesLicense || !matchesCategory) return false;
       if (!query) return true;
 
       return JSON.stringify(app).toLowerCase().includes(query);
     });
-  }, [apps, category, license, search, sourceType]);
+  }, [apps, category, license, search]);
 
   return (
     <div className="glass-page mx-auto max-w-6xl space-y-8">
@@ -131,7 +124,7 @@ export default function DiscoverPage() {
           </p>
         </div>
 
-        <div className="mt-7 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
+        <div className="mt-7 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto]">
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
@@ -149,11 +142,6 @@ export default function DiscoverPage() {
             {licenses.map((item) => <option key={item} value={item}>{item}</option>)}
           </select>
 
-          <select value={sourceType} onChange={(event) => setSourceType(event.target.value)} className="min-h-12 rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-200">
-            <option value="all">All source types</option>
-            <option value="open">Open source</option>
-            <option value="closed">Closed source</option>
-          </select>
         </div>
       </section>
 
@@ -209,10 +197,7 @@ export default function DiscoverPage() {
 
                   <div className="mt-5 flex flex-wrap gap-2 text-xs">
                     {app.version && <span className="rounded-full border border-slate-700 px-2.5 py-1 text-slate-300">v{app.version}</span>}
-                    {app.license_type && <span className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-indigo-200">{app.license_type}</span>}
-                    <span className={`rounded-full px-2.5 py-1 ${app.closed_source ? "bg-amber-500/10 text-amber-200" : "bg-emerald-500/10 text-emerald-200"}`}>
-                      {app.closed_source ? "Closed source" : "Open source"}
-                    </span>
+                    {app.license_type && <span className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-indigo-200">{app.license_type}</span>}\n                    <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-emerald-200">Open source</span>
                   </div>
 
                   <div className="mt-5 border-t border-slate-800 pt-4 text-right text-xs font-medium text-indigo-300 group-hover:text-indigo-200">

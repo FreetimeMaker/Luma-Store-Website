@@ -124,12 +124,14 @@ export default function SubmissionDetailsPage() {
     const currentSubmission = submissionData as Submission;
     setSubmission(currentSubmission);
 
-    const [commentsResult, scanResult] = await Promise.all([
-      supabase.from("luma_review_comments").select("id,submission_id,user_id,body,created_at").eq("submission_id", submissionId).order("created_at", { ascending: true }),
-      supabase.from("luma_security_scans").select("id,status,risk_level,findings,permissions,scanned_at,created_at").eq("submission_id", submissionId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
-    ]);
+    const scanResult = await supabase
+      .from("luma_security_scans")
+      .select("id,status,risk_level,findings,permissions,scanned_at,created_at")
+      .eq("submission_id", submissionId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    if (!commentsResult.error) setComments((commentsResult.data ?? []) as ReviewComment[]);
     if (!scanResult.error) setScan((scanResult.data as SecurityScan | null) ?? null);
 
     if (currentSubmission.package_name) {

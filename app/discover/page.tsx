@@ -36,6 +36,7 @@ export default function DiscoverPage() {
   const [search, setSearch] = useState("");
   const [license, setLicense] = useState("all");
   const [category, setCategory] = useState("all");
+  const [developer, setDeveloper] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -97,6 +98,18 @@ export default function DiscoverPage() {
     [apps],
   );
 
+  const developers = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          apps
+            .map((app) => app.developer_name?.trim())
+            .filter((value): value is string => Boolean(value)),
+        ),
+      ).sort((a, b) => a.localeCompare(b)),
+    [apps],
+  );
+
   const filteredApps = useMemo(() => {
     const query = search.trim().toLowerCase();
 
@@ -104,12 +117,13 @@ export default function DiscoverPage() {
       const appCategories = Array.isArray(app.categories) ? app.categories : [];
       const matchesLicense = license === "all" || app.license_type === license;
       const matchesCategory = category === "all" || appCategories.includes(category) || app.subcategory === category;
-      if (!matchesLicense || !matchesCategory) return false;
+      const matchesDeveloper = developer === "all" || app.developer_name === developer;
+      if (!matchesLicense || !matchesCategory || !matchesDeveloper) return false;
       if (!query) return true;
 
       return JSON.stringify(app).toLowerCase().includes(query);
     });
-  }, [apps, category, license, search]);
+  }, [apps, category, developer, license, search]);
 
   return (
     <div className="glass-page mx-auto max-w-6xl space-y-8">
@@ -124,7 +138,7 @@ export default function DiscoverPage() {
           </p>
         </div>
 
-        <div className="mt-7 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto]">
+        <div className="mt-7 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
@@ -135,6 +149,11 @@ export default function DiscoverPage() {
           <select value={category} onChange={(event) => setCategory(event.target.value)} className="min-h-12 rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-200">
             <option value="all">All categories</option>
             {categories.map((item) => <option key={item} value={item}>{item}</option>)}
+          </select>
+
+          <select value={developer} onChange={(event) => setDeveloper(event.target.value)} className="min-h-12 rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-200">
+            <option value="all">All developers</option>
+            {developers.map((item) => <option key={item} value={item}>{item}</option>)}
           </select>
 
           <select value={license} onChange={(event) => setLicense(event.target.value)} className="min-h-12 rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-200">

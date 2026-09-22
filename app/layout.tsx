@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
-import AuthNav from "./components/AuthNav";\nimport PwaRegistration from "./components/PwaRegistration";
+import AuthNav from "./components/AuthNav";
+import PwaRegistration from "./components/PwaRegistration";
 
 export const metadata: Metadata = {
   title: {
@@ -25,7 +26,8 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="h-full antialiased">
-      <body className="liquid-shell min-h-full text-slate-100">\n        <PwaRegistration />
+      <body className="liquid-shell min-h-full text-slate-100">
+        <PwaRegistration />
         <header className="liquid-nav sticky top-0 z-50 w-full border-b px-4 py-3 sm:px-6">
           <AuthNav />
         </header>

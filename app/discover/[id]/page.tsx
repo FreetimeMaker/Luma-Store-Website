@@ -90,10 +90,7 @@ function Field({ label, value, mono = false }: { label: string; value: string | 
     <div className="rounded-xl border border-slate-800 bg-slate-950/45 p-3">
       <dt className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{label}</dt>
       <dd className={`mt-1 break-words text-sm text-slate-200 ${mono ? "font-mono text-xs" : ""}`}>{String(value)}</dd>
-      {androidQrUrl&&<div role="presentation" onMouseDown={(event)=>{if(event.target===event.currentTarget)setAndroidQrUrl(null)}} className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-md"><div role="dialog" aria-modal="true" aria-labelledby="android-download-title" className="glass-panel relative w-full max-w-sm p-6 text-center shadow-2xl"><button type="button" onClick={()=>setAndroidQrUrl(null)} aria-label="Close" className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-lg text-slate-300 hover:bg-white/10 hover:text-white">×</button><p className="text-xs font-semibold uppercase tracking-[.16em] text-indigo-300">Android download</p><h2 id="android-download-title" className="mt-2 text-2xl font-bold text-white">Install on Android</h2><p className="mt-2 text-sm leading-6 text-slate-400">Scan this QR code with your Android device. The download will start through Luma Store.</p><div className="mx-auto mt-5 w-fit rounded-3xl bg-white p-3 shadow-xl"><img src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(androidQrUrl)}`} alt={`QR code to download ${name} for Android`} width={240} height={240} className="h-52 w-52 sm:h-56 sm:w-56"/></div><a href={androidQrUrl} className="mt-5 inline-flex text-xs text-slate-500 hover:text-indigo-300">Download on this device instead</a></div></div>}
-    </div>
-  );
-}
+    </div>\n  );\n}
 function fundingHref(value: string | null, provider: "liberapay" | "opencollective") { if (!value) return null; if (/^https?:\/\//i.test(value)) return value; return provider === "liberapay" ? `https://liberapay.com/${value.replace(/^@/, "")}/` : `https://opencollective.com/${value.replace(/^@/, "")}`; }
 
 function LinkChip({ href, label, onClick }: { href: string | null; label: string; onClick?:()=>void }) {

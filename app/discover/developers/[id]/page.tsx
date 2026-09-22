@@ -32,7 +32,9 @@ export default function DiscoverDeveloperPage() {
     let cancelled = false;
     async function load() {
       setLoading(true);
-      const identifier = decodeURIComponent(params.id);\n      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(identifier);\n      const result = await supabase.from("store_apps").select("id,name,short_description,description,developer_name,developer_id,icon_url,version,package_name,license_type,categories,updated_at").eq(isUuid ? "developer_id" : "developer_name", identifier).order("updated_at", { ascending: false });
+      const identifier = decodeURIComponent(params.id);
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(identifier);
+      const result = await supabase.from("store_apps").select("id,name,short_description,description,developer_name,developer_id,icon_url,version,package_name,license_type,categories,updated_at").eq(isUuid ? "developer_id" : "developer_name", identifier).order("updated_at", { ascending: false });
       if (cancelled) return;
       if (result.error) { setError(result.error.message); setApps([]); }
       else {

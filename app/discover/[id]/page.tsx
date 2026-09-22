@@ -95,13 +95,14 @@ function Field({ label, value, mono = false }: { label: string; value: string | 
 }
 function fundingHref(value: string | null, provider: "liberapay" | "opencollective") { if (!value) return null; if (/^https?:\/\//i.test(value)) return value; return provider === "liberapay" ? `https://liberapay.com/${value.replace(/^@/, "")}/` : `https://opencollective.com/${value.replace(/^@/, "")}`; }
 
-function LinkChip({ href, label }: { href: string | null; label: string }) {
+function LinkChip({ href, label, onClick }: { href: string | null; label: string; onClick?:()=>void }) {
   if (!href) return null;
   return (
     <a
       href={href}
       target="_blank"
       rel="noreferrer"
+      onClick={onClick}
       className="inline-flex items-center rounded-lg border border-indigo-400/20 bg-indigo-500/10 px-3 py-2 text-xs font-medium text-indigo-200 transition hover:bg-indigo-500/20 hover:text-white"
     >
       {label} ↗
@@ -131,6 +132,7 @@ export default function DiscoverAppPage() {
   useEffect(() => { setPageUrl(window.location.href); }, [params.id]);
 
   async function shareApp() { if (!pageUrl || !app) return; const data={title:app.name || "Luma Store app",text:app.short_description || "View this app on Luma Store",url:pageUrl}; if(navigator.share){try{await navigator.share(data);return}catch(error){if(error instanceof DOMException&&error.name==="AbortError")return}} await navigator.clipboard.writeText(pageUrl);setCopied(true);window.setTimeout(()=>setCopied(false),1800); }
+  function trackFunding(provider:"donate"|"liberapay"|"opencollective"|"bitcoin"|"litecoin"){if(!app?.developer_id)return;void supabase.from("luma_funding_clicks").insert({developer_id:app.developer_id,app_id:app.id,provider});}
   async function copyAppLink(){if(!pageUrl)return;await navigator.clipboard.writeText(pageUrl);setCopied(true);window.setTimeout(()=>setCopied(false),1800);}
 
   useEffect(() => {
@@ -351,9 +353,9 @@ export default function DiscoverAppPage() {
           <h2 className="text-xl font-semibold text-white">Support the developer</h2>
           <p className="mt-1 text-sm text-slate-400">These funding methods belong to {app.developer_name || "this developer"} and apply to all of their apps.</p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <LinkChip href={funding.donate_url} label="Donate" />
-            <LinkChip href={fundingHref(funding.liberapay, "liberapay")} label="Liberapay" />
-            <LinkChip href={fundingHref(funding.opencollective, "opencollective")} label="OpenCollective" />
+            <LinkChip href={funding.donate_url} label="Donate" onClick={()=>trackFunding("donate")} />
+            <LinkChip href={fundingHref(funding.liberapay, "liberapay")} label="Liberapay" onClick={()=>trackFunding("liberapay")} />
+            <LinkChip href={fundingHref(funding.opencollective, "opencollective")} label="OpenCollective" onClick={()=>trackFunding("opencollective")} />
           </div>
           {(funding.bitcoin || funding.litecoin) && <dl className="mt-4 grid gap-3 sm:grid-cols-2"><Field label="Bitcoin" value={funding.bitcoin} mono /><Field label="Litecoin" value={funding.litecoin} mono /></dl>}
         </section>

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-type SubmissionStatus = "Draft" | "Pending" | "In Review" | "Changes Requested" | "Approved" | "Rejected";
+type SubmissionStatus = "Draft" | "Pending" | "In Review" | "Changes Requested" | "Approved" | "Rejected" | "Archived";
 
 type SubmissionBody = {
   submission?: Record<string, unknown>;
@@ -136,5 +136,36 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Luma submission failed:", error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "Submission failed." }, { status: 500 });
+  }
+}
+
+
+export async function DELETE(request: Request) {
+  try {
+    const authorization = request.headers.get("authorization");
+    if (!authorization?.startsWith("Bearer ")) return NextResponse.json({ error: "Authentication is required." }, { status: 401 });
+    const supabase = createAdminClient();
+    const { data: authData, error: authError } = await supabase.auth.getUser(authorization.slice(7));
+    if (authError || !authData.user) return NextResponse.json({ error: "Your Luma Store session is invalid or expired." }, { status: 401 });
+    const id = new URL(request.url).searchParams.get("id");
+    if (!id) return NextResponse.json({ error: "Submission id is required." }, { status: 400 });
+    const { data: submission, error } = await supabase.from("luma_submissions").select("id,status,store_app_id").eq("id", id).eq("user_id", authData.user.id).single();
+    if (error || !submission) return NextResponse.json({ error: "Submission not found." }, { status: 404 });
+    if (submission.status === "Approved") {
+      if (!submission.store_app_id) return NextResponse.json({ error: "Published app could not be found." }, { status: 409 });
+      const now = new Date().toISOString();
+      const { error: archiveError } = await supabase.from("store_apps").update({ archived_at: now, updated_at: now }).eq("id", submission.store_app_id).eq("developer_id", authData.user.id);
+      if (archiveError) throw archiveError;
+      const { error: statusError } = await supabase.from("luma_submissions").update({ status: "Archived", status_updated_at: now }).eq("id", id).eq("user_id", authData.user.id);
+      if (statusError) throw statusError;
+      return NextResponse.json({ archived: true });
+    }
+    if (!["Draft","Pending","In Review","Changes Requested","Rejected"].includes(submission.status)) return NextResponse.json({ error: "This submission cannot be deleted." }, { status: 409 });
+    const { error: deleteError } = await supabase.from("luma_submissions").delete().eq("id", id).eq("user_id", authData.user.id);
+    if (deleteError) throw deleteError;
+    return NextResponse.json({ deleted: true });
+  } catch (error) {
+    console.error("Luma submission removal failed:", error);
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Action failed." }, { status: 500 });
   }
 }

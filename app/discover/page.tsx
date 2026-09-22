@@ -161,10 +161,6 @@ export default function DiscoverPage() {
             aria-label="Search apps"
             className="sm:col-span-2 lg:col-span-3 min-h-12 w-full rounded-2xl border border-white/10 bg-slate-950/45 px-4 py-3 text-sm text-white shadow-inner shadow-black/10 backdrop-blur-xl outline-none placeholder:text-slate-500 transition focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/20"
           />
-          <div className="hidden" aria-hidden="true"
-            "min-h-12 w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/20"
-          />
-
           <select value={category} onChange={(event) => setCategory(event.target.value)} className="min-h-12 rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-200">
             <option value="all">All categories</option>
             {categories.map((item) => <option key={item} value={item}>{item}</option>)}

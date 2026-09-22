@@ -325,7 +325,7 @@ export default function LumaDeveloperPortal() {
         version_code: isAndroid && /^\d+$/.test(appVersionCode.trim()) ? Number(appVersionCode) : null,
         website_url: websiteUrl.trim() || null, issue_tracker_url: issueTrackerUrl.trim() || null, translation_url: translationUrl.trim() || null,
         author_name: authorName.trim() || null, author_email: authorEmail.trim() || null, author_website: authorWebsite.trim() || null,
-        donate_url: donateUrl.trim() || null, liberapay: liberapay.trim() || null, opencollective: opencollective.trim() || null, bitcoin: bitcoin.trim() || null, litecoin: litecoin.trim() || null,
+
       };
       const response = await fetch("/api/luma/submissions", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify({ submission, editingId: draftId, draft: true, draftStep }) });
       const result = await response.json() as { submission?: LumaSubmissionRow; error?: string };

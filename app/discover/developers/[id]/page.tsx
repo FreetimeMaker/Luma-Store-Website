@@ -20,11 +20,14 @@ type StoreApp = {
   updated_at: string | null;
 };
 
+type DeveloperFunding = { donate_url: string | null; liberapay: string | null; opencollective: string | null; bitcoin: string | null; litecoin: string | null; };
+
 export default function DiscoverDeveloperPage() {
   const params = useParams<{ id: string }>();
   const supabase = useMemo(() => createClient(), []);
   const [apps, setApps] = useState<StoreApp[]>([]);
   const [totalDownloads, setTotalDownloads] = useState<number | null>(null);
+  const [funding, setFunding] = useState<DeveloperFunding | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,6 +43,8 @@ export default function DiscoverDeveloperPage() {
       else {
         const rows = (result.data ?? []) as StoreApp[];
         setApps(rows);
+        const developerId = rows.find((app) => app.developer_id)?.developer_id;
+        if (developerId) { const fundingResult = await supabase.from("luma_developer_funding").select("donate_url,liberapay,opencollective,bitcoin,litecoin").eq("developer_id", developerId).maybeSingle(); if (!cancelled) setFunding((fundingResult.data as DeveloperFunding | null) ?? null); }
         const ids = rows.map((app) => app.id);
         if (ids.length) {
           const events = await supabase.from("luma_download_events").select("id", { count: "exact", head: true }).in("app_id", ids);
@@ -63,6 +68,7 @@ export default function DiscoverDeveloperPage() {
       <h1 className="mt-3 text-3xl font-bold text-white sm:text-4xl">{developerName}</h1>
       <p className="mt-2 text-sm text-slate-400">{apps.length} published {apps.length === 1 ? "app" : "apps"} · {totalDownloads === null ? "—" : totalDownloads.toLocaleString()} total downloads</p>
     </section>
+    {funding && (funding.donate_url || funding.liberapay || funding.opencollective || funding.bitcoin || funding.litecoin) && <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6"><h2 className="text-xl font-semibold text-white">Support {developerName}</h2><div className="mt-4 flex flex-wrap gap-2">{funding.donate_url&&<a href={funding.donate_url} target="_blank" rel="noreferrer" className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white">Donate ↗</a>}{funding.liberapay&&<a href={funding.liberapay} target="_blank" rel="noreferrer" className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-200">Liberapay ↗</a>}{funding.opencollective&&<a href={funding.opencollective} target="_blank" rel="noreferrer" className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-200">OpenCollective ↗</a>}</div>{(funding.bitcoin||funding.litecoin)&&<div className="mt-4 grid gap-3 sm:grid-cols-2">{funding.bitcoin&&<div className="rounded-xl border border-slate-800 bg-slate-950/45 p-3"><p className="text-xs text-slate-500">Bitcoin</p><p className="mt-1 break-all font-mono text-xs text-slate-200">{funding.bitcoin}</p></div>}{funding.litecoin&&<div className="rounded-xl border border-slate-800 bg-slate-950/45 p-3"><p className="text-xs text-slate-500">Litecoin</p><p className="mt-1 break-all font-mono text-xs text-slate-200">{funding.litecoin}</p></div>}</div>}</section>}
     <section><div className="mb-4"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Published apps</p><h2 className="mt-1 text-2xl font-bold text-white">Apps by {developerName}</h2></div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{apps.map((app) => { const name=app.name||app.package_name||"Untitled app"; return <Link key={app.id} href={`/discover/${encodeURIComponent(app.package_name || app.id)}`} className="group rounded-2xl border border-slate-800 bg-slate-900/60 p-5 transition hover:border-indigo-400/40 hover:bg-slate-900">
         <div className="flex items-start gap-4">{app.icon_url ? <img src={app.icon_url} alt={`${name} icon`} className="h-16 w-16 rounded-2xl border border-slate-700 bg-slate-950 object-cover" /> : <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-700 bg-slate-950 text-xl font-bold text-indigo-200">{name.slice(0,1).toUpperCase()}</div>}<div className="min-w-0"><h3 className="truncate font-semibold text-white group-hover:text-indigo-200">{name}</h3><p className="mt-1 text-xs text-slate-500">{app.version ? `Version ${app.version}` : app.package_name}</p></div></div>

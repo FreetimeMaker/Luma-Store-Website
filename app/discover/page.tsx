@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
@@ -20,7 +20,7 @@ type StoreApp = {
   updated_at: string | null;
   [key: string]: unknown;
 };
-type DiscoverMetric={app_id:string;total_downloads:number|string;recent_downloads:number|string;platforms:string[]};
+type DiscoverMetric={app_id:string;total_downloads:number|string;recent_downloads:number|string;platforms:string[]};\ntype RecentApp={id:string;name:string;package_name:string|null;icon_url:string|null};
 
 function appInitials(name: string) {
   return name
@@ -43,7 +43,7 @@ export default function DiscoverPage() {
   const [sort, setSort] = useState("trending");
   const [metrics, setMetrics] = useState<Record<string,DiscoverMetric>>({});
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);\n  const [recentApps,setRecentApps]=useState<RecentApp[]>([]);\n  const searchRef=useRef<HTMLInputElement>(null);\n\n  useEffect(()=>{try{setRecentApps(JSON.parse(localStorage.getItem("luma-recent-apps")||"[]"))}catch{}const keys=(event:KeyboardEvent)=>{const target=event.target as HTMLElement|null;if(target?.matches("input, textarea, select, [contenteditable=true]"))return;if(event.key==="/"||((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="k")){event.preventDefault();searchRef.current?.focus()}};window.addEventListener("keydown",keys);return()=>window.removeEventListener("keydown",keys)},[]);
 
   useEffect(() => {
     let cancelled = false;
@@ -123,7 +123,7 @@ export default function DiscoverPage() {
   const hasFilters = Boolean(search.trim()) || license !== "all" || category !== "all" || developer !== "all" || platform !== "all";
   const resetFilters = () => { setSearch(""); setLicense("all"); setCategory("all"); setDeveloper("all"); setPlatform("all"); };
 
-  const filteredApps = useMemo(() => {
+  const suggestions=useMemo(()=>{const q=search.trim().toLowerCase();if(!q)return [];return apps.filter(app=>(app.name||"").toLowerCase().includes(q)||(app.package_name||"").toLowerCase().includes(q)||(app.developer_name||"").toLowerCase().includes(q)).slice(0,5)},[apps,search]);\n  const trending=useMemo(()=>[...apps].sort((a,b)=>Number(metrics[b.id]?.recent_downloads||0)-Number(metrics[a.id]?.recent_downloads||0)).slice(0,5),[apps,metrics]);\n  const newThisWeek=useMemo(()=>apps.filter(a=>a.created_at&&Date.now()-new Date(a.created_at).getTime()<=7*86400000).slice(0,5),[apps]);\n  const recentlyUpdated=useMemo(()=>[...apps].sort((a,b)=>new Date(b.updated_at||0).getTime()-new Date(a.updated_at||0).getTime()).slice(0,5),[apps]);\n\n  const filteredApps = useMemo(() => {
     const query = search.trim().toLowerCase();
 
     const result=apps.filter((app) => {
@@ -159,7 +159,7 @@ export default function DiscoverPage() {
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search apps..."
             aria-label="Search apps"
-            className="sm:col-span-2 lg:col-span-3 min-h-12 w-full rounded-2xl border border-white/10 bg-slate-950/45 px-4 py-3 text-sm text-white shadow-inner shadow-black/10 backdrop-blur-xl outline-none placeholder:text-slate-500 transition focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/20"
+            className="min-h-12 w-full rounded-2xl border border-white/10 bg-slate-950/45 px-4 py-3 text-sm text-white shadow-inner shadow-black/10 backdrop-blur-xl outline-none placeholder:text-slate-500 transition focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/20"
           />
           <select value={category} onChange={(event) => setCategory(event.target.value)} className="min-h-12 rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-200">
             <option value="all">All categories</option>
@@ -253,3 +253,4 @@ export default function DiscoverPage() {
     </div>
   );
 }
+\nfunction Collection({title,apps}:{title:string;apps:StoreApp[]}){if(!apps.length)return null;return <section><h2 className="mb-3 text-lg font-semibold text-white">{title}</h2><div className="flex snap-x gap-3 overflow-x-auto pb-2">{apps.map(app=>{const name=app.name||app.package_name||"Untitled app";return <Link key={app.id} href={`/discover/${encodeURIComponent(app.package_name||app.id)}`} className="glass-action flex min-w-56 snap-start items-center gap-3 p-3"><div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-slate-900">{app.icon_url?<img src={app.icon_url} alt="" className="h-full w-full object-cover"/>:<span className="flex h-full items-center justify-center text-xs font-bold text-indigo-200">{appInitials(name)}</span>}</div><div className="min-w-0"><strong className="block truncate text-sm text-white">{name}</strong><span className="block truncate text-xs text-slate-500">{app.developer_name||app.package_name||"Unknown developer"}</span></div></Link>})}</div></section>}

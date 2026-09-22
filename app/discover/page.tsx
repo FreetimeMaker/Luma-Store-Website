@@ -50,6 +50,7 @@ export default function DiscoverPage() {
       const { data, error: loadError } = await supabase
         .from("store_apps")
         .select("*")
+        .is("archived_at", null)
         .order("updated_at", { ascending: false });
 
       if (cancelled) return;

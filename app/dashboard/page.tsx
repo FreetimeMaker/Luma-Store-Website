@@ -28,6 +28,7 @@ type AppSubmission = {
   status: SubmissionStatus;
   submittedAt: string;
   category: string;
+  categories: string[];
   licenseType: string;
   iconUrl: string;
   version: string;
@@ -62,6 +63,7 @@ type LumaSubmissionRow = {
   status: SubmissionStatus;
   submitted_at: string;
   category: string;
+  categories: unknown;
   license_type: string | null;
   closed_source: boolean | null;
   icon_url: string | null;
@@ -169,6 +171,7 @@ function rowToApp(item: LumaSubmissionRow): AppSubmission {
     status: item.status,
     submittedAt: item.submitted_at,
     category: item.category,
+    categories: asStringArray(item.categories).length ? asStringArray(item.categories) : [item.category],
     licenseType: item.license_type || "",
     iconUrl: item.icon_url || "",
     version: item.version || "",
@@ -256,7 +259,7 @@ export default function LumaDeveloperPortal() {
   const [step, setStep] = useState(1);
   const [appName, setAppName] = useState("");
   const [appLink, setAppLink] = useState("");
-  const [appCategory, setAppCategory] = useState<string>("System");
+  const [appCategories, setAppCategories] = useState<string[]>(["System"]);
   const [appLicenseType, setAppLicenseType] = useState("MIT");
   const [appIconUrl, setAppIconUrl] = useState("");
   const [iconPreviewError, setIconPreviewError] = useState(false);
@@ -354,7 +357,7 @@ export default function LumaDeveloperPortal() {
   }, [supabase]);
 
   const resetForm = () => {
-    setStep(1); setAppName(""); setAppLink(""); setAppCategory("System"); setAppLicenseType("MIT"); setAppIconUrl(""); setIconPreviewError(false);
+    setStep(1); setAppName(""); setAppLink(""); setAppCategories(["System"]); setAppLicenseType("MIT"); setAppIconUrl(""); setIconPreviewError(false);
     setAppVersion(""); setAppPlatform(""); setAppLinuxPackageBase(""); setAppDownloadUrl(""); setAppPackageName(""); setAppVersionCode("");
     setWebsiteUrl(""); setIssueTrackerUrl(""); setTranslationUrl(""); setAuthorName(""); setAuthorEmail(""); setAuthorWebsite("");
     setDonateUrl(""); setLiberapay(""); setOpencollective(""); setBitcoin(""); setLitecoin("");
@@ -365,7 +368,7 @@ export default function LumaDeveloperPortal() {
   const beginEdit = (app: AppSubmission) => {
     if (!(["Rejected", "Approved", "Changes Requested"] as SubmissionStatus[]).includes(app.status)) return;
     setEditingId(app.id); setEditingStatus(app.status); setAppName(app.name); setAppLink(app.repoUrl || app.link);
-    setAppCategory(FDROID_CATEGORIES.includes(app.category as typeof FDROID_CATEGORIES[number]) ? app.category : "System");
+    setAppCategories((app.categories?.length ? app.categories : [app.category]).filter((category) => FDROID_CATEGORIES.includes(category as typeof FDROID_CATEGORIES[number])));
     setAppLicenseType(app.licenseType || "MIT"); setAppIconUrl(app.iconUrl); setIconPreviewError(false); setAppVersion(app.version);
     setAppPlatform(app.platform === "Linux" ? "Linux" : app.platform === "Windows" ? "Windows" : app.platform === "Android" ? "Android" : "");
     setAppLinuxPackageBase(app.linuxPackageBase === "Debian-based" || app.linuxPackageBase === "RPM-based" ? app.linuxPackageBase : "");
@@ -417,7 +420,7 @@ export default function LumaDeveloperPortal() {
       if (isLinux && !appLinuxPackageBase) throw new Error("Linux submissions must specify Debian-based or RPM-based.");
       if (!appDownloadUrl.trim()) throw new Error("A download URL is required.");
       if (!validAndroidMetadata) throw new Error("Android apps require a valid package name and positive versionCode.");
-      if (!FDROID_CATEGORIES.includes(appCategory as typeof FDROID_CATEGORIES[number])) throw new Error("Please select a valid F-Droid category.");
+      if (!appCategories.length || appCategories.some((category) => !FDROID_CATEGORIES.includes(category as typeof FDROID_CATEGORIES[number]))) throw new Error("Please select at least one valid F-Droid category.");
       if (!appLicenseType) throw new Error("Please select an open-source license.");
       githubRepository(appLink);
       if (manualStoreMetadata && !manualMetadataValid) throw new Error("Manual store metadata requires complete English metadata and complete optional languages.");
@@ -445,7 +448,8 @@ export default function LumaDeveloperPortal() {
         link: appLink.trim(),
         repo_url: appLink.trim(),
         source_code_url: appLink.trim(),
-        category: appCategory,
+        category: appCategories[0],
+        categories: appCategories,
         subcategory: null,
         license_type: appLicenseType,
         closed_source: false,
@@ -540,7 +544,7 @@ export default function LumaDeveloperPortal() {
                   {isLinux && <div><label className="mb-2 block text-sm font-medium text-slate-300">Linux package base</label><select required value={appLinuxPackageBase} onChange={(e)=>setAppLinuxPackageBase(e.target.value as LinuxPackageBase)} className={fieldClass}><option value="">Select package base…</option><option value="Debian-based">Debian-based (.deb)</option><option value="RPM-based">RPM-based (.rpm)</option></select></div>}
                 </div>
                 <div className="grid gap-5 md:grid-cols-2">
-                  <div><label className="mb-2 block text-sm font-medium text-slate-300">F-Droid Category</label><select value={appCategory} onChange={(e)=>setAppCategory(e.target.value)} className={fieldClass}>{FDROID_CATEGORIES.map((category)=><option key={category}>{category}</option>)}</select></div>
+                  <div><label className="mb-2 block text-sm font-medium text-slate-300">F-Droid Categories</label><div className="grid gap-2 sm:grid-cols-2">{FDROID_CATEGORIES.map((category)=><label key={category} className="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-slate-200"><input type="checkbox" checked={appCategories.includes(category)} onChange={(e)=>setAppCategories((current)=>e.target.checked ? [...new Set([...current, category])] : current.filter((item)=>item!==category))} className="h-4 w-4 accent-indigo-500"/><span>{category}</span></label>)}</div><p className="mt-2 text-xs text-slate-500">Select all categories that apply.</p></div>
                   <div><label className="mb-2 block text-sm font-medium text-slate-300">Open-Source License</label><select required value={appLicenseType} onChange={(e)=>setAppLicenseType(e.target.value)} className={fieldClass}>{LICENSE_OPTIONS.map(([value,label])=><option key={value} value={value}>{label} ({value})</option>)}</select></div>
                 </div>
                 <div><label className="mb-2 block text-sm font-medium text-slate-300">App Icon URL</label><div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_180px]"><input type="url" required value={appIconUrl} onChange={(e)=>{setAppIconUrl(e.target.value);setIconPreviewError(false);}} className={fieldClass}/><div className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4 text-center"><div className="mx-auto flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-slate-700 bg-slate-900">{appIconUrl.trim()&&!iconPreviewError?<img src={appIconUrl.trim()} alt="App icon preview" className="h-full w-full object-cover" onError={()=>setIconPreviewError(true)}/>:<span className="text-xs text-slate-500">No icon</span>}</div></div></div></div>
@@ -572,7 +576,7 @@ export default function LumaDeveloperPortal() {
                 <div className="flex justify-between"><button type="button" onClick={()=>goToStep(1)} className="rounded-xl bg-slate-800 px-5 py-2.5 text-white">Back</button><button type="button" onClick={()=>{if(manualStoreMetadata&&manualMetadataValid){setFastlaneMetadata({title:closedTitle.trim(),shortDescription:closedShortDescription.trim(),fullDescription:closedFullDescription.trim(),changelog:closedChangelog.trim(),screenshots:closedScreenshots,locale:"en-US",branch:"manual"});setAppName(closedTitle.trim());} goToStep(3);}} disabled={manualStoreMetadata?!manualMetadataValid:!fastlaneMetadata} className="rounded-xl bg-indigo-600 px-5 py-2.5 text-white disabled:opacity-40">Continue</button></div>
               </div>}
 
-              {step === 3 && <div className="space-y-6"><div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-5"><dl className="grid gap-4 text-sm md:grid-cols-2"><div><dt className="text-slate-500">Title</dt><dd className="text-white">{fastlaneMetadata?.title}</dd></div><div><dt className="text-slate-500">Platform</dt><dd className="text-white">{appPlatform}{isLinux&&appLinuxPackageBase?` · ${appLinuxPackageBase}`:""}</dd></div><div><dt className="text-slate-500">Category</dt><dd className="text-white">{appCategory}</dd></div><div><dt className="text-slate-500">Source model</dt><dd className="text-white">Open source</dd></div><div><dt className="text-slate-500">License</dt><dd className="text-white">{appLicenseType}</dd></div><div><dt className="text-slate-500">Version</dt><dd className="text-white">{appVersion}</dd></div>{isAndroid&&<div><dt className="text-slate-500">Package</dt><dd className="break-all text-white">{appPackageName}</dd></div>}<div><dt className="text-slate-500">Author</dt><dd className="text-white">{authorName||"—"}</dd></div><div><dt className="text-slate-500">Website</dt><dd className="break-all text-white">{websiteUrl||"—"}</dd></div><div><dt className="text-slate-500">Donations</dt><dd className="text-white">{[donateUrl,liberapay,opencollective,bitcoin,litecoin].filter(Boolean).length} configured</dd></div></dl></div><div className="flex justify-between"><button type="button" onClick={()=>setStep(2)} className="rounded-xl bg-slate-800 px-5 py-2.5 text-white">Back</button><button type="submit" disabled={isSubmitting||!fastlaneMetadata} className="rounded-xl bg-emerald-600 px-5 py-2.5 font-medium text-white disabled:opacity-40">{isSubmitting?"Saving…":isApprovedUpdate?"Submit Update":isRequestedChange?"Resubmit Changes":"Submit App"}</button></div></div>}
+              {step === 3 && <div className="space-y-6"><div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-5"><dl className="grid gap-4 text-sm md:grid-cols-2"><div><dt className="text-slate-500">Title</dt><dd className="text-white">{fastlaneMetadata?.title}</dd></div><div><dt className="text-slate-500">Platform</dt><dd className="text-white">{appPlatform}{isLinux&&appLinuxPackageBase?` · ${appLinuxPackageBase}`:""}</dd></div><div><dt className="text-slate-500">Categories</dt><dd className="text-white">{appCategories.join(", ")}</dd></div><div><dt className="text-slate-500">Source model</dt><dd className="text-white">Open source</dd></div><div><dt className="text-slate-500">License</dt><dd className="text-white">{appLicenseType}</dd></div><div><dt className="text-slate-500">Version</dt><dd className="text-white">{appVersion}</dd></div>{isAndroid&&<div><dt className="text-slate-500">Package</dt><dd className="break-all text-white">{appPackageName}</dd></div>}<div><dt className="text-slate-500">Author</dt><dd className="text-white">{authorName||"—"}</dd></div><div><dt className="text-slate-500">Website</dt><dd className="break-all text-white">{websiteUrl||"—"}</dd></div><div><dt className="text-slate-500">Donations</dt><dd className="text-white">{[donateUrl,liberapay,opencollective,bitcoin,litecoin].filter(Boolean).length} configured</dd></div></dl></div><div className="flex justify-between"><button type="button" onClick={()=>setStep(2)} className="rounded-xl bg-slate-800 px-5 py-2.5 text-white">Back</button><button type="submit" disabled={isSubmitting||!fastlaneMetadata} className="rounded-xl bg-emerald-600 px-5 py-2.5 font-medium text-white disabled:opacity-40">{isSubmitting?"Saving…":isApprovedUpdate?"Submit Update":isRequestedChange?"Resubmit Changes":"Submit App"}</button></div></div>}
             </form>
           </section>
 

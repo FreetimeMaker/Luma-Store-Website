@@ -7,7 +7,10 @@ import { createClient } from "@/lib/supabase/client";
 
 const PRODUCTION_ORIGIN = "https://luma.free-time.me";
 
-function ProviderIcon({ provider }: { provider: "github" | "gitlab" }) {
+function ProviderIcon({ provider }: { provider: "github" | "gitlab" | "google" }) {
+  if (provider === "google") {
+    return <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.18-2.07H12v3.92h5.38a4.6 4.6 0 0 1-2 3.02v2.54h3.24c1.9-1.75 2.98-4.33 2.98-7.41Z"/><path fill="#34A853" d="M12 22c2.7 0 4.97-.9 6.62-2.36l-3.24-2.54c-.9.6-2.05.96-3.38.96-2.61 0-4.82-1.76-5.61-4.13H3.04v2.62A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.39 13.93A6 6 0 0 1 6.08 12c0-.67.11-1.32.31-1.93V7.45H3.04A10 10 0 0 0 2 12c0 1.61.39 3.14 1.04 4.55l3.35-2.62Z"/><path fill="#EA4335" d="M12 5.94c1.47 0 2.79.5 3.82 1.49l2.87-2.87A9.63 9.63 0 0 0 12 2a10 10 0 0 0-8.96 5.45l3.35 2.62C7.18 7.7 9.39 5.94 12 5.94Z"/></svg>;
+  }
   if (provider === "github") {
     return (
       <svg width="18" height="18" viewBox="0 0 16 16" fill="#e2e8f0" aria-hidden>
@@ -24,7 +27,7 @@ function ProviderIcon({ provider }: { provider: "github" | "gitlab" }) {
 }
 
 function safeNext(value: string | null) {
-  return value?.startsWith("/dashboard") ? value : "/dashboard";
+  return value?.startsWith("/") && !value.startsWith("//") ? value : "/discover";
 }
 
 function authOrigin() {
@@ -46,12 +49,12 @@ function LoginContent() {
     });
   }, [next, router, supabase]);
 
-  async function redirectTo(provider: "github" | "gitlab") {
+  async function redirectTo(provider: "github" | "gitlab" | "google") {
     const callbackUrl = `${authOrigin()}/auth/callback?next=${encodeURIComponent(next)}`;
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: callbackUrl, scopes: provider === "github" ? "read:user public_repo" : undefined },
+      options: { redirectTo: callbackUrl, scopes: provider === "github" ? "read:user public_repo" : provider === "google" ? "openid email profile" : undefined },
     });
 
     if (error) console.error("Login error:", error.message);
@@ -61,14 +64,15 @@ function LoginContent() {
     <main className="glass-page flex min-h-[70vh] items-center justify-center p-6">
       <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-xl">
         <div className="mb-6 inline-flex rounded-full border border-indigo-500/30 bg-indigo-950/40 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-indigo-300">
-          Developer access
+          Luma Store account
         </div>
         <h1 className="text-2xl font-semibold text-white">Sign in to Luma Store</h1>
         <p className="mt-2 text-sm leading-6 text-slate-400">
-          Sign in to open the developer dashboard, submit an app, and follow its automatic security scan and publishing status.
+          Sign in to save apps across devices, rate apps, or access developer tools.
         </p>
 
         <div className="mt-6 flex flex-col gap-3">
+          <button onClick={() => redirectTo("google")} className="flex items-center gap-3 rounded-xl border border-slate-700 px-4 py-3 text-left font-medium text-slate-200 transition hover:border-slate-600 hover:bg-slate-800"><ProviderIcon provider="google" /><span>Sign in with Google</span></button>
           <button
             onClick={() => redirectTo("github")}
             className="flex items-center gap-3 rounded-xl border border-slate-700 px-4 py-3 text-left font-medium text-slate-200 transition hover:border-slate-600 hover:bg-slate-800"

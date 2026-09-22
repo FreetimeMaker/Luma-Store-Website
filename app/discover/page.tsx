@@ -172,7 +172,7 @@ export default function DiscoverPage() {
               return (
                 <Link
                   key={app.id}
-                  href={`/discover/${app.id}`}
+                  href={`/discover/${encodeURIComponent(app.package_name || app.id)}`}
                   className="group rounded-2xl border border-slate-800 bg-slate-900/60 p-5 transition hover:-translate-y-0.5 hover:border-indigo-400/30 hover:bg-slate-900/90"
                 >
                   <div className="flex items-start gap-4">

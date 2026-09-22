@@ -60,7 +60,6 @@ export default function DiscoverDeveloperPage() {
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-200">Luma Store Developer</p>
       <h1 className="mt-3 text-3xl font-bold text-white sm:text-4xl">{developerName}</h1>
       <p className="mt-2 text-sm text-slate-400">{apps.length} published {apps.length === 1 ? "app" : "apps"} · {totalDownloads === null ? "—" : totalDownloads.toLocaleString()} total downloads</p>
-      <div className="mt-5"><img src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-badge?developer_id=${encodeURIComponent(params.id)}`} alt={`${developerName} total Luma Store downloads`} className="h-5 w-auto" /></div>
     </section>
     <section><div className="mb-4"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Published apps</p><h2 className="mt-1 text-2xl font-bold text-white">Apps by {developerName}</h2></div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{apps.map((app) => { const name=app.name||app.package_name||"Untitled app"; return <Link key={app.id} href={`/discover/${app.id}`} className="group rounded-2xl border border-slate-800 bg-slate-900/60 p-5 transition hover:border-indigo-400/40 hover:bg-slate-900">

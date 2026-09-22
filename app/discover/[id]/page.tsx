@@ -90,6 +90,7 @@ function Field({ label, value, mono = false }: { label: string; value: string | 
     <div className="rounded-xl border border-slate-800 bg-slate-950/45 p-3">
       <dt className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{label}</dt>
       <dd className={`mt-1 break-words text-sm text-slate-200 ${mono ? "font-mono text-xs" : ""}`}>{String(value)}</dd>
+      {androidQrUrl&&<div role="presentation" onMouseDown={(event)=>{if(event.target===event.currentTarget)setAndroidQrUrl(null)}} className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-md"><div role="dialog" aria-modal="true" aria-labelledby="android-download-title" className="glass-panel relative w-full max-w-sm p-6 text-center shadow-2xl"><button type="button" onClick={()=>setAndroidQrUrl(null)} aria-label="Close" className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-lg text-slate-300 hover:bg-white/10 hover:text-white">×</button><p className="text-xs font-semibold uppercase tracking-[.16em] text-indigo-300">Android download</p><h2 id="android-download-title" className="mt-2 text-2xl font-bold text-white">Install on Android</h2><p className="mt-2 text-sm leading-6 text-slate-400">Scan this QR code with your Android device. The download will start through Luma Store.</p><div className="mx-auto mt-5 w-fit rounded-3xl bg-white p-3 shadow-xl"><img src={`https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(androidQrUrl)}`} alt={`QR code to download ${name} for Android`} width={240} height={240} className="h-52 w-52 sm:h-56 sm:w-56"/></div><a href={androidQrUrl} className="mt-5 inline-flex text-xs text-slate-500 hover:text-indigo-300">Download on this device instead</a></div></div>}
     </div>
   );
 }
@@ -125,6 +126,7 @@ export default function DiscoverAppPage() {
   const [ratingCount, setRatingCount] = useState(0);
   const [pageUrl, setPageUrl] = useState("");
   const [copied, setCopied] = useState(false);
+  const [androidQrUrl, setAndroidQrUrl] = useState<string | null>(null);
   const ratingApi = "https://api.free-time.me/lumastore";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -133,7 +135,7 @@ export default function DiscoverAppPage() {
 
   async function shareApp() { if (!pageUrl || !app) return; const data={title:app.name || "Luma Store app",text:app.short_description || "View this app on Luma Store",url:pageUrl}; if(navigator.share){try{await navigator.share(data);return}catch(error){if(error instanceof DOMException&&error.name==="AbortError")return}} await navigator.clipboard.writeText(pageUrl);setCopied(true);window.setTimeout(()=>setCopied(false),1800); }
   function trackFunding(provider:"donate"|"liberapay"|"opencollective"|"bitcoin"|"litecoin"){if(!app?.developer_id)return;void supabase.from("luma_funding_clicks").insert({developer_id:app.developer_id,app_id:app.id,provider});}
-  async function copyAppLink(){if(!pageUrl)return;await navigator.clipboard.writeText(pageUrl);setCopied(true);window.setTimeout(()=>setCopied(false),1800);}
+  async function copyAppLink(){if(!pageUrl)return;await navigator.clipboard.writeText(pageUrl);setCopied(true);window.setTimeout(()=>setCopied(false),1800);}\n  function handleDownload(event: React.MouseEvent<HTMLAnchorElement>, platform: StoreAppPlatform, downloadUrl: string){if(platform.platform.toLowerCase()!=="android")return;const isDesktop=window.matchMedia("(hover: hover) and (pointer: fine)").matches;if(!isDesktop)return;event.preventDefault();setAndroidQrUrl(downloadUrl);}\n  useEffect(()=>{if(!androidQrUrl)return;const close=(event:KeyboardEvent)=>{if(event.key==="Escape")setAndroidQrUrl(null)};window.addEventListener("keydown",close);return()=>window.removeEventListener("keydown",close)},[androidQrUrl]);
 
   useEffect(() => {
     let cancelled = false;
@@ -257,7 +259,7 @@ export default function DiscoverAppPage() {
               downloadablePlatforms.map((platform) => (
                 <a
                   key={platform.id}
-                  href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-app?${app.package_name ? `package_name=${encodeURIComponent(app.package_name)}` : `app_id=${encodeURIComponent(app.id)}`}&platform=${encodeURIComponent(platform.platform)}`}
+                  href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-app?${app.package_name ? `package_name=${encodeURIComponent(app.package_name)}` : `app_id=${encodeURIComponent(app.id)}`}&platform=${encodeURIComponent(platform.platform)}`}\n                  onClick={(event)=>handleDownload(event,platform,`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-app?${app.package_name ? `package_name=${encodeURIComponent(app.package_name)}` : `app_id=${encodeURIComponent(app.id)}`}&platform=${encodeURIComponent(platform.platform)}`)}
                   className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-indigo-500 px-5 py-3 text-center text-sm font-bold text-white shadow-lg shadow-indigo-950/30 transition hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-300/60"
                 >
                   Download {platform.platform}

@@ -22,6 +22,8 @@ type StoreApp = {
 
 function fundingHref(value: string | null, provider: "liberapay" | "opencollective") { if (!value) return null; if (/^https?:\/\//i.test(value)) return value; return provider === "liberapay" ? `https://liberapay.com/${value.replace(/^@/, "")}/` : `https://opencollective.com/${value.replace(/^@/, "")}`; }
 
+type DeveloperProfile = { display_name:string|null; bio:string|null; website_url:string|null; github_url:string|null; gitlab_url:string|null; avatar_url:string|null; verified:boolean; created_at:string|null; };
+
 type DeveloperFunding = { donate_url: string | null; liberapay: string | null; opencollective: string | null; bitcoin: string | null; litecoin: string | null; };
 
 export default function DiscoverDeveloperPage() {
@@ -30,6 +32,7 @@ export default function DiscoverDeveloperPage() {
   const [apps, setApps] = useState<StoreApp[]>([]);
   const [totalDownloads, setTotalDownloads] = useState<number | null>(null);
   const [funding, setFunding] = useState<DeveloperFunding | null>(null);
+  const [profile, setProfile] = useState<DeveloperProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,7 +49,7 @@ export default function DiscoverDeveloperPage() {
         const rows = (result.data ?? []) as StoreApp[];
         setApps(rows);
         const developerId = rows.find((app) => app.developer_id)?.developer_id;
-        if (developerId) { const fundingResult = await supabase.from("luma_developer_funding").select("donate_url,liberapay,opencollective,bitcoin,litecoin").eq("developer_id", developerId).maybeSingle(); if (!cancelled) setFunding((fundingResult.data as DeveloperFunding | null) ?? null); }
+        if (developerId) { const profileResult=await supabase.from("luma_developer_profiles").select("display_name,bio,website_url,github_url,gitlab_url,avatar_url,verified,created_at").eq("developer_id",developerId).maybeSingle(); if(!cancelled)setProfile((profileResult.data as DeveloperProfile|null)??null); const {data:developerDownloads}=await supabase.rpc("luma_developer_download_count",{target_developer_id:developerId}); if(!cancelled)setTotalDownloads(Number(developerDownloads??0)); const fundingResult = await supabase.from("luma_developer_funding").select("donate_url,liberapay,opencollective,bitcoin,litecoin").eq("developer_id", developerId).maybeSingle(); if (!cancelled) setFunding((fundingResult.data as DeveloperFunding | null) ?? null); }
         const ids = rows.map((app) => app.id);
         if (ids.length) {
           const events = await supabase.from("luma_download_events").select("id", { count: "exact", head: true }).in("app_id", ids);
@@ -62,13 +65,11 @@ export default function DiscoverDeveloperPage() {
   if (loading) return <div className="glass-page mx-auto h-80 max-w-6xl animate-pulse rounded-3xl border border-slate-800 bg-slate-900/60" />;
   if (error || apps.length === 0) return <div className="glass-page mx-auto max-w-3xl rounded-2xl border border-rose-500/25 bg-rose-950/20 p-6"><h1 className="text-xl font-semibold text-rose-200">Developer not found</h1><p className="mt-2 text-sm text-rose-100/70">{error || "No published apps were found for this developer."}</p><Link href="/discover" className="mt-4 inline-flex text-sm font-medium text-indigo-300">← Back to Discover</Link></div>;
 
-  const developerName = apps.find((app) => app.developer_name)?.developer_name || "Luma Store developer";
+  const developerName = profile?.display_name || apps.find((app) => app.developer_name)?.developer_name || "Luma Store developer";
   return <div className="glass-page mx-auto max-w-6xl space-y-8 pb-20">
     <Link href="/discover" className="inline-flex text-sm font-medium text-indigo-300 hover:text-indigo-200">← Back to Discover</Link>
     <section className="rounded-3xl border border-indigo-400/15 bg-gradient-to-br from-indigo-500/15 via-slate-900 to-violet-500/10 p-6 sm:p-8">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-200">Luma Store Developer</p>
-      <h1 className="mt-3 text-3xl font-bold text-white sm:text-4xl">{developerName}</h1>
-      <p className="mt-2 text-sm text-slate-400">{apps.length} published {apps.length === 1 ? "app" : "apps"} · {totalDownloads === null ? "—" : totalDownloads.toLocaleString()} total downloads</p>
+      <div className="flex items-start gap-5">{profile?.avatar_url&&<img src={profile.avatar_url} alt="" className="h-20 w-20 rounded-3xl border border-slate-700 object-cover"/>}<div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-200">Luma Store Developer</p><div className="mt-3 flex flex-wrap items-center gap-2"><h1 className="text-3xl font-bold text-white sm:text-4xl">{developerName}</h1>{profile?.verified&&<span className="rounded-full bg-sky-500/10 px-2.5 py-1 text-xs font-semibold text-sky-200">✓ Verified</span>}</div>{profile?.bio&&<p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">{profile.bio}</p>}<div className="mt-3 flex flex-wrap gap-2">{profile?.website_url&&<a href={profile.website_url} target="_blank" rel="noreferrer" className="text-sm text-indigo-300">Website ↗</a>}{profile?.github_url&&<a href={profile.github_url} target="_blank" rel="noreferrer" className="text-sm text-indigo-300">GitHub ↗</a>}{profile?.gitlab_url&&<a href={profile.gitlab_url} target="_blank" rel="noreferrer" className="text-sm text-indigo-300">GitLab ↗</a>}</div><p className="mt-2 text-sm text-slate-400">{apps.length} published {apps.length === 1 ? "app" : "apps"} · {totalDownloads === null ? "—" : totalDownloads.toLocaleString()} total downloads</p></div></div>
     </section>
     {funding && (funding.donate_url || funding.liberapay || funding.opencollective || funding.bitcoin || funding.litecoin) && <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6"><h2 className="text-xl font-semibold text-white">Support {developerName}</h2><div className="mt-4 flex flex-wrap gap-2">{funding.donate_url&&<a href={funding.donate_url} target="_blank" rel="noreferrer" className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white">Donate ↗</a>}{funding.liberapay&&<a href={fundingHref(funding.liberapay, "liberapay") || "#"} target="_blank" rel="noreferrer" className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-200">Liberapay ↗</a>}{funding.opencollective&&<a href={fundingHref(funding.opencollective, "opencollective") || "#"} target="_blank" rel="noreferrer" className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-200">OpenCollective ↗</a>}</div>{(funding.bitcoin||funding.litecoin)&&<div className="mt-4 grid gap-3 sm:grid-cols-2">{funding.bitcoin&&<div className="rounded-xl border border-slate-800 bg-slate-950/45 p-3"><p className="text-xs text-slate-500">Bitcoin</p><p className="mt-1 break-all font-mono text-xs text-slate-200">{funding.bitcoin}</p></div>}{funding.litecoin&&<div className="rounded-xl border border-slate-800 bg-slate-950/45 p-3"><p className="text-xs text-slate-500">Litecoin</p><p className="mt-1 break-all font-mono text-xs text-slate-200">{funding.litecoin}</p></div>}</div>}</section>}
     <section><div className="mb-4"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Published apps</p><h2 className="mt-1 text-2xl font-bold text-white">Apps by {developerName}</h2></div>

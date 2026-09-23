@@ -506,7 +506,8 @@ export default function LumaDeveloperPortal() {
         ...additionalClosedMetadata.map((item) => ({ locale: item.locale.trim(), title: item.title.trim(), shortDescription: item.shortDescription.trim(), fullDescription: item.fullDescription.trim(), changelog: item.changelog.trim(), screenshots: item.screenshotsText.split(/\\r?\\n/).map((value) => value.trim()).filter(Boolean) })),
       ] : [];
 
-      const firstPlatformMetadata=separatePlatformRepos?platformMetadata[appPlatforms[0]]:null;\n      const currentStoreMetadata = separatePlatformRepos && firstPlatformMetadata ? {title:firstPlatformMetadata.title.trim(),shortDescription:firstPlatformMetadata.shortDescription.trim(),fullDescription:firstPlatformMetadata.fullDescription.trim(),changelog:firstPlatformMetadata.changelog.trim(),screenshots:firstPlatformMetadata.screenshotsText.split(/\\r?\\n/).map(value=>value.trim()).filter(Boolean),locale:"en-US",branch:"manual"} : manualStoreMetadata ? {
+      const firstPlatformMetadata=separatePlatformRepos?platformMetadata[appPlatforms[0]]:null;
+      const currentStoreMetadata = separatePlatformRepos && firstPlatformMetadata ? {title:firstPlatformMetadata.title.trim(),shortDescription:firstPlatformMetadata.shortDescription.trim(),fullDescription:firstPlatformMetadata.fullDescription.trim(),changelog:firstPlatformMetadata.changelog.trim(),screenshots:firstPlatformMetadata.screenshotsText.split(/\\r?\\n/).map(value=>value.trim()).filter(Boolean),locale:"en-US",branch:"manual"} : manualStoreMetadata ? {
         title: localizedMetadata[0].title,
         shortDescription: localizedMetadata[0].shortDescription,
         fullDescription: localizedMetadata[0].fullDescription,

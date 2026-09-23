@@ -54,6 +54,32 @@ type SecurityScan = {
 
 type DownloadStats = { app_id: string; total: number; today: number; this_month: number; this_year: number };
 
+type PublishedPlatform = {
+  id: string;
+  platform: string;
+  package_type: string | null;
+  linux_package_base: string | null;
+  download_url: string | null;
+  file_size_mb: number | null;
+  sha256: string | null;
+  artifact_verified_at: string | null;
+  artifact_size_bytes: number | string | null;
+};
+
+type SubmissionPlatform = {
+  platform: string;
+  packageType: string;
+  downloadUrl: string;
+  repoUrl: string;
+  metadata: {
+    title: string;
+    shortDescription: string;
+    fullDescription: string;
+    changelog: string;
+    screenshots: string[];
+  } | null;
+};
+
 type PublishedApp = {
   id: string;
   name: string;
@@ -98,6 +124,39 @@ function hasSeparatePlatformData(value: unknown): boolean {
   });
 }
 
+function normalizeSubmissionPlatforms(value: unknown): SubmissionPlatform[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    if (!entry || typeof entry !== "object") return [];
+    const item = entry as Record<string, unknown>;
+    const platform = typeof item.platform === "string" ? item.platform : "";
+    if (!platform) return [];
+    const packageType = String(item.packageType ?? item.package_type ?? "artifact");
+    const downloadUrl = String(item.downloadUrl ?? item.download_url ?? "");
+    const repoUrl = String(item.repoUrl ?? item.repo_url ?? "");
+    const rawMetadata = item.metadata;
+    let metadata: SubmissionPlatform["metadata"] = null;
+    if (rawMetadata && typeof rawMetadata === "object") {
+      const row = rawMetadata as Record<string, unknown>;
+      metadata = {
+        title: String(row.title ?? ""),
+        shortDescription: String(row.shortDescription ?? row.short_description ?? ""),
+        fullDescription: String(row.fullDescription ?? row.full_description ?? ""),
+        changelog: String(row.changelog ?? ""),
+        screenshots: stringArray(row.screenshots),
+      };
+    }
+    return [{ platform, packageType, downloadUrl, repoUrl, metadata }];
+  });
+}
+
+function formatBytes(value: number | string | null | undefined): string {
+  const bytes = Number(value);
+  if (!Number.isFinite(bytes) || bytes <= 0) return "—";
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
 export default function SubmissionDetailsPage() {
   const params = useParams<{ id: string }>();
   const submissionId = params.id;
@@ -106,6 +165,7 @@ export default function SubmissionDetailsPage() {
   const [versions, setVersions] = useState<VersionRow[]>([]);
   const [scan, setScan] = useState<SecurityScan | null>(null);
   const [publishedApp, setPublishedApp] = useState<PublishedApp | null>(null);
+  const [publishedPlatforms, setPublishedPlatforms] = useState<PublishedPlatform[]>([]);
   const [downloadStats, setDownloadStats] = useState<DownloadStats | null>(null);
   const [badgePlatform, setBadgePlatform] = useState("all");
   const [loading, setLoading] = useState(true);
@@ -174,9 +234,17 @@ export default function SubmissionDetailsPage() {
         const published = (publishedResult.data as PublishedApp | null) ?? null;
         setPublishedApp(published);
         if (published?.id) {
-          const { data: statsRows } = await supabase.rpc("get_my_luma_download_stats");
+          const [{ data: statsRows }, platformResult] = await Promise.all([
+            supabase.rpc("get_my_luma_download_stats"),
+            supabase
+              .from("store_app_platforms")
+              .select("id,platform,package_type,linux_package_base,download_url,file_size_mb,sha256,artifact_verified_at,artifact_size_bytes")
+              .eq("app_id", published.id)
+              .order("platform", { ascending: true }),
+          ]);
           const stats = ((statsRows ?? []) as DownloadStats[]).find((row) => row.app_id === published.id) ?? null;
           setDownloadStats(stats);
+          if (!platformResult.error) setPublishedPlatforms((platformResult.data ?? []) as PublishedPlatform[]);
         }
       }
     }
@@ -195,6 +263,8 @@ export default function SubmissionDetailsPage() {
 
   const antiFeatures = stringArray((publishedApp?.ant_features ?? submission.ant_features));
   const repoUrl = publishedApp?.repo_url || submission.repo_url || submission.link;
+  const submissionPlatforms = normalizeSubmissionPlatforms(submission.platforms);
+  const platformNames = Array.from(new Set(submissionPlatforms.map((item) => item.platform)));
 
   return (
     <div className="glass-page mx-auto max-w-6xl space-y-6 pb-20">
@@ -251,7 +321,76 @@ export default function SubmissionDetailsPage() {
         </section>
       )}
 
-      {(submission.separate_platform_repos || hasSeparatePlatformData(submission.platforms)) && (()=>{const rows=Array.isArray(submission.platforms)?submission.platforms.filter((item):item is Record<string,unknown>=>!!item&&typeof item==="object"):[];const unique=rows.filter((item,index)=>rows.findIndex(other=>String(other.platform)===String(item.platform))===index);return unique.length>0?<section className={`${cardClass} overflow-hidden`}><div className="border-b border-slate-800 px-5 py-4"><h2 className="font-semibold text-white">Platform repositories & metadata</h2><p className="mt-1 text-sm text-slate-400">This app uses separate repositories and store metadata per platform.</p></div><div className="grid gap-4 p-5 md:grid-cols-2">{unique.map(item=>{const metadata=item.metadata&&typeof item.metadata==="object"?item.metadata as Record<string,unknown>:{};const screenshots=Array.isArray(metadata.screenshots)?metadata.screenshots.filter((value):value is string=>typeof value==="string"):[];return <article key={String(item.platform)} className="rounded-2xl border border-slate-800 bg-slate-950/35 p-4"><div className="flex items-center justify-between gap-3"><h3 className="font-semibold text-white">{String(item.platform||"Platform")}</h3><span className="rounded-full border border-indigo-500/30 bg-indigo-500/10 px-2.5 py-1 text-xs text-indigo-200">{String(item.packageType||"artifact")}</span></div>{typeof item.repoUrl==="string"&&item.repoUrl?<a href={item.repoUrl} target="_blank" rel="noopener noreferrer" className="mt-3 block break-all text-sm text-indigo-300 hover:text-indigo-200">{item.repoUrl}</a>:null}<dl className="mt-4 space-y-3"><div><dt className="text-xs uppercase tracking-wide text-slate-500">Title</dt><dd className="mt-1 text-sm text-slate-200">{String(metadata.title||"—")}</dd></div><div><dt className="text-xs uppercase tracking-wide text-slate-500">Short description</dt><dd className="mt-1 text-sm text-slate-300">{String(metadata.shortDescription||"—")}</dd></div><div><dt className="text-xs uppercase tracking-wide text-slate-500">Description</dt><dd className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-400">{String(metadata.fullDescription||"—")}</dd></div><div><dt className="text-xs uppercase tracking-wide text-slate-500">Changelog</dt><dd className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-400">{String(metadata.changelog||"—")}</dd></div></dl>{screenshots.length>0&&<div className="mt-4 flex gap-3 overflow-x-auto pb-2">{screenshots.map((url,index)=><img key={url+index} src={url} alt={`${String(item.platform)} screenshot ${index+1}`} className="h-40 w-auto rounded-xl border border-slate-800 object-contain"/>)}</div>}</article>})}</div></section>:null;})()}
+      {publishedApp && publishedPlatforms.length > 0 && (
+        <section className={`${cardClass} overflow-hidden`}>
+          <div className="border-b border-slate-800 px-5 py-4">
+            <h2 className="font-semibold text-white">Published platform artifacts</h2>
+            <p className="mt-1 text-sm text-slate-400">Files currently available from Luma Store for each platform.</p>
+          </div>
+          <div className="grid gap-4 p-5 md:grid-cols-2">
+            {publishedPlatforms.map((item) => (
+              <article key={item.id} className="rounded-2xl border border-slate-800 bg-slate-950/35 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="font-semibold text-white">{item.platform}</h3>
+                  <span className="rounded-full border border-indigo-500/30 bg-indigo-500/10 px-2.5 py-1 text-xs text-indigo-200">{item.package_type || "artifact"}</span>
+                </div>
+                <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div><dt className="text-xs uppercase tracking-wide text-slate-500">Size</dt><dd className="mt-1 text-sm text-slate-200">{item.file_size_mb ? `${Number(item.file_size_mb).toFixed(2)} MB` : formatBytes(item.artifact_size_bytes)}</dd></div>
+                  <div><dt className="text-xs uppercase tracking-wide text-slate-500">Verified</dt><dd className="mt-1 text-sm text-slate-200">{formatDate(item.artifact_verified_at)}</dd></div>
+                  {item.linux_package_base && <div><dt className="text-xs uppercase tracking-wide text-slate-500">Linux base</dt><dd className="mt-1 text-sm text-slate-200">{item.linux_package_base}</dd></div>}
+                  {item.sha256 && <div className="sm:col-span-2"><dt className="text-xs uppercase tracking-wide text-slate-500">SHA-256</dt><dd className="mt-1 break-all font-mono text-xs text-slate-300">{item.sha256}</dd></div>}
+                </dl>
+                {item.download_url && <a href={item.download_url} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-3 py-2 text-xs font-medium text-indigo-200 hover:bg-indigo-500/20">Open download ↗</a>}
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {submissionPlatforms.length > 0 && (
+        <section className={`${cardClass} overflow-hidden`}>
+          <div className="border-b border-slate-800 px-5 py-4">
+            <h2 className="font-semibold text-white">{submission.separate_platform_repos || hasSeparatePlatformData(submission.platforms) ? "Platform repositories & metadata" : "Submission platforms"}</h2>
+            <p className="mt-1 text-sm text-slate-400">Submitted repositories, package files and store metadata per platform.</p>
+          </div>
+          <div className="space-y-5 p-5">
+            {platformNames.map((platform) => {
+              const entries = submissionPlatforms.filter((item) => item.platform === platform);
+              const metadataEntry = entries.find((item) => item.metadata);
+              const repoEntry = entries.find((item) => item.repoUrl);
+              const metadata = metadataEntry?.metadata;
+              return (
+                <article key={platform} className="rounded-2xl border border-slate-800 bg-slate-950/35 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h3 className="text-lg font-semibold text-white">{platform}</h3>
+                    <div className="flex flex-wrap gap-2">{entries.map((item, index) => <span key={`${item.packageType}-${index}`} className="rounded-full border border-indigo-500/30 bg-indigo-500/10 px-2.5 py-1 text-xs text-indigo-200">{item.packageType}</span>)}</div>
+                  </div>
+                  {repoEntry?.repoUrl && <a href={repoEntry.repoUrl} target="_blank" rel="noopener noreferrer" className="mt-3 block break-all text-sm text-indigo-300 hover:text-indigo-200">{repoEntry.repoUrl}</a>}
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {entries.map((item, index) => (
+                      <div key={`${item.packageType}-download-${index}`} className="rounded-xl border border-slate-800 bg-slate-950/45 p-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{item.packageType} download</p>
+                        {item.downloadUrl ? <a href={item.downloadUrl} target="_blank" rel="noopener noreferrer" className="mt-1 block break-all text-sm text-indigo-300 hover:text-indigo-200">{item.downloadUrl}</a> : <p className="mt-1 text-sm text-slate-500">—</p>}
+                      </div>
+                    ))}
+                  </div>
+                  {metadata && (
+                    <div className="mt-5 border-t border-slate-800 pt-4">
+                      <dl className="space-y-3">
+                        <div><dt className="text-xs uppercase tracking-wide text-slate-500">Title</dt><dd className="mt-1 text-sm text-slate-200">{metadata.title || "—"}</dd></div>
+                        <div><dt className="text-xs uppercase tracking-wide text-slate-500">Short description</dt><dd className="mt-1 text-sm text-slate-300">{metadata.shortDescription || "—"}</dd></div>
+                        <div><dt className="text-xs uppercase tracking-wide text-slate-500">Description</dt><dd className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-400">{metadata.fullDescription || "—"}</dd></div>
+                        <div><dt className="text-xs uppercase tracking-wide text-slate-500">Changelog</dt><dd className="mt-1 whitespace-pre-wrap text-sm leading-6 text-slate-400">{metadata.changelog || "—"}</dd></div>
+                      </dl>
+                      {metadata.screenshots.length > 0 && <div className="mt-4 flex gap-3 overflow-x-auto pb-2">{metadata.screenshots.map((url,index)=><img key={url+index} src={url} alt={`${platform} screenshot ${index+1}`} className="h-40 w-auto rounded-xl border border-slate-800 object-contain"/>)}</div>}
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <SecurityScanPanel submissionId={submissionId} initialScan={scan} />

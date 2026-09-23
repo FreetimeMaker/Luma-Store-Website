@@ -48,7 +48,7 @@ type RelatedApp = { id:string; name:string|null; package_name:string|null; short
 type PlatformDownloadCount = { platform:string; downloads:number|string; };
 type VersionHistoryItem = { version:string|null; version_code:number|string|null; changelog:string|null; published_at:string|null; };
 
-type DeveloperFunding = { donate_url: string | null; liberapay: string | null; opencollective: string | null; bitcoin: string | null; litecoin: string | null; };
+type DeveloperFunding = { donate_url: string | null; liberapay: string | null; opencollective: string | null; bitcoin: string | null; litecoin: string | null; crypto_addresses: Record<string,string> | null; };
 
 type StoreAppPlatform = {
   id: string;
@@ -179,7 +179,7 @@ export default function DiscoverAppPage() {
           localStorage.setItem(key, JSON.stringify(next));
         } catch {}
         if (loadedApp.developer_id) {
-          const fundingResult = await supabase.from("luma_developer_funding").select("donate_url,liberapay,opencollective,bitcoin,litecoin").eq("developer_id", loadedApp.developer_id).maybeSingle();
+          const fundingResult = await supabase.from("luma_developer_funding").select("donate_url,liberapay,opencollective,bitcoin,litecoin,crypto_addresses").eq("developer_id", loadedApp.developer_id).maybeSingle();
           if (!cancelled) setFunding((fundingResult.data as DeveloperFunding | null) ?? null);
         } else if (!cancelled) setFunding(null);
         const platformResult = await supabase.from("store_app_platforms").select("id,app_id,platform,package_type,linux_package_base,download_url,file_size_mb,sha256,artifact_verified_at,artifact_size_bytes,permissions").eq("app_id", loadedApp.id).order("platform", { ascending: true });
@@ -228,6 +228,7 @@ export default function DiscoverAppPage() {
     );
   }
 
+  const cryptoLabels:Record<string,string>={bitcoin:"Bitcoin (BTC)",ethereum:"Ethereum (ETH)",tether:"Tether (USDT)",usdc:"USD Coin (USDC)",bnb:"BNB",solana:"Solana (SOL)",xrp:"XRP",cardano:"Cardano (ADA)",dogecoin:"Dogecoin (DOGE)",tron:"TRON (TRX)",polkadot:"Polkadot (DOT)",avalanche:"AvalAX (AVAX)",chainlink:"Chainlink (LINK)",polygon:"Polygon (POL)",litecoin:"Litecoin (LTC)",bitcoin_cash:"Bitcoin Cash (BCH)",stellar:"Stellar (XLM)",monero:"Monero (XMR)",toncoin:"Toncoin (TON)",shiba_inu:"Shiba Inu (SHIB)"}; const cryptoEntries=Object.entries(funding?.crypto_addresses||{}).filter(([,value])=>Boolean(value));
   const screenshots = stringArray(app.screenshots);
   const antiFeatures = stringArray(app.ant_features);
   const name = app.name || app.package_name || "Untitled app";
@@ -383,7 +384,7 @@ export default function DiscoverAppPage() {
 
       {relatedDeveloperApps.length>0&&<section className="rounded-3xl border border-white/10 bg-slate-900/50 p-5 shadow-lg shadow-black/10 backdrop-blur-xl sm:p-6"><h2 className="text-xl font-semibold text-white">More from {app.developer_name || "this developer"}</h2><div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{relatedDeveloperApps.map((item)=>{const itemName=item.name||item.package_name||"Untitled app";return <Link key={item.id} href={`/discover/${encodeURIComponent(item.package_name||item.id)}`} className="rounded-2xl border border-white/10 bg-slate-950/30 p-4 backdrop-blur-lg transition duration-300 hover:-translate-y-0.5 hover:border-indigo-400/40 hover:bg-slate-900/60"><div className="flex items-center gap-3">{item.icon_url?<img src={item.icon_url} alt="" className="h-12 w-12 rounded-xl border border-slate-700 object-cover"/>:<div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-800 font-bold">{itemName[0]}</div>}<div className="min-w-0"><h3 className="truncate font-semibold text-white">{itemName}</h3><p className="text-xs text-slate-500">{item.version?`Version ${item.version}`:"View app"}</p></div></div>{item.short_description&&<p className="mt-3 line-clamp-2 text-sm text-slate-400">{item.short_description}</p>}</Link>})}</div></section>}
 
-      {funding && (funding.donate_url || funding.liberapay || funding.opencollective || funding.bitcoin || funding.litecoin) && (
+      {funding && (funding.donate_url || funding.liberapay || funding.opencollective || funding.bitcoin || funding.litecoin || Object.values(funding.crypto_addresses||{}).some(Boolean)) && (
         <section className="rounded-3xl border border-white/10 bg-slate-900/50 p-5 shadow-lg shadow-black/10 backdrop-blur-xl sm:p-6">
           <h2 className="text-xl font-semibold text-white">Support the developer</h2>
           <p className="mt-1 text-sm text-slate-400">These funding methods belong to {app.developer_name || "this developer"} and apply to all of their apps.</p>
@@ -392,7 +393,7 @@ export default function DiscoverAppPage() {
             <LinkChip href={funding.liberapay?fundingRedirect(app.id,"liberapay"):null} label="Liberapay" />
             <LinkChip href={funding.opencollective?fundingRedirect(app.id,"opencollective"):null} label="OpenCollective" />
           </div>
-          {(funding.bitcoin || funding.litecoin) && <dl className="mt-4 grid gap-3 sm:grid-cols-2"><Field label="Bitcoin" value={funding.bitcoin} mono /><Field label="Litecoin" value={funding.litecoin} mono /></dl>}
+          {cryptoEntries.length>0 && <dl className="mt-4 grid gap-3 sm:grid-cols-2">{cryptoEntries.map(([key,value])=><Field key={key} label={cryptoLabels[key]||key} value={value} mono />)}</dl>}
         </section>
       )}
 

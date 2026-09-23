@@ -361,9 +361,49 @@ export default function LumaDeveloperPortal() {
   const isAndroid = appPlatforms.includes("Android");
   const isWindows = appPlatforms.includes("Windows");
   const isLinux = appPlatforms.includes("Linux");
-  const platformDetails=(platform:AppPlatform)=>{const item=platformMetadata[platform];return separatePlatformRepos?{repoUrl:item.repoUrl.trim(),metadata:{title:item.title.trim(),shortDescription:item.shortDescription.trim(),fullDescription:item.fullDescription.trim(),changelog:item.changelog.trim(),screenshots:item.screenshotsText.split(/\\r?\\n/).map(value=>value.trim()).filter(Boolean)}}:{}};
-  const platformArtifacts: PlatformArtifact[]=[...(isAndroid&&androidDownloadUrl.trim()?[{platform:"Android" as const,packageType:"apk" as const,downloadUrl:androidDownloadUrl.trim(),...platformDetails("Android")}]:[]),...(isWindows&&windowsDownloadUrl.trim()?[{platform:"Windows" as const,packageType:"exe" as const,downloadUrl:windowsDownloadUrl.trim(),...platformDetails("Windows")}]:[]),...(isLinux&&linuxDebUrl.trim()?[{platform:"Linux" as const,packageType:"deb" as const,downloadUrl:linuxDebUrl.trim(),...platformDetails("Linux")}]:[]),...(isLinux&&linuxRpmUrl.trim()?[{platform:"Linux" as const,packageType:"rpm" as const,downloadUrl:linuxRpmUrl.trim(),...platformDetails("Linux")}]:[])];
   const manualStoreMetadata = isWindows || isLinux;
+  const platformDetails = (platform: AppPlatform, androidOverride: FastlaneMetadata | null = fastlaneMetadata) => {
+    const item = platformMetadata[platform];
+    const repoPart = separatePlatformRepos ? { repoUrl: item.repoUrl.trim() } : {};
+    if (platform === "Android") {
+      if (!androidOverride) return repoPart;
+      return {
+        ...repoPart,
+        metadata: {
+          title: androidOverride.title.trim(),
+          shortDescription: androidOverride.shortDescription.trim(),
+          fullDescription: androidOverride.fullDescription.trim(),
+          changelog: androidOverride.changelog.trim(),
+          screenshots: androidOverride.screenshots,
+        },
+      };
+    }
+    const manual = separatePlatformRepos ? item : {
+      ...item,
+      title: closedTitle,
+      shortDescription: closedShortDescription,
+      fullDescription: closedFullDescription,
+      changelog: closedChangelog,
+      screenshotsText: closedScreenshotsText,
+    };
+    return {
+      ...repoPart,
+      metadata: {
+        title: manual.title.trim(),
+        shortDescription: manual.shortDescription.trim(),
+        fullDescription: manual.fullDescription.trim(),
+        changelog: manual.changelog.trim(),
+        screenshots: manual.screenshotsText.split(/\\r?\\n/).map(value => value.trim()).filter(Boolean),
+      },
+    };
+  };
+  const buildPlatformArtifacts = (androidOverride: FastlaneMetadata | null = fastlaneMetadata): PlatformArtifact[] => [
+    ...(isAndroid && androidDownloadUrl.trim() ? [{ platform: "Android" as const, packageType: "apk" as const, downloadUrl: androidDownloadUrl.trim(), ...platformDetails("Android", androidOverride) }] : []),
+    ...(isWindows && windowsDownloadUrl.trim() ? [{ platform: "Windows" as const, packageType: "exe" as const, downloadUrl: windowsDownloadUrl.trim(), ...platformDetails("Windows", androidOverride) }] : []),
+    ...(isLinux && linuxDebUrl.trim() ? [{ platform: "Linux" as const, packageType: "deb" as const, downloadUrl: linuxDebUrl.trim(), ...platformDetails("Linux", androidOverride) }] : []),
+    ...(isLinux && linuxRpmUrl.trim() ? [{ platform: "Linux" as const, packageType: "rpm" as const, downloadUrl: linuxRpmUrl.trim(), ...platformDetails("Linux", androidOverride) }] : []),
+  ];
+  const platformArtifacts = buildPlatformArtifacts();
   const validAndroidMetadata = !isAndroid || (/^([A-Za-z][A-Za-z0-9_]*\.)+[A-Za-z][A-Za-z0-9_]*$/.test(appPackageName.trim()) && /^\d+$/.test(appVersionCode.trim()) && Number(appVersionCode) > 0);
   const invalidateFastlane = () => { setFastlaneMetadata(null); setFastlaneError(null); };
   const saveDraft = async (draftStep = step) => {
@@ -497,7 +537,8 @@ export default function LumaDeveloperPortal() {
     if (!isAndroid) return;
     setFastlaneLoading(true); setFastlaneError(null); setFastlaneMetadata(null);
     try {
-      const metadata = await fetchFastlaneMetadata(appLink, appVersionCode);
+      const androidRepo = separatePlatformRepos ? platformMetadata.Android.repoUrl.trim() : appLink.trim();
+      const metadata = await fetchFastlaneMetadata(androidRepo, appVersionCode);
       setFastlaneMetadata(metadata); setAppName(metadata.title);
     } catch (error) {
       setFastlaneError(error instanceof Error ? error.message : "Fastlane metadata could not be loaded.");

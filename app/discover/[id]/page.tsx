@@ -136,10 +136,11 @@ function CryptoAddressField({ label, value }: { label: string; value: string }) 
         <button
           type="button"
           onClick={() => void navigator.clipboard.writeText(value)}
-          className="shrink-0 rounded-lg border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1.5 text-[11px] font-semibold text-indigo-200 transition hover:bg-indigo-500/20 hover:text-white"
+          className="shrink-0 rounded-lg border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1.5 text-[11px] font-semibold text-indigo-200 transition hover:bg-indigo-500/20 hover:text-white sm:px-3 sm:py-2"
           aria-label={`Copy ${label} address`}
         >
-          Copy
+          <span className="sm:hidden">Copy</span>
+          <span className="hidden sm:inline">Copy address</span>
         </button>
       </dd>
     </div>

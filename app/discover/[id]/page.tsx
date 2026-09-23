@@ -393,7 +393,7 @@ export default function DiscoverAppPage() {
             <LinkChip href={funding.liberapay?fundingRedirect(app.id,"liberapay"):null} label="Liberapay" />
             <LinkChip href={funding.opencollective?fundingRedirect(app.id,"opencollective"):null} label="OpenCollective" />
           </div>
-          {cryptoEntries.length>0 && <dl className="mt-4 grid gap-3 sm:grid-cols-2">{cryptoEntries.map(([key,value])=><Field key={key} label={cryptoLabels[key]||key} value={value} mono />)}</dl>}
+          {cryptoEntries.length>0 && <dl className="mt-4 grid gap-3 sm:grid-cols-2">{cryptoEntries.map(([key,value])=><Field key={key} label={`${cryptoLabels[key.split("::")[0]]||key.split("::")[0]}${key.includes("::")?` · ${key.split("::")[1]}`:""}`} value={value} mono />)}</dl>}
         </section>
       )}
 

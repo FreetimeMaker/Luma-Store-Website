@@ -183,7 +183,7 @@ function parsePlatformArtifacts(value: unknown, legacyPlatform: string | null, l
     const rawRepoUrl = item.repoUrl ?? item.repo_url;
     const repoUrl = typeof rawRepoUrl === "string" ? rawRepoUrl : undefined;
     const rawMetadata = item.metadata;
-    let metadata: PlatformArtifact["metadata"];
+    let metadata: PlatformArtifact["metadata"] = undefined;
 
     if (rawMetadata && typeof rawMetadata === "object") {
       const row = rawMetadata as Record<string, unknown>;

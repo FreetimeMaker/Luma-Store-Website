@@ -32,6 +32,7 @@ type StoreApp = {
   author_website: string | null;
   website_url: string | null;
   source_code_url: string | null;
+  repo_url: string | null;
   issue_tracker_url: string | null;
   translation_url: string | null;
   changelog_url: string | null;

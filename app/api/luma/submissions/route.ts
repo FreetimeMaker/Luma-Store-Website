@@ -81,7 +81,8 @@ export async function POST(request: Request) {
     }
 
     if (!githubToken) return NextResponse.json({ error: "GitHub authentication is required." }, { status: 401 });
-    const separatePlatformRepos = submission.separate_platform_repos === true;
+    const separatePlatformRepos = submission.separate_platform_repos === true || platforms.some((item) => Boolean(item.repoUrl || item.metadata));
+    submission.separate_platform_repos = separatePlatformRepos;
     if (separatePlatformRepos) {
       const uniquePlatforms = [...new Set(platforms.map((item) => item.platform))];
       for (const platform of uniquePlatforms) {

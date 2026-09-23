@@ -125,6 +125,27 @@ function Field({ label, value, mono = false }: { label: string; value: string | 
     </div>
   );
 }
+function CryptoAddressField({ label, value }: { label: string; value: string }) {
+  const compact = value.length > 26 ? `${value.slice(0, 12)}…${value.slice(-10)}` : value;
+  return (
+    <div className="min-w-0 rounded-xl border border-slate-800 bg-slate-950/45 p-3">
+      <dt className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{label}</dt>
+      <dd className="mt-2 flex min-w-0 items-center gap-2">
+        <span className="min-w-0 flex-1 font-mono text-xs text-slate-200 sm:hidden">{compact}</span>
+        <span className="hidden min-w-0 flex-1 break-all font-mono text-xs text-slate-200 sm:block">{value}</span>
+        <button
+          type="button"
+          onClick={() => void navigator.clipboard.writeText(value)}
+          className="shrink-0 rounded-lg border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1.5 text-[11px] font-semibold text-indigo-200 transition hover:bg-indigo-500/20 hover:text-white"
+          aria-label={`Copy ${label} address`}
+        >
+          Copy
+        </button>
+      </dd>
+    </div>
+  );
+}
+
 function fundingRedirect(appId:string,provider:"donate"|"liberapay"|"opencollective"){const base=process.env.NEXT_PUBLIC_SUPABASE_URL;if(!base)return null;return `${base}/functions/v1/funding-click?app=${encodeURIComponent(appId)}&provider=${provider}`;}
 
 function LinkChip({ href, label, onClick }: { href: string | null; label: string; onClick?:()=>void }) {
@@ -432,7 +453,7 @@ export default function DiscoverAppPage() {
             <LinkChip href={funding.liberapay?fundingRedirect(app.id,"liberapay"):null} label="Liberapay" />
             <LinkChip href={funding.opencollective?fundingRedirect(app.id,"opencollective"):null} label="OpenCollective" />
           </div>
-          {cryptoEntries.length>0 && <dl className="mt-4 grid gap-3 sm:grid-cols-2">{cryptoEntries.map(([key,value])=><Field key={key} label={`${cryptoLabels[key.split("::")[0]]||key.split("::")[0]}${key.includes("::")?` · ${key.split("::")[1]}`:""}`} value={value} mono />)}</dl>}
+          {cryptoEntries.length>0 && <dl className="mt-4 grid min-w-0 gap-3 sm:grid-cols-2">{cryptoEntries.map(([key,value])=><CryptoAddressField key={key} label={`${cryptoLabels[key.split("::")[0]]||key.split("::")[0]}${key.includes("::")?` · ${key.split("::")[1]}`:""}`} value={value} />)}</dl>}
         </section>
       )}
 

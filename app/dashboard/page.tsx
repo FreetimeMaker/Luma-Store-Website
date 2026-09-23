@@ -474,8 +474,7 @@ export default function LumaDeveloperPortal() {
   const isRequestedChange = editingStatus === "Changes Requested";
   const closedScreenshots = closedScreenshotsText.split(/\\r?\\n/).map((value) => value.trim()).filter(Boolean);
   const englishMetadataValid = Boolean(closedTitle.trim() && closedShortDescription.trim() && closedFullDescription.trim() && closedChangelog.trim() && closedScreenshots.length > 0);
-  const additionalMetadataValid = additionalClosedMetadata.every((item) => Boolean(item.locale.trim() && item.title.trim() && item.shortDescription.trim() && item.fullDescription.trim() && item.changelog.trim() && item.screenshotsText.split(/\r?
-/).some((value) => value.trim())));
+  const additionalMetadataValid = additionalClosedMetadata.every((item) => Boolean(item.locale.trim() && item.title.trim() && item.shortDescription.trim() && item.fullDescription.trim() && item.changelog.trim() && item.screenshotsText.split(/\\r?\\n/).some((value) => value.trim())));
   const localeKeys = ["en-US", ...additionalClosedMetadata.map((item) => item.locale.trim().toLowerCase())];
   const localesUnique = new Set(localeKeys.map((locale) => locale.toLowerCase())).size === localeKeys.length;
   const manualMetadataValid = englishMetadataValid && additionalMetadataValid && localesUnique;
@@ -497,8 +496,7 @@ export default function LumaDeveloperPortal() {
 
       const localizedMetadata: LocalizedMetadata[] = manualStoreMetadata ? [
         { locale: "en-US", title: closedTitle.trim(), shortDescription: closedShortDescription.trim(), fullDescription: closedFullDescription.trim(), changelog: closedChangelog.trim(), screenshots: closedScreenshots },
-        ...additionalClosedMetadata.map((item) => ({ locale: item.locale.trim(), title: item.title.trim(), shortDescription: item.shortDescription.trim(), fullDescription: item.fullDescription.trim(), changelog: item.changelog.trim(), screenshots: item.screenshotsText.split(/\r?
-/).map((value) => value.trim()).filter(Boolean) })),
+        ...additionalClosedMetadata.map((item) => ({ locale: item.locale.trim(), title: item.title.trim(), shortDescription: item.shortDescription.trim(), fullDescription: item.fullDescription.trim(), changelog: item.changelog.trim(), screenshots: item.screenshotsText.split(/\\r?\\n/).map((value) => value.trim()).filter(Boolean) })),
       ] : [];
 
       const currentStoreMetadata = manualStoreMetadata ? {

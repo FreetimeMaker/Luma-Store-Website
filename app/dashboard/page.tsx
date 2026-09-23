@@ -506,18 +506,19 @@ export default function LumaDeveloperPortal() {
     setAppLicenseType(app.licenseType || ""); setAppIconUrl(app.iconUrl); setIconPreviewError(false); setAppVersion(app.version);
     setAppPlatforms(Array.from(new Set(app.platforms.map((item)=>item.platform))));
     setSeparatePlatformRepos(app.separatePlatformRepos);
-    if(app.separatePlatformRepos){setPlatformMetadata((current)=>{const next={...current};(["Android","Windows","Linux"] as AppPlatform[]).forEach(platform=>{const item=app.platforms.find(entry=>entry.platform===platform);if(item?.metadata)next[platform]={repoUrl:item.repoUrl||"",title:item.metadata.title||"",shortDescription:item.metadata.shortDescription||"",fullDescription:item.metadata.fullDescription||"",changelog:item.metadata.changelog||"",screenshotsText:(item.metadata.screenshots||[]).join("\\n")};});return next;});}
+    setPlatformMetadata((current)=>{const next={...current};(["Android","Windows","Linux"] as AppPlatform[]).forEach(platform=>{const item=app.platforms.find(entry=>entry.platform===platform);if(item?.metadata)next[platform]={repoUrl:item.repoUrl||app.repoUrl||app.link||"",title:item.metadata.title||"",shortDescription:item.metadata.shortDescription||"",fullDescription:item.metadata.fullDescription||"",changelog:item.metadata.changelog||"",screenshotsText:(item.metadata.screenshots||[]).join("\\n")};else if(item?.repoUrl)next[platform]={...next[platform],repoUrl:item.repoUrl};});return next;});
     setAndroidDownloadUrl(app.platforms.find((item)=>item.platform==="Android")?.downloadUrl||""); setWindowsDownloadUrl(app.platforms.find((item)=>item.platform==="Windows")?.downloadUrl||"");
     setLinuxDebUrl(app.platforms.find((item)=>item.packageType==="deb")?.downloadUrl||""); setLinuxRpmUrl(app.platforms.find((item)=>item.packageType==="rpm")?.downloadUrl||""); setAppPackageName(app.packageName); setAppVersionCode(app.versionCode);
     setWebsiteUrl(app.websiteUrl); setIssueTrackerUrl(app.issueTrackerUrl); setTranslationUrl(app.translationUrl);
     setAuthorName(app.authorName); setAuthorEmail(app.authorEmail); setAuthorWebsite(app.authorWebsite);
     setDonateUrl(app.donateUrl); setLiberapay(app.liberapay); setOpencollective(app.opencollective); setBitcoin(app.bitcoin); setLitecoin(app.litecoin);
     const english = app.localizedMetadata.find((item) => item.locale.toLowerCase() === "en-us") ?? app.localizedMetadata.find((item) => item.locale.toLowerCase().startsWith("en"));
-    setClosedTitle(english?.title || app.name);
-    setClosedShortDescription(english?.shortDescription || app.shortDescription);
-    setClosedFullDescription(english?.fullDescription || app.description);
-    setClosedChangelog(english?.changelog || app.changelog);
-    setClosedScreenshotsText((english?.screenshots || app.screenshots).join("\\n"));
+    const manualPlatform = app.platforms.find((item)=>item.platform==="Linux"&&item.metadata)?.metadata ?? app.platforms.find((item)=>item.platform==="Windows"&&item.metadata)?.metadata;
+    setClosedTitle(manualPlatform?.title || english?.title || app.name);
+    setClosedShortDescription(manualPlatform?.shortDescription || english?.shortDescription || app.shortDescription);
+    setClosedFullDescription(manualPlatform?.fullDescription || english?.fullDescription || app.description);
+    setClosedChangelog(manualPlatform?.changelog || english?.changelog || app.changelog);
+    setClosedScreenshotsText((manualPlatform?.screenshots || english?.screenshots || app.screenshots).join("\\n"));
     setAdditionalClosedMetadata(app.localizedMetadata.filter((item) => item !== english).map((item) => ({ ...item, screenshotsText: item.screenshots.join("\\n") })));
     setFastlaneMetadata(null); setFastlaneError(null); setStep(1); setSubmitted(false);
     window.scrollTo({ top: 0, behavior: "smooth" });

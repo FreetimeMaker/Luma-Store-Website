@@ -62,6 +62,16 @@ type StoreAppPlatform = {
   artifact_verified_at: string | null;
   artifact_size_bytes: number | string | null;
   permissions: JsonValue;
+  repo_url: string | null;
+  listing_metadata: JsonValue;
+};
+
+type PlatformListing = {
+  title: string;
+  shortDescription: string;
+  fullDescription: string;
+  changelog: string;
+  screenshots: string[];
 };
 
 function formatDate(value: string | null) {
@@ -88,6 +98,22 @@ function hasJsonValue(value: JsonValue) {
   if (typeof value === "object") return Object.keys(value).length > 0;
   if (typeof value === "string") return value.trim().length > 0;
   return true;
+}
+
+function platformListing(value: JsonValue): PlatformListing | null {
+  if (!value || Array.isArray(value) || typeof value !== "object") return null;
+  const row = value as Record<string, JsonValue>;
+  const screenshots = Array.isArray(row.screenshots)
+    ? row.screenshots.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    : [];
+  const listing = {
+    title: typeof row.title === "string" ? row.title : "",
+    shortDescription: typeof row.shortDescription === "string" ? row.shortDescription : typeof row.short_description === "string" ? row.short_description : "",
+    fullDescription: typeof row.fullDescription === "string" ? row.fullDescription : typeof row.full_description === "string" ? row.full_description : "",
+    changelog: typeof row.changelog === "string" ? row.changelog : "",
+    screenshots,
+  };
+  return listing.title || listing.shortDescription || listing.fullDescription || listing.changelog || listing.screenshots.length ? listing : null;
 }
 
 function Field({ label, value, mono = false }: { label: string; value: string | number | null | undefined; mono?: boolean }) {
@@ -121,6 +147,7 @@ export default function DiscoverAppPage() {
   const supabase = useMemo(() => createClient(), []);
   const [app, setApp] = useState<StoreApp | null>(null);
   const [platforms, setPlatforms] = useState<StoreAppPlatform[]>([]);
+  const [selectedListingPlatform, setSelectedListingPlatform] = useState<string | null>(null);
   const [funding, setFunding] = useState<DeveloperFunding | null>(null);
   const [downloadCount, setDownloadCount] = useState(0);
   const [platformDownloadCounts, setPlatformDownloadCounts] = useState<PlatformDownloadCount[]>([]);
@@ -182,8 +209,13 @@ export default function DiscoverAppPage() {
           const fundingResult = await supabase.from("luma_developer_funding").select("donate_url,liberapay,opencollective,bitcoin,litecoin,crypto_addresses").eq("developer_id", loadedApp.developer_id).maybeSingle();
           if (!cancelled) setFunding((fundingResult.data as DeveloperFunding | null) ?? null);
         } else if (!cancelled) setFunding(null);
-        const platformResult = await supabase.from("store_app_platforms").select("id,app_id,platform,package_type,linux_package_base,download_url,file_size_mb,sha256,artifact_verified_at,artifact_size_bytes,permissions").eq("app_id", loadedApp.id).order("platform", { ascending: true });
-        if (!cancelled) setPlatforms((platformResult.data ?? []) as StoreAppPlatform[]);
+        const platformResult = await supabase.from("store_app_platforms").select("id,app_id,platform,package_type,linux_package_base,download_url,file_size_mb,sha256,artifact_verified_at,artifact_size_bytes,permissions,repo_url,listing_metadata").eq("app_id", loadedApp.id).order("platform", { ascending: true });
+        if (!cancelled) {
+          const loadedPlatforms = (platformResult.data ?? []) as StoreAppPlatform[];
+          setPlatforms(loadedPlatforms);
+          const listingPlatforms = Array.from(new Set(loadedPlatforms.filter((item) => platformListing(item.listing_metadata)).map((item) => item.platform)));
+          setSelectedListingPlatform((current) => current && listingPlatforms.includes(current) ? current : (listingPlatforms.includes("Android") ? "Android" : listingPlatforms[0] ?? null));
+        }
         const { data: totalDownloads } = await supabase.rpc("luma_app_download_count", { target_app_id: loadedApp.id });
         if (!cancelled) setDownloadCount(Number(totalDownloads ?? 0));
         const { data: platformCounts } = await supabase.rpc("luma_app_platform_download_counts", { target_app_id: loadedApp.id });
@@ -229,9 +261,15 @@ export default function DiscoverAppPage() {
   }
 
   const cryptoLabels:Record<string,string>={bitcoin:"Bitcoin (BTC)",ethereum:"Ethereum (ETH)",tether:"Tether (USDT)",usdc:"USD Coin (USDC)",bnb:"BNB",solana:"Solana (SOL)",xrp:"XRP",cardano:"Cardano (ADA)",dogecoin:"Dogecoin (DOGE)",tron:"TRON (TRX)",polkadot:"Polkadot (DOT)",avalanche:"AvalAX (AVAX)",chainlink:"Chainlink (LINK)",polygon:"Polygon (POL)",litecoin:"Litecoin (LTC)",bitcoin_cash:"Bitcoin Cash (BCH)",stellar:"Stellar (XLM)",monero:"Monero (XMR)",toncoin:"Toncoin (TON)",shiba_inu:"Shiba Inu (SHIB)"}; const cryptoEntries=Object.entries(funding?.crypto_addresses||{}).filter(([,value])=>Boolean(value));
-  const screenshots = stringArray(app.screenshots);
+  const listingPlatforms = Array.from(new Set(platforms.filter((item) => platformListing(item.listing_metadata)).map((item) => item.platform)));
+  const activePlatformRow = selectedListingPlatform ? platforms.find((item) => item.platform === selectedListingPlatform && platformListing(item.listing_metadata)) : undefined;
+  const activeListing = activePlatformRow ? platformListing(activePlatformRow.listing_metadata) : null;
+  const screenshots = activeListing?.screenshots.length ? activeListing.screenshots : stringArray(app.screenshots);
   const antiFeatures = stringArray(app.ant_features);
-  const name = app.name || app.package_name || "Untitled app";
+  const name = activeListing?.title || app.name || app.package_name || "Untitled app";
+  const shortDescription = activeListing?.shortDescription || app.short_description;
+  const description = activeListing?.fullDescription || app.description;
+  const changelog = activeListing?.changelog || app.changelog;
   const downloadablePlatforms = platforms.filter((platform) => Boolean(platform.download_url));
   const artifactLabel=(platform:StoreAppPlatform)=>platform.platform.toLowerCase()==="linux"?`Linux ${(platform.package_type||platform.linux_package_base||"").toUpperCase().replace("-BASED","")}`:platform.package_type?`${platform.platform} ${platform.package_type.toUpperCase()}`:platform.platform;
   const downloadHref=(platform:StoreAppPlatform)=>`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-app?${app.package_name ? `package_name=${encodeURIComponent(app.package_name)}` : `app_id=${encodeURIComponent(app.id)}`}&platform=${encodeURIComponent(platform.platform)}${platform.package_type?`&package_type=${encodeURIComponent(platform.package_type)}`:""}`;
@@ -258,9 +296,10 @@ export default function DiscoverAppPage() {
                 <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-200">Open source</span>
               </div>
               {app.developer_id ? <Link href={`/discover/developers/${encodeURIComponent(app.developer_name || app.developer_id)}`} className="mt-2 inline-flex text-sm text-indigo-300 hover:text-indigo-200">{app.developer_name || app.author_name || "Unknown developer"} →</Link> : <p className="mt-2 text-sm text-slate-400">{app.developer_name || app.author_name || "Unknown developer"}</p>}
-              {app.short_description && <p className="mt-4 max-w-3xl text-base leading-7 text-slate-300">{app.short_description}</p>}
+              {shortDescription && <p className="mt-4 max-w-3xl text-base leading-7 text-slate-300">{shortDescription}</p>}
               <div className="mt-4 flex flex-wrap items-center gap-2"><div className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-950/50 px-3 py-1.5 text-sm text-slate-300"><span aria-hidden="true">↓</span><span>{downloadCount.toLocaleString()} downloads</span></div><div className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-950/50 px-3 py-1.5 text-sm text-slate-300"><span className="text-amber-300">★</span><span>{ratingCount ? ratingAverage.toFixed(1) : "No ratings"}{ratingCount ? ` · ${ratingCount}` : ""}</span></div></div>
 
+              {listingPlatforms.length > 1 && <div className="mt-4 flex flex-wrap gap-2">{listingPlatforms.map((platform)=><button type="button" key={platform} onClick={()=>{setSelectedListingPlatform(platform);setScreenshotIndex(null);}} className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${selectedListingPlatform===platform?"border-indigo-400/40 bg-indigo-500/15 text-indigo-100":"border-slate-700 bg-slate-950/40 text-slate-400 hover:text-white"}`}>{platform} listing</button>)}</div>}
               <div className="mt-3 flex flex-wrap gap-2">{platforms.map((platform)=><span key={platform.id} className="rounded-full border border-slate-700 bg-slate-950/40 px-2.5 py-1 text-xs text-slate-300">{artifactLabel(platform)}</span>)}</div>
               {platformDownloadCounts.length>0&&<div className="mt-3 flex flex-wrap gap-2">{platformDownloadCounts.map((item)=><span key={item.platform} className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-xs text-indigo-200">{item.platform}: {Number(item.downloads).toLocaleString()} downloads</span>)}</div>}
 
@@ -296,10 +335,10 @@ export default function DiscoverAppPage() {
         </div>
       </section>
 
-      {app.description && (
+      {description && (
         <section className="rounded-3xl border border-white/10 bg-slate-900/50 p-5 shadow-lg shadow-black/10 backdrop-blur-xl sm:p-6">
-          <h2 className="text-xl font-semibold text-white">Description</h2>
-          <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-300">{app.description}</p>
+          <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-xl font-semibold text-white">Description</h2>{selectedListingPlatform&&activeListing&&<span className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-xs text-indigo-200">{selectedListingPlatform} listing</span>}</div>
+          <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-300">{description}</p>
         </section>
       )}
 
@@ -350,7 +389,7 @@ export default function DiscoverAppPage() {
           <div className="mt-4 flex flex-wrap gap-2">
             <LinkChip href={app.website_url} label="Website" />
             <LinkChip href={app.author_website} label="Author website" />
-            <LinkChip href={app.source_code_url} label="Source code" />
+            <LinkChip href={activePlatformRow?.repo_url || app.source_code_url} label={selectedListingPlatform&&activePlatformRow?.repo_url?`${selectedListingPlatform} source code`:"Source code"} />
             <LinkChip href={app.issue_tracker_url} label="Issue tracker" />
             <LinkChip href={app.translation_url} label="Translations" />
             <LinkChip href={app.changelog_url} label="Changelog" />
@@ -360,10 +399,10 @@ export default function DiscoverAppPage() {
 
       {versionHistory.length>0&&<section className="rounded-3xl border border-white/10 bg-slate-900/50 p-5 shadow-lg shadow-black/10 backdrop-blur-xl sm:p-6"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Releases</p><h2 className="mt-1 text-xl font-semibold text-white">Version history</h2><div className="mt-4 space-y-3">{versionHistory.map((item,index)=><details key={String(item.version)+"-"+String(item.version_code)+"-"+index} open={index===0} className="group rounded-2xl border border-white/10 bg-slate-950/30 p-4"><summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2"><span className="font-semibold text-white">{item.version?"v"+item.version:"Version"} {index===0&&<span className="ml-2 rounded-full bg-indigo-500/10 px-2 py-0.5 text-[11px] text-indigo-200">Latest</span>}</span><span className="text-xs text-slate-500">{formatDate(item.published_at)} · #{item.version_code??"—"} <span className="ml-1 inline-block transition group-open:rotate-180">⌄</span></span></summary><p className="mt-3 whitespace-pre-wrap border-t border-white/10 pt-3 text-sm leading-6 text-slate-400">{item.changelog||"No changelog provided."}</p></details>)}</div></section>}
 
-      {app.changelog && (
+      {changelog && (
         <section className="rounded-3xl border border-white/10 bg-slate-900/50 p-5 shadow-lg shadow-black/10 backdrop-blur-xl sm:p-6">
-          <h2 className="text-xl font-semibold text-white">Changelog</h2>
-          <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-300">{app.changelog}</p>
+          <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-xl font-semibold text-white">Changelog</h2>{selectedListingPlatform&&activeListing&&<span className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-xs text-indigo-200">{selectedListingPlatform}</span>}</div>
+          <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-300">{changelog}</p>
         </section>
       )}
 

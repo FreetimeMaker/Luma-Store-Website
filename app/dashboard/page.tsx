@@ -438,10 +438,8 @@ export default function LumaDeveloperPortal() {
     setClosedShortDescription(english?.shortDescription || app.shortDescription);
     setClosedFullDescription(english?.fullDescription || app.description);
     setClosedChangelog(english?.changelog || app.changelog);
-    setClosedScreenshotsText((english?.screenshots || app.screenshots).join("
-"));
-    setAdditionalClosedMetadata(app.localizedMetadata.filter((item) => item !== english).map((item) => ({ ...item, screenshotsText: item.screenshots.join("
-") })));
+    setClosedScreenshotsText((english?.screenshots || app.screenshots).join("\\n"));
+    setAdditionalClosedMetadata(app.localizedMetadata.filter((item) => item !== english).map((item) => ({ ...item, screenshotsText: item.screenshots.join("\\n") })));
     setFastlaneMetadata(null); setFastlaneError(null); setStep(1); setSubmitted(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };

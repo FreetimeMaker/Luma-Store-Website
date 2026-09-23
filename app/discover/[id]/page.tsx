@@ -53,6 +53,7 @@ type StoreAppPlatform = {
   id: string;
   app_id: string;
   platform: string;
+  package_type: string | null;
   linux_package_base: string | null;
   download_url: string | null;
   file_size_mb: number | null;
@@ -180,7 +181,7 @@ export default function DiscoverAppPage() {
           const fundingResult = await supabase.from("luma_developer_funding").select("donate_url,liberapay,opencollective,bitcoin,litecoin").eq("developer_id", loadedApp.developer_id).maybeSingle();
           if (!cancelled) setFunding((fundingResult.data as DeveloperFunding | null) ?? null);
         } else if (!cancelled) setFunding(null);
-        const platformResult = await supabase.from("store_app_platforms").select("id,app_id,platform,linux_package_base,download_url,file_size_mb,sha256,artifact_verified_at,artifact_size_bytes,permissions").eq("app_id", loadedApp.id).order("platform", { ascending: true });
+        const platformResult = await supabase.from("store_app_platforms").select("id,app_id,platform,package_type,linux_package_base,download_url,file_size_mb,sha256,artifact_verified_at,artifact_size_bytes,permissions").eq("app_id", loadedApp.id).order("platform", { ascending: true });
         if (!cancelled) setPlatforms((platformResult.data ?? []) as StoreAppPlatform[]);
         const { data: totalDownloads } = await supabase.rpc("luma_app_download_count", { target_app_id: loadedApp.id });
         if (!cancelled) setDownloadCount(Number(totalDownloads ?? 0));
@@ -229,7 +230,7 @@ export default function DiscoverAppPage() {
   const screenshots = stringArray(app.screenshots);
   const antiFeatures = stringArray(app.ant_features);
   const name = app.name || app.package_name || "Untitled app";
-  const downloadablePlatforms = platforms.filter((platform) => Boolean(platform.download_url));
+  const downloadablePlatforms = platforms.filter((platform) => Boolean(platform.download_url));\n  const artifactLabel=(platform:StoreAppPlatform)=>platform.platform.toLowerCase()==="linux"?`Linux ${(platform.package_type||platform.linux_package_base||"").toUpperCase().replace("-BASED","")}`:platform.package_type?`${platform.platform} ${platform.package_type.toUpperCase()}`:platform.platform;\n  const downloadHref=(platform:StoreAppPlatform)=>`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-app?${app.package_name ? `package_name=${encodeURIComponent(app.package_name)}` : `app_id=${encodeURIComponent(app.id)}`}&platform=${encodeURIComponent(platform.platform)}${platform.package_type?`&package_type=${encodeURIComponent(platform.package_type)}`:""}`;
 
   return (
     <div className="glass-page mx-auto max-w-6xl space-y-5 px-3 pb-20 sm:space-y-6 sm:px-4">
@@ -256,7 +257,7 @@ export default function DiscoverAppPage() {
               {app.short_description && <p className="mt-4 max-w-3xl text-base leading-7 text-slate-300">{app.short_description}</p>}
               <div className="mt-4 flex flex-wrap items-center gap-2"><div className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-950/50 px-3 py-1.5 text-sm text-slate-300"><span aria-hidden="true">↓</span><span>{downloadCount.toLocaleString()} downloads</span></div><div className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-950/50 px-3 py-1.5 text-sm text-slate-300"><span className="text-amber-300">★</span><span>{ratingCount ? ratingAverage.toFixed(1) : "No ratings"}{ratingCount ? ` · ${ratingCount}` : ""}</span></div></div>
 
-              <div className="mt-3 flex flex-wrap gap-2">{platforms.map((platform)=><span key={platform.id} className="rounded-full border border-slate-700 bg-slate-950/40 px-2.5 py-1 text-xs text-slate-300">{platform.platform}{platform.platform.toLowerCase()==="linux"&&platform.linux_package_base?` · ${platform.linux_package_base}`:""}</span>)}</div>
+              <div className="mt-3 flex flex-wrap gap-2">{platforms.map((platform)=><span key={platform.id} className="rounded-full border border-slate-700 bg-slate-950/40 px-2.5 py-1 text-xs text-slate-300">{artifactLabel(platform)}</span>)}</div>
               {platformDownloadCounts.length>0&&<div className="mt-3 flex flex-wrap gap-2">{platformDownloadCounts.map((item)=><span key={item.platform} className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-xs text-indigo-200">{item.platform}: {Number(item.downloads).toLocaleString()} downloads</span>)}</div>}
 
               <div className="mt-5 flex flex-wrap gap-2">
@@ -274,12 +275,10 @@ export default function DiscoverAppPage() {
               downloadablePlatforms.map((platform) => (
                 <a
                   key={platform.id}
-                  href={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-app?${app.package_name ? `package_name=${encodeURIComponent(app.package_name)}` : `app_id=${encodeURIComponent(app.id)}`}&platform=${encodeURIComponent(platform.platform)}`}
-                  onClick={(event)=>handleDownload(event,platform,`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-app?${app.package_name ? `package_name=${encodeURIComponent(app.package_name)}` : `app_id=${encodeURIComponent(app.id)}`}&platform=${encodeURIComponent(platform.platform)}`)}
+                  href={downloadHref(platform)}\n                  onClick={(event)=>handleDownload(event,platform,downloadHref(platform))}
                   className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-indigo-500 px-5 py-3 text-center text-sm font-bold text-white shadow-lg shadow-indigo-950/30 transition hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-300/60"
                 >
-                  Download {platform.platform}
-                  {platform.platform.toLowerCase() === "linux" && platform.linux_package_base ? ` · ${platform.linux_package_base}` : ""}
+                  Download {artifactLabel(platform)}
                   {platform.file_size_mb !== null ? ` · ${platform.file_size_mb.toFixed(2)} MB` : ""}
                 </a>
               ))
@@ -305,9 +304,9 @@ export default function DiscoverAppPage() {
           <TrustItem label="Source code" value={app.source_code_url||app.repo_url?"Repository linked":"Not provided"} tone={app.source_code_url||app.repo_url?"good":"neutral"}/>
           <TrustItem label="License" value={app.license_type||"Not provided"} tone={app.license_type?"good":"neutral"}/>
           <TrustItem label="Anti-features" value={hasJsonValue(app.ant_features)?stringArray(app.ant_features).join(", ")||"Declared":"None declared"} tone={hasJsonValue(app.ant_features)?"warn":"good"}/>
-          <TrustItem label="SHA-256" value={platforms.some(p=>p.sha256)?platforms.filter(p=>p.sha256).map(p=>p.platform+": "+p.sha256).join(" · "):"Not provided yet"} tone={platforms.some(p=>p.sha256)?"good":"neutral"}/>
+          <TrustItem label="SHA-256" value={platforms.some(p=>p.sha256)?platforms.filter(p=>p.sha256).map(p=>artifactLabel(p)+": "+p.sha256).join(" · "):"Not provided yet"} tone={platforms.some(p=>p.sha256)?"good":"neutral"}/>
           <TrustItem label="Android permissions" value={(()=>{const android=platforms.find(p=>p.platform.toLowerCase()==="android");return android?(hasJsonValue(android.permissions)?stringArray(android.permissions).join(", ")||"Metadata available":"Not provided yet"):"Not applicable"})()} tone="neutral"/>
-          <TrustItem label="Artifact size" value={platforms.some(p=>p.artifact_size_bytes!=null||p.file_size_mb!=null)?platforms.filter(p=>p.artifact_size_bytes!=null||p.file_size_mb!=null).map(p=>p.platform+": "+(p.artifact_size_bytes!=null?(Number(p.artifact_size_bytes)/1024/1024).toLocaleString(undefined,{maximumFractionDigits:2}):Number(p.file_size_mb).toLocaleString(undefined,{maximumFractionDigits:2}))+" MB").join(" · "):"Not provided"} tone="neutral"/>
+          <TrustItem label="Artifact size" value={platforms.some(p=>p.artifact_size_bytes!=null||p.file_size_mb!=null)?platforms.filter(p=>p.artifact_size_bytes!=null||p.file_size_mb!=null).map(p=>artifactLabel(p)+": "+(p.artifact_size_bytes!=null?(Number(p.artifact_size_bytes)/1024/1024).toLocaleString(undefined,{maximumFractionDigits:2}):Number(p.file_size_mb).toLocaleString(undefined,{maximumFractionDigits:2}))+" MB").join(" · "):"Not provided"} tone="neutral"/>
           <TrustItem label="Artifact verification" value={platforms.some(p=>p.artifact_verified_at)?"SHA-256 calculated by Luma Store during publishing":"Not verified yet"} tone={platforms.some(p=>p.artifact_verified_at)?"good":"neutral"}/>
         </div>
         {hasJsonValue(app.ant_features)&&<div className="mt-4 rounded-2xl border border-amber-400/20 bg-amber-500/10 p-4"><p className="text-sm font-semibold text-amber-100">Declared anti-features</p><p className="mt-1 text-sm leading-6 text-amber-100/70">{stringArray(app.ant_features).join(", ")||"This app has anti-feature metadata, but it is not stored as a simple list."}</p></div>}

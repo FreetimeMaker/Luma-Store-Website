@@ -289,7 +289,7 @@ export default function AppMetadataPage() {
     void load();
   }, [id, supabase]);
 
-  function setField(field: keyof typeof form, value: string | string[] | AppPlatform[] | boolean) {
+  function setField<K extends keyof typeof form>(field: K, value: (typeof form)[K]) {
     setForm((current) => ({ ...current, [field]: value }));
   }
 

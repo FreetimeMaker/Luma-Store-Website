@@ -357,8 +357,8 @@ export default function SubmissionDetailsPage() {
       {submissionPlatforms.length > 0 && (
         <section className={`${cardClass} overflow-hidden`}>
           <div className="border-b border-slate-800 px-5 py-4">
-            <h2 className="font-semibold text-white">{submission.separate_platform_repos || hasSeparatePlatformData(submission.platforms) ? "Platform repositories & metadata" : "Submission platforms"}</h2>
-            <p className="mt-1 text-sm text-slate-400">Submitted repositories, package files and store metadata per platform.</p>
+            <h2 className="font-semibold text-white">Platform listings & artifacts</h2>
+            <p className="mt-1 text-sm text-slate-400">Android, Linux and Windows keep their own listing metadata and package files. Repository URLs are shown per platform only when separate repositories are enabled.</p>
           </div>
           <div className="space-y-5 p-5">
             {platformNames.map((platform) => {

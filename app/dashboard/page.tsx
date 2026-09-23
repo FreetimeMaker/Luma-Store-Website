@@ -571,33 +571,81 @@ export default function LumaDeveloperPortal() {
       if (!validAndroidMetadata) throw new Error("Android apps require a valid package name and positive versionCode.");
       if (!appCategories.length || appCategories.some((category) => !FDROID_CATEGORIES.includes(category as typeof FDROID_CATEGORIES[number]))) throw new Error("Please select at least one valid F-Droid category.");
       if (!appLicenseType) throw new Error("Please select an open-source license.");
-      githubRepository(appLink);
-      if (manualStoreMetadata && !manualMetadataValid) throw new Error("Manual store metadata requires complete English metadata and complete optional languages.");
+      if (manualStoreMetadata && !separatePlatformRepos && !manualMetadataValid) throw new Error("Linux and Windows require complete manual store metadata.");
+      if (separatePlatformRepos) {
+        for (const platform of appPlatforms) {
+          const item = platformMetadata[platform];
+          if (!item.repoUrl.trim()) throw new Error(`${platform} requires its own repository URL.`);
+          if (platform !== "Android") {
+            const screenshots = item.screenshotsText.split(/\\r?\\n/).map((value) => value.trim()).filter(Boolean);
+            if (!item.title.trim() || !item.shortDescription.trim() || !item.fullDescription.trim() || !item.changelog.trim() || screenshots.length === 0) {
+              throw new Error(`${platform} requires complete manual store metadata and at least one screenshot.`);
+            }
+          }
+        }
+      }
 
-      const localizedMetadata: LocalizedMetadata[] = manualStoreMetadata ? [
+      const androidRepo = separatePlatformRepos ? platformMetadata.Android.repoUrl.trim() : appLink.trim();
+      const primaryRepo = isAndroid
+        ? androidRepo
+        : separatePlatformRepos
+          ? platformMetadata[appPlatforms[0]].repoUrl.trim()
+          : appLink.trim();
+      githubRepository(primaryRepo);
+
+      const androidStoreMetadata = isAndroid ? await fetchFastlaneMetadata(androidRepo, appVersionCode) : null;
+      if (androidStoreMetadata) {
+        setFastlaneMetadata(androidStoreMetadata);
+        setAppName(androidStoreMetadata.title);
+      }
+
+      const manualLocalizedMetadata: LocalizedMetadata[] = manualStoreMetadata ? [
         { locale: "en-US", title: closedTitle.trim(), shortDescription: closedShortDescription.trim(), fullDescription: closedFullDescription.trim(), changelog: closedChangelog.trim(), screenshots: closedScreenshots },
         ...additionalClosedMetadata.map((item) => ({ locale: item.locale.trim(), title: item.title.trim(), shortDescription: item.shortDescription.trim(), fullDescription: item.fullDescription.trim(), changelog: item.changelog.trim(), screenshots: item.screenshotsText.split(/\\r?\\n/).map((value) => value.trim()).filter(Boolean) })),
       ] : [];
 
-      const firstPlatformMetadata=separatePlatformRepos?platformMetadata[appPlatforms[0]]:null;
-      const currentStoreMetadata = separatePlatformRepos && firstPlatformMetadata ? {title:firstPlatformMetadata.title.trim(),shortDescription:firstPlatformMetadata.shortDescription.trim(),fullDescription:firstPlatformMetadata.fullDescription.trim(),changelog:firstPlatformMetadata.changelog.trim(),screenshots:firstPlatformMetadata.screenshotsText.split(/\\r?\\n/).map(value=>value.trim()).filter(Boolean),locale:"en-US",branch:"manual"} : manualStoreMetadata ? {
-        title: localizedMetadata[0].title,
-        shortDescription: localizedMetadata[0].shortDescription,
-        fullDescription: localizedMetadata[0].fullDescription,
-        changelog: localizedMetadata[0].changelog,
-        screenshots: localizedMetadata[0].screenshots,
+      const firstManualPlatform = appPlatforms.find((platform) => platform !== "Android");
+      const firstManualMetadata = separatePlatformRepos && firstManualPlatform ? platformMetadata[firstManualPlatform] : null;
+      const manualPrimaryMetadata: FastlaneMetadata | null = firstManualMetadata ? {
+        title: firstManualMetadata.title.trim(),
+        shortDescription: firstManualMetadata.shortDescription.trim(),
+        fullDescription: firstManualMetadata.fullDescription.trim(),
+        changelog: firstManualMetadata.changelog.trim(),
+        screenshots: firstManualMetadata.screenshotsText.split(/\\r?\\n/).map((value) => value.trim()).filter(Boolean),
         locale: "en-US",
         branch: "manual",
-      } : await fetchFastlaneMetadata(appLink.trim(), appVersionCode);
+      } : manualLocalizedMetadata[0] ? {
+        title: manualLocalizedMetadata[0].title,
+        shortDescription: manualLocalizedMetadata[0].shortDescription,
+        fullDescription: manualLocalizedMetadata[0].fullDescription,
+        changelog: manualLocalizedMetadata[0].changelog,
+        screenshots: manualLocalizedMetadata[0].screenshots,
+        locale: "en-US",
+        branch: "manual",
+      } : null;
+
+      const currentStoreMetadata = androidStoreMetadata ?? manualPrimaryMetadata;
+      if (!currentStoreMetadata) throw new Error("Store metadata is incomplete.");
       setFastlaneMetadata(currentStoreMetadata); setAppName(currentStoreMetadata.title);
+
+      const localizedMetadata: LocalizedMetadata[] = androidStoreMetadata ? [{
+        locale: androidStoreMetadata.locale || "en-US",
+        title: androidStoreMetadata.title,
+        shortDescription: androidStoreMetadata.shortDescription,
+        fullDescription: androidStoreMetadata.fullDescription,
+        changelog: androidStoreMetadata.changelog,
+        screenshots: androidStoreMetadata.screenshots,
+      }] : manualLocalizedMetadata;
+
+      const submissionArtifacts = buildPlatformArtifacts(androidStoreMetadata);
 
       const appMetadata = {
         name: currentStoreMetadata.title,
         short_description: currentStoreMetadata.shortDescription,
         description: currentStoreMetadata.fullDescription,
-        link: appLink.trim(),
-        repo_url: appLink.trim(),
-        source_code_url: appLink.trim(),
+        link: primaryRepo,
+        repo_url: primaryRepo,
+        source_code_url: primaryRepo,
         category: appCategories[0],
         categories: appCategories,
         subcategory: null,
@@ -607,10 +655,10 @@ export default function LumaDeveloperPortal() {
         icon_url: appIconUrl.trim(),
         version: appVersion.trim(),
         platform: appPlatforms[0],
-        platforms: platformArtifacts,
+        platforms: submissionArtifacts,
         separate_platform_repos: separatePlatformRepos,
         linux_package_base: null,
-        download_url: platformArtifacts[0]?.downloadUrl || null,
+        download_url: submissionArtifacts[0]?.downloadUrl || null,
         changelog: currentStoreMetadata.changelog,
         package_name: isAndroid ? appPackageName.trim() : null,
         version_code: isAndroid ? Number(appVersionCode) : null,

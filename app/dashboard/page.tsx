@@ -35,6 +35,7 @@ type AppSubmission = {
   version: string;
   platform: string;
   platforms: PlatformArtifact[];
+  separatePlatformRepos: boolean;
   linuxPackageBase: string;
   downloadUrl: string;
   changelog: string;
@@ -72,6 +73,7 @@ type LumaSubmissionRow = {
   version: string | null;
   platform: string | null;
   platforms: unknown;
+  separate_platform_repos: boolean | null;
   linux_package_base: string | null;
   download_url: string | null;
   changelog: string | null;
@@ -167,15 +169,43 @@ function parseLocalizedMetadata(value: unknown): LocalizedMetadata[] {
 function parsePlatformArtifacts(value: unknown, legacyPlatform: string | null, legacyUrl: string | null, legacyLinuxBase: string | null): PlatformArtifact[] {
   if (Array.isArray(value)) return value.flatMap((entry) => {
     if (!entry || typeof entry !== "object") return [];
-    const item=entry as Record<string,unknown>, platform=item.platform;
-    if (platform!=="Android"&&platform!=="Windows"&&platform!=="Linux") return [];
-    const packageType=String(item.packageType??item.package_type??(platform==="Android"?"apk":platform==="Windows"?"exe":legacyLinuxBase==="RPM-based"?"rpm":"deb")) as PlatformArtifact["packageType"];
-    const downloadUrl=String(item.downloadUrl??item.download_url??"");
-    return downloadUrl ? [{platform,packageType,downloadUrl}] : [];
+    const item = entry as Record<string, unknown>;
+    const platform = item.platform;
+    if (platform !== "Android" && platform !== "Windows" && platform !== "Linux") return [];
+
+    const packageType = String(
+      item.packageType ?? item.package_type ??
+      (platform === "Android" ? "apk" : platform === "Windows" ? "exe" : legacyLinuxBase === "RPM-based" ? "rpm" : "deb")
+    ) as PlatformArtifact["packageType"];
+    const downloadUrl = String(item.downloadUrl ?? item.download_url ?? "");
+    if (!downloadUrl) return [];
+
+    const rawRepoUrl = item.repoUrl ?? item.repo_url;
+    const repoUrl = typeof rawRepoUrl === "string" ? rawRepoUrl : undefined;
+    const rawMetadata = item.metadata;
+    let metadata: PlatformArtifact["metadata"];
+
+    if (rawMetadata && typeof rawMetadata === "object") {
+      const row = rawMetadata as Record<string, unknown>;
+      metadata = {
+        title: typeof row.title === "string" ? row.title : "",
+        shortDescription: typeof row.shortDescription === "string" ? row.shortDescription : typeof row.short_description === "string" ? row.short_description : "",
+        fullDescription: typeof row.fullDescription === "string" ? row.fullDescription : typeof row.full_description === "string" ? row.full_description : "",
+        changelog: typeof row.changelog === "string" ? row.changelog : "",
+        screenshots: asStringArray(row.screenshots),
+      };
+    }
+
+    return [{ platform, packageType, downloadUrl, ...(repoUrl ? { repoUrl } : {}), ...(metadata ? { metadata } : {}) }];
   });
+
   if (!legacyPlatform || !legacyUrl) return [];
-  const platform=legacyPlatform as AppPlatform;
-  return [{platform,packageType:platform==="Android"?"apk":platform==="Windows"?"exe":legacyLinuxBase==="RPM-based"?"rpm":"deb",downloadUrl:legacyUrl}];
+  const platform = legacyPlatform as AppPlatform;
+  return [{
+    platform,
+    packageType: platform === "Android" ? "apk" : platform === "Windows" ? "exe" : legacyLinuxBase === "RPM-based" ? "rpm" : "deb",
+    downloadUrl: legacyUrl,
+  }];
 }
 
 function rowToApp(item: LumaSubmissionRow): AppSubmission {
@@ -194,6 +224,7 @@ function rowToApp(item: LumaSubmissionRow): AppSubmission {
     version: item.version || "",
     platform: item.platform || "",
     platforms: parsePlatformArtifacts(item.platforms, item.platform, item.download_url, item.linux_package_base),
+    separatePlatformRepos: item.separate_platform_repos === true,
     linuxPackageBase: item.linux_package_base || "",
     downloadUrl: item.download_url || "",
     changelog: item.changelog || "",

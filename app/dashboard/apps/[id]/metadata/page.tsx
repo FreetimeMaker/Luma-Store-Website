@@ -384,49 +384,55 @@ export default function AppMetadataPage() {
       const primaryPlatform = form.selectedPlatforms[0];
       const primaryRepo = form.separatePlatformRepos ? platformMetadata[primaryPlatform].repoUrl.trim() : form.sourceCodeUrl.trim();
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Your login session expired.");
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Your login session expired.");
+      if (!session.provider_token) throw new Error("GitHub authorization is required. Please sign out and sign in with GitHub again.");
 
-      const { error: updateError } = await supabase
-        .from("luma_submissions")
-        .update({
-          name: form.name.trim(),
-          short_description: form.shortDescription.trim(),
-          description: form.description.trim(),
-          icon_url: form.iconUrl.trim(),
-          category: form.categories[0],
-          categories: form.categories,
-          license_type: form.licenseType.trim(),
-          version: form.version.trim(),
-          package_name: isAndroid ? form.packageName.trim() : null,
-          version_code: isAndroid ? Number(form.versionCode) : null,
-          changelog: form.changelog.trim(),
-          screenshots,
-          localized_metadata: updateEnglishMetadata(app.localized_metadata, form.name.trim(), form.shortDescription.trim(), form.description.trim(), form.changelog.trim(), screenshots),
-          platform: primaryPlatform,
-          platforms: artifacts,
-          separate_platform_repos: form.separatePlatformRepos,
-          linux_package_base: null,
-          download_url: artifacts[0]?.downloadUrl || null,
-          link: primaryRepo || null,
-          repo_url: primaryRepo || null,
-          source_code_url: primaryRepo || null,
-          closed_source: false,
-          author_name: clean(form.authorName),
-          author_email: clean(form.authorEmail),
-          author_website: clean(form.authorWebsite),
-          website_url: clean(form.websiteUrl),
-          issue_tracker_url: clean(form.issueTrackerUrl),
-          translation_url: clean(form.translationUrl),
-          changelog_url: clean(form.changelogUrl),
-          review_message: null,
-          status: "Pending",
-          status_updated_at: new Date().toISOString(),
-        })
-        .eq("id", id)
-        .eq("user_id", user.id);
+      const submission = {
+        name: form.name.trim(),
+        short_description: form.shortDescription.trim(),
+        description: form.description.trim(),
+        icon_url: form.iconUrl.trim(),
+        category: form.categories[0],
+        categories: form.categories,
+        subcategory: null,
+        license_type: form.licenseType.trim(),
+        version: form.version.trim(),
+        package_name: isAndroid ? form.packageName.trim() : null,
+        version_code: isAndroid ? Number(form.versionCode) : null,
+        changelog: form.changelog.trim(),
+        screenshots,
+        localized_metadata: updateEnglishMetadata(app.localized_metadata, form.name.trim(), form.shortDescription.trim(), form.description.trim(), form.changelog.trim(), screenshots),
+        platform: primaryPlatform,
+        platforms: artifacts,
+        separate_platform_repos: form.separatePlatformRepos,
+        linux_package_base: null,
+        download_url: artifacts[0]?.downloadUrl || null,
+        link: primaryRepo || null,
+        repo_url: primaryRepo || null,
+        source_code_url: primaryRepo || null,
+        closed_source: false,
+        author_name: clean(form.authorName),
+        author_email: clean(form.authorEmail),
+        author_website: clean(form.authorWebsite),
+        website_url: clean(form.websiteUrl),
+        issue_tracker_url: clean(form.issueTrackerUrl),
+        translation_url: clean(form.translationUrl),
+        changelog_url: clean(form.changelogUrl),
+        review_message: null,
+      };
 
-      if (updateError) throw updateError;
+      const response = await fetch("/api/luma/submissions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + session.access_token,
+          "X-GitHub-Token": session.provider_token,
+        },
+        body: JSON.stringify({ submission, editingId: id, editingStatus: app.status }),
+      });
+      const result = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(result.error || "App metadata could not be saved.");
 
       router.push("/dashboard/apps/" + id);
       router.refresh();

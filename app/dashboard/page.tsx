@@ -472,8 +472,7 @@ export default function LumaDeveloperPortal() {
 
   const isApprovedUpdate = editingStatus === "Approved";
   const isRequestedChange = editingStatus === "Changes Requested";
-  const closedScreenshots = closedScreenshotsText.split(/\r?
-/).map((value) => value.trim()).filter(Boolean);
+  const closedScreenshots = closedScreenshotsText.split(/\\r?\\n/).map((value) => value.trim()).filter(Boolean);
   const englishMetadataValid = Boolean(closedTitle.trim() && closedShortDescription.trim() && closedFullDescription.trim() && closedChangelog.trim() && closedScreenshots.length > 0);
   const additionalMetadataValid = additionalClosedMetadata.every((item) => Boolean(item.locale.trim() && item.title.trim() && item.shortDescription.trim() && item.fullDescription.trim() && item.changelog.trim() && item.screenshotsText.split(/\r?
 /).some((value) => value.trim())));

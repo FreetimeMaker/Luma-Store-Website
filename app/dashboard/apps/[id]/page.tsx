@@ -27,6 +27,8 @@ type Submission = {
   package_name: string | null;
   changelog: string | null;
   ant_features: unknown;
+  platforms: unknown[] | null;
+  separate_platform_repos: boolean | null;
 };
 
 type VersionRow = {

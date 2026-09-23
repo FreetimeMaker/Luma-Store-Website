@@ -60,7 +60,7 @@ export async function POST(request: Request) {
     }
     const isDraft = body.draft === true;
     const rawPlatforms = Array.isArray(submission.platforms) ? submission.platforms : [];
-    const platforms = rawPlatforms.flatMap((entry) => { if (!entry || typeof entry !== "object") return []; const item=entry as Record<string,unknown>; const platform=String(item.platform??""), packageType=String(item.packageType??""); const downloadUrl=String(item.downloadUrl??"").trim(); if (!["Android","Windows","Linux"].includes(platform) || !["apk","exe","msi","deb","rpm"].includes(packageType) || !downloadUrl) return []; try { const url=new URL(downloadUrl); if (url.protocol!=="https:"&&url.protocol!=="http:") return []; } catch { return []; } if(platform==="Android"&&packageType!=="apk")return []; if(platform==="Windows"&&!["exe","msi"].includes(packageType))return []; if(platform==="Linux"&&!["deb","rpm"].includes(packageType))return []; return [{platform,packageType,downloadUrl}]; });
+    const platforms = rawPlatforms.flatMap((entry) => { if (!entry || typeof entry !== "object") return []; const item=entry as Record<string,unknown>; const platform=String(item.platform??""), packageType=String(item.packageType??""); const downloadUrl=String(item.downloadUrl??"").trim(), repoUrl=String(item.repoUrl??"").trim(); const metadata=item.metadata&&typeof item.metadata==="object"?item.metadata as Record<string,unknown>:null; if (!["Android","Windows","Linux"].includes(platform) || !["apk","exe","msi","deb","rpm"].includes(packageType) || !downloadUrl) return []; try { const url=new URL(downloadUrl); if (url.protocol!=="https:"&&url.protocol!=="http:") return []; } catch { return []; } if(platform==="Android"&&packageType!=="apk")return []; if(platform==="Windows"&&!["exe","msi"].includes(packageType))return []; if(platform==="Linux"&&!["deb","rpm"].includes(packageType))return []; return [{platform,packageType,downloadUrl,...(repoUrl?{repoUrl}:{}),...(metadata?{metadata}: {})}]; });
     if (!isDraft && platforms.length === 0) return NextResponse.json({ error: "At least one valid platform download is required." }, { status: 400 });
     submission.platforms = platforms;
     submission.platform = platforms[0]?.platform ?? submission.platform ?? null;
@@ -81,7 +81,23 @@ export async function POST(request: Request) {
     }
 
     if (!githubToken) return NextResponse.json({ error: "GitHub authentication is required." }, { status: 401 });
-    const { owner, repo } = parseGitHubRepository(submission.repo_url ?? submission.link);
+    const separatePlatformRepos = submission.separate_platform_repos === true;
+    if (separatePlatformRepos) {
+      const uniquePlatforms = [...new Set(platforms.map((item) => item.platform))];
+      for (const platform of uniquePlatforms) {
+        const entries = platforms.filter((item) => item.platform === platform);
+        const repoUrl = entries.find((item) => item.repoUrl)?.repoUrl;
+        const metadata = entries.find((item) => item.metadata)?.metadata as Record<string, unknown> | undefined;
+        if (!repoUrl) return NextResponse.json({ error: `${platform} requires its own repository URL when separate repositories are enabled.` }, { status: 400 });
+        try { parseGitHubRepository(repoUrl); } catch (error) { return NextResponse.json({ error: `${platform}: ${error instanceof Error ? error.message : "Invalid repository URL."}` }, { status: 400 }); }
+        const screenshots = Array.isArray(metadata?.screenshots) ? metadata.screenshots.filter((value) => typeof value === "string" && value.trim()) : [];
+        if (!metadata || !String(metadata.title??"").trim() || !String(metadata.shortDescription??"").trim() || !String(metadata.fullDescription??"").trim() || !String(metadata.changelog??"").trim() || screenshots.length === 0) {
+          return NextResponse.json({ error: `${platform} requires complete store metadata and at least one screenshot when separate repositories are enabled.` }, { status: 400 });
+        }
+      }
+    }
+    const primaryRepoUrl = separatePlatformRepos ? platforms.find((item) => item.repoUrl)?.repoUrl : String(submission.repo_url ?? submission.link ?? "");
+    const { owner, repo } = parseGitHubRepository(primaryRepoUrl);
     const [githubUser, githubRepo] = await Promise.all([
       githubJson("/user", githubToken),
       githubJson(`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`, githubToken),
@@ -103,6 +119,24 @@ export async function POST(request: Request) {
 
     if (!ownsRepository && !canWrite) {
       return NextResponse.json({ error: "Your GitHub account must own this repository or have write access to it." }, { status: 403 });
+    }
+
+    if (separatePlatformRepos) {
+      const checked = new Set<string>([`https://github.com/${owner}/${repo}`.toLowerCase()]);
+      for (const item of platforms) {
+        if (!item.repoUrl) continue;
+        const parsed = parseGitHubRepository(item.repoUrl);
+        const canonical = `https://github.com/${parsed.owner}/${parsed.repo}`;
+        if (checked.has(canonical.toLowerCase())) continue;
+        const platformRepo = await githubJson(`/repos/${encodeURIComponent(parsed.owner)}/${encodeURIComponent(parsed.repo)}`, githubToken) as Record<string, unknown>;
+        if (platformRepo.private === true) return NextResponse.json({ error: `${item.platform} repository must be public.` }, { status: 400 });
+        const platformOwner = platformRepo.owner && typeof platformRepo.owner === "object" && "login" in platformRepo.owner ? String((platformRepo.owner as { login?: unknown }).login ?? "") : "";
+        const platformPermissions = platformRepo.permissions && typeof platformRepo.permissions === "object" ? platformRepo.permissions as Record<string, unknown> : {};
+        const platformOwned = login.length > 0 && platformOwner.toLowerCase() === login.toLowerCase();
+        const platformWritable = platformPermissions.push === true || platformPermissions.maintain === true || platformPermissions.admin === true;
+        if (!platformOwned && !platformWritable) return NextResponse.json({ error: `Your GitHub account must own or have write access to the ${item.platform} repository.` }, { status: 403 });
+        checked.add(canonical.toLowerCase());
+      }
     }
 
     const safeSubmission = {

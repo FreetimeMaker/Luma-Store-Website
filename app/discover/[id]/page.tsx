@@ -230,7 +230,9 @@ export default function DiscoverAppPage() {
   const screenshots = stringArray(app.screenshots);
   const antiFeatures = stringArray(app.ant_features);
   const name = app.name || app.package_name || "Untitled app";
-  const downloadablePlatforms = platforms.filter((platform) => Boolean(platform.download_url));\n  const artifactLabel=(platform:StoreAppPlatform)=>platform.platform.toLowerCase()==="linux"?`Linux ${(platform.package_type||platform.linux_package_base||"").toUpperCase().replace("-BASED","")}`:platform.package_type?`${platform.platform} ${platform.package_type.toUpperCase()}`:platform.platform;\n  const downloadHref=(platform:StoreAppPlatform)=>`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-app?${app.package_name ? `package_name=${encodeURIComponent(app.package_name)}` : `app_id=${encodeURIComponent(app.id)}`}&platform=${encodeURIComponent(platform.platform)}${platform.package_type?`&package_type=${encodeURIComponent(platform.package_type)}`:""}`;
+  const downloadablePlatforms = platforms.filter((platform) => Boolean(platform.download_url));
+  const artifactLabel=(platform:StoreAppPlatform)=>platform.platform.toLowerCase()==="linux"?`Linux ${(platform.package_type||platform.linux_package_base||"").toUpperCase().replace("-BASED","")}`:platform.package_type?`${platform.platform} ${platform.package_type.toUpperCase()}`:platform.platform;
+  const downloadHref=(platform:StoreAppPlatform)=>`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-app?${app.package_name ? `package_name=${encodeURIComponent(app.package_name)}` : `app_id=${encodeURIComponent(app.id)}`}&platform=${encodeURIComponent(platform.platform)}${platform.package_type?`&package_type=${encodeURIComponent(platform.package_type)}`:""}`;
 
   return (
     <div className="glass-page mx-auto max-w-6xl space-y-5 px-3 pb-20 sm:space-y-6 sm:px-4">
@@ -275,7 +277,8 @@ export default function DiscoverAppPage() {
               downloadablePlatforms.map((platform) => (
                 <a
                   key={platform.id}
-                  href={downloadHref(platform)}\n                  onClick={(event)=>handleDownload(event,platform,downloadHref(platform))}
+                  href={downloadHref(platform)}
+                  onClick={(event)=>handleDownload(event,platform,downloadHref(platform))}
                   className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-indigo-500 px-5 py-3 text-center text-sm font-bold text-white shadow-lg shadow-indigo-950/30 transition hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-300/60"
                 >
                   Download {artifactLabel(platform)}

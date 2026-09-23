@@ -29,6 +29,7 @@ type Submission = {
   ant_features: unknown;
   platforms: unknown[] | null;
   separate_platform_repos: boolean | null;
+  store_app_id: string | null;
 };
 
 type VersionRow = {
@@ -183,7 +184,7 @@ export default function SubmissionDetailsPage() {
 
     const { data: submissionData, error: submissionError } = await supabase
       .from("luma_submissions")
-      .select("id,user_id,name,short_description,description,category,status,submitted_at,status_updated_at,review_message,repo_url,link,license_type,version,version_code,package_name,changelog,ant_features,platforms,separate_platform_repos")
+      .select("id,user_id,name,short_description,description,category,status,submitted_at,status_updated_at,review_message,repo_url,link,license_type,version,version_code,package_name,changelog,ant_features,platforms,separate_platform_repos,store_app_id")
       .eq("id", submissionId)
       .eq("user_id", user.id)
       .single();
@@ -216,12 +217,18 @@ export default function SubmissionDetailsPage() {
       if (!versionsResult.error) setVersions((versionsResult.data ?? []) as VersionRow[]);
     }
 
-    if (currentSubmission.status === "Approved") {
-      let publishedResult = await supabase
-        .from("store_apps")
-        .select("id,name,short_description,description,version,version_code,package_name,license_type,repo_url,changelog,ant_features,updated_at")
-        .eq("luma_submission_id", submissionId)
-        .maybeSingle();
+    if (currentSubmission.status === "Approved" || currentSubmission.store_app_id) {
+      let publishedResult = currentSubmission.store_app_id
+        ? await supabase
+            .from("store_apps")
+            .select("id,name,short_description,description,version,version_code,package_name,license_type,repo_url,changelog,ant_features,updated_at")
+            .eq("id", currentSubmission.store_app_id)
+            .maybeSingle()
+        : await supabase
+            .from("store_apps")
+            .select("id,name,short_description,description,version,version_code,package_name,license_type,repo_url,changelog,ant_features,updated_at")
+            .eq("luma_submission_id", submissionId)
+            .maybeSingle();
 
       if (!publishedResult.data && currentSubmission.package_name) {
         publishedResult = await supabase
@@ -305,9 +312,9 @@ export default function SubmissionDetailsPage() {
         </section>
       )}
 
-      {submission.status === "Approved" && (
+      {(submission.status === "Approved" || publishedApp) && (
         <section className={`${cardClass} overflow-hidden`}>
-          <div className="border-b border-slate-800 px-5 py-4"><h2 className="font-semibold text-white">Published app</h2></div>
+          <div className="border-b border-slate-800 px-5 py-4"><h2 className="font-semibold text-white">{submission.status === "Approved" ? "Published app" : "Currently published app"}</h2>{submission.status !== "Approved" && publishedApp && <p className="mt-1 text-sm text-slate-400">This is the live version while your edited metadata is being reviewed.</p>}</div>
           {publishedApp ? (
             <div className="grid gap-5 p-5 md:grid-cols-2">
               <div><p className="text-xs uppercase tracking-wide text-slate-500">Published version</p><p className="mt-1 text-lg font-semibold text-white">{publishedApp.version || "—"} {publishedApp.version_code ? `(code ${publishedApp.version_code})` : ""}</p></div>

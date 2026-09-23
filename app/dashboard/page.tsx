@@ -559,6 +559,61 @@ export default function LumaDeveloperPortal() {
   const localesUnique = new Set(localeKeys.map((locale) => locale.toLowerCase())).size === localeKeys.length;
   const manualMetadataValid = englishMetadataValid && additionalMetadataValid && localesUnique;
 
+  const separatePlatformMetadataValid = !separatePlatformRepos || appPlatforms.every((platform) => {
+    const item = platformMetadata[platform];
+    if (!item.repoUrl.trim()) return false;
+    if (platform === "Android") return true;
+    return Boolean(
+      item.title.trim()
+      && item.shortDescription.trim()
+      && item.fullDescription.trim()
+      && item.changelog.trim()
+      && item.screenshotsText.trim()
+    );
+  });
+
+  const continueDisabled = Boolean(
+    (isAndroid && !fastlaneMetadata)
+    || (manualStoreMetadata && (
+      separatePlatformRepos
+        ? !separatePlatformMetadataValid
+        : !manualMetadataValid
+    ))
+  );
+
+  const continueToReview = () => {
+    if (!isAndroid && manualStoreMetadata && !separatePlatformRepos && manualMetadataValid) {
+      const metadata: FastlaneMetadata = {
+        title: closedTitle.trim(),
+        shortDescription: closedShortDescription.trim(),
+        fullDescription: closedFullDescription.trim(),
+        changelog: closedChangelog.trim(),
+        screenshots: closedScreenshots,
+        locale: "en-US",
+        branch: "manual",
+      };
+      setFastlaneMetadata(metadata);
+      setAppName(metadata.title);
+    } else if (!isAndroid && separatePlatformRepos) {
+      const primaryPlatform = appPlatforms.find((platform) => platform !== "Android");
+      const primary = primaryPlatform ? platformMetadata[primaryPlatform] : null;
+      if (primary) {
+        const metadata: FastlaneMetadata = {
+          title: primary.title.trim(),
+          shortDescription: primary.shortDescription.trim(),
+          fullDescription: primary.fullDescription.trim(),
+          changelog: primary.changelog.trim(),
+          screenshots: primary.screenshotsText.split(/\\r?\\n/).map((value) => value.trim()).filter(Boolean),
+          locale: "en-US",
+          branch: "manual",
+        };
+        setFastlaneMetadata(metadata);
+        setAppName(metadata.title);
+      }
+    }
+    goToStep(3);
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault(); setIsSubmitting(true);
     try {
@@ -776,7 +831,10 @@ https://.../screenshot2.png"/></div></div></div>
 
                 {isAndroid && !separatePlatformRepos && <div className="rounded-xl border border-emerald-500/20 bg-emerald-950/10 p-4"><p className="mb-3 text-sm text-slate-400">Android listing is always loaded from Fastlane.</p><button type="button" onClick={verifyFastlane} disabled={!appLink.trim()||!validAndroidMetadata||fastlaneLoading} className="rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-medium text-white disabled:opacity-40">{fastlaneLoading?"Checking Fastlane…":"Load Android Fastlane listing"}</button>{fastlaneError&&<p className="mt-3 text-sm text-red-400">{fastlaneError}</p>}</div>}
                 {fastlaneMetadata&&<div className="rounded-2xl border border-emerald-500/20 bg-emerald-950/10 p-5"><p className="text-sm font-semibold text-emerald-300">Store metadata ready</p><p className="mt-1 text-xs text-slate-500">{fastlaneMetadata.locale} · {fastlaneMetadata.screenshots.length} screenshots</p><p className="mt-4 text-lg font-semibold text-white">{fastlaneMetadata.title}</p></div>}
-                <div className="flex justify-between"><button type="button" onClick={()=>goToStep(1)} className="rounded-xl bg-slate-800 px-5 py-2.5 text-white">Back</button><button type="button" onClick={()=>{if(!isAndroid&&manualStoreMetadata&&manualMetadataValid){const metadata={title:closedTitle.trim(),shortDescription:closedShortDescription.trim(),fullDescription:closedFullDescription.trim(),changelog:closedChangelog.trim(),screenshots:closedScreenshots,locale:"en-US",branch:"manual"};setFastlaneMetadata(metadata);setAppName(metadata.title);}else if(!isAndroid&&separatePlatformRepos){const primaryPlatform=appPlatforms.find(platform=>platform!=="Android");const primary=primaryPlatform?platformMetadata[primaryPlatform]:null;if(primary){const metadata={title:primary.title.trim(),shortDescription:primary.shortDescription.trim(),fullDescription:primary.fullDescription.trim(),changelog:primary.changelog.trim(),screenshots:primary.screenshotsText.split(/\\r?\\n/).map(value=>value.trim()).filter(Boolean),locale:"en-US",branch:"manual"};setFastlaneMetadata(metadata);setAppName(metadata.title);}} goToStep(3);}} disabled={(isAndroid&&!fastlaneMetadata)||(manualStoreMetadata&&(!separatePlatformRepos?!manualMetadataValid:appPlatforms.some(platform=>{if(platform==="Android")return !platformMetadata.Android.repoUrl.trim();const item=platformMetadata[platform];return !item.repoUrl.trim()||!item.title.trim()||!item.shortDescription.trim()||!item.fullDescription.trim()||!item.changelog.trim()||!item.screenshotsText.trim()}))} className="rounded-xl bg-indigo-600 px-5 py-2.5 text-white disabled:opacity-40">Continue</button></div>
+                <div className="flex justify-between">
+                  <button type="button" onClick={()=>goToStep(1)} className="rounded-xl bg-slate-800 px-5 py-2.5 text-white">Back</button>
+                  <button type="button" onClick={continueToReview} disabled={continueDisabled} className="rounded-xl bg-indigo-600 px-5 py-2.5 text-white disabled:opacity-40">Continue</button>
+                </div>
               </div>}
 
               {step === 3 && <div className="space-y-6"><div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-5"><dl className="grid gap-4 text-sm md:grid-cols-2"><div><dt className="text-slate-500">Title</dt><dd className="text-white">{fastlaneMetadata?.title}</dd></div><div><dt className="text-slate-500">Platform</dt><dd className="text-white">{appPlatforms.join(" · ")}</dd></div><div><dt className="text-slate-500">Categories</dt><dd className="text-white">{appCategories.join(", ")}</dd></div><div><dt className="text-slate-500">Source model</dt><dd className="text-white">Open source</dd></div><div><dt className="text-slate-500">License</dt><dd className="text-white">{appLicenseType}</dd></div><div><dt className="text-slate-500">Version</dt><dd className="text-white">{appVersion}</dd></div>{isAndroid&&<div><dt className="text-slate-500">Package</dt><dd className="break-all text-white">{appPackageName}</dd></div>}<div><dt className="text-slate-500">Author</dt><dd className="text-white">{authorName||"—"}</dd></div><div><dt className="text-slate-500">Website</dt><dd className="break-all text-white">{websiteUrl||"—"}</dd></div></dl></div><div className="flex justify-between"><button type="button" onClick={()=>setStep(2)} className="rounded-xl bg-slate-800 px-5 py-2.5 text-white">Back</button><button type="submit" disabled={isSubmitting||!fastlaneMetadata} className="rounded-xl bg-emerald-600 px-5 py-2.5 font-medium text-white disabled:opacity-40">{isSubmitting?"Saving…":isApprovedUpdate?"Submit Update":isRequestedChange?"Resubmit Changes":"Submit App"}</button></div></div>}

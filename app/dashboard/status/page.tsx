@@ -149,10 +149,10 @@ export default function DeveloperStatusPage() {
         </Link>
       </div>
 
-      {loading && <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 text-center text-sm text-slate-400 sm:p-10 sm:text-base">Loading submission history…</div>}
+      {loading && <div className="glass-panel p-6 text-center text-sm text-slate-400 sm:p-10 sm:text-base">Loading submission history…</div>}
       {error && <div className="rounded-2xl border border-amber-800/50 bg-amber-950/30 px-4 py-4 text-sm leading-6 text-amber-200 sm:px-5">{error}</div>}
       {!loading && submissions.length === 0 && (
-        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 text-center text-sm text-slate-400 sm:p-10 sm:text-base">
+        <div className="glass-panel p-6 text-center text-sm text-slate-400 sm:p-10 sm:text-base">
           {selectedSubmissionId ? "This app submission was not found or you do not have access to it." : "You have not submitted an app yet."}
         </div>
       )}
@@ -161,7 +161,7 @@ export default function DeveloperStatusPage() {
         {submissions.map((submission) => {
           const events = history.filter((entry) => entry.submission_id === submission.id);
           return (
-            <section key={submission.id} className="min-w-0 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-sm shadow-black/20">
+            <section key={submission.id} className="min-w-0 overflow-hidden glass-panel shadow-sm shadow-black/20">
               <div className="min-w-0 border-b border-slate-800 p-4 sm:p-6">
                 <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">

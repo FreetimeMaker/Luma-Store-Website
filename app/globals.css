@@ -1,425 +1,298 @@
 @import "tailwindcss";
 
 :root {
-  --glass-border: rgba(255, 255, 255, 0.13);
-  --glass-border-strong: rgba(255, 255, 255, 0.2);
-  --glass-fill: rgba(15, 23, 42, 0.48);
-  --glass-fill-strong: rgba(15, 23, 42, 0.64);
-  --glass-highlight: rgba(255, 255, 255, 0.1);
-  --glass-shadow: 0 18px 60px rgba(2, 6, 23, 0.34);
-  --glass-shadow-soft: 0 10px 32px rgba(2, 6, 23, 0.22);
+  color-scheme: dark;
+  --bg: #090d14;
+  --bg-elevated: #0d131d;
+  --surface: #111923;
+  --surface-strong: #151f2b;
+  --surface-muted: #0c121b;
+  --border: rgba(148, 163, 184, 0.14);
+  --border-strong: rgba(148, 163, 184, 0.22);
+  --text: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-subtle: #64748b;
+  --accent: #818cf8;
+  --accent-strong: #6366f1;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #fb7185;
+  --radius-sm: 0.625rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1.125rem;
+  --radius-xl: 1.5rem;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.18);
+  --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.22);
+}
+
+* {
+  box-sizing: border-box;
 }
 
 html {
-  max-width: 100%;
-  overflow-x: clip;
-  overflow-y: visible;
-  background: #07101f;
+  min-height: 100%;
+  background: var(--bg);
   -webkit-text-size-adjust: 100%;
 }
 
 body {
-  max-width: 100%;
-  overflow-x: clip;
-  overflow-y: visible;
-  color: #f8fafc;
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-body.liquid-shell {
   min-height: 100vh;
+  margin: 0;
+  overflow-x: hidden;
   background:
-    radial-gradient(circle at 10% 5%, rgba(99, 102, 241, 0.26), transparent 26rem),
-    radial-gradient(circle at 88% 12%, rgba(168, 85, 247, 0.2), transparent 30rem),
-    radial-gradient(circle at 55% 72%, rgba(14, 165, 233, 0.12), transparent 34rem),
-    linear-gradient(145deg, #06101f 0%, #091326 38%, #07101d 68%, #050b16 100%);
-  background-attachment: fixed;
+    linear-gradient(180deg, rgba(99, 102, 241, 0.045), transparent 18rem),
+    var(--bg);
+  color: var(--text);
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  font-synthesis-weight: none;
+  text-rendering: optimizeLegibility;
 }
 
-body.liquid-shell::before,
-body.liquid-shell::after {
-  content: "";
-  position: fixed;
-  z-index: 0;
-  pointer-events: none;
-  border-radius: 9999px;
-  filter: blur(28px);
-  opacity: 0.62;
+a {
+  color: inherit;
+  text-decoration: none;
 }
 
-body.liquid-shell::before {
-  top: 14vh;
-  left: -8rem;
-  width: 24rem;
-  height: 24rem;
-  background: linear-gradient(145deg, rgba(99, 102, 241, 0.24), rgba(56, 189, 248, 0.06));
+button,
+input,
+textarea,
+select {
+  font: inherit;
 }
 
-body.liquid-shell::after {
-  right: -10rem;
-  bottom: 8vh;
-  width: 28rem;
-  height: 28rem;
-  background: linear-gradient(145deg, rgba(168, 85, 247, 0.2), rgba(236, 72, 153, 0.06));
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
 }
 
-.liquid-nav,
-.liquid-footer {
-  z-index: 40;
-  border-color: rgba(255, 255, 255, 0.12) !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015)),
-    rgba(6, 13, 28, 0.48) !important;
-  -webkit-backdrop-filter: blur(30px) saturate(180%);
-  backdrop-filter: blur(30px) saturate(180%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 10px 40px rgba(2, 6, 23, 0.16);
+img,
+video,
+svg {
+  max-width: 100%;
+}
+
+::selection {
+  background: rgba(129, 140, 248, 0.3);
+  color: #fff;
+}
+
+.liquid-shell {
+  min-height: 100vh;
+  background: transparent;
 }
 
 .liquid-nav {
-  position: -webkit-sticky !important;
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 50 !important;
-  width: 100%;
-  isolation: isolate;
-}
-
-.liquid-footer {
-  position: relative;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  border-bottom: 1px solid var(--border);
+  background: rgba(9, 13, 20, 0.88);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
 }
 
 .liquid-main {
   position: relative;
-  z-index: 1;
+  min-height: calc(100vh - 9rem);
 }
 
-/* Turn the existing Tailwind cards into translucent, reflective glass surfaces. */
-.liquid-shell :is(section, article, form, div)[class*="rounded-3xl"][class*="border"],
-.liquid-shell :is(section, article, form, div)[class*="rounded-2xl"][class*="border"],
-.liquid-shell :is(section, article, form, div)[class*="rounded-xl"][class*="border"] {
-  border-color: var(--glass-border) !important;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.018) 38%, rgba(99, 102, 241, 0.035)),
-    var(--glass-fill) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(155%);
-  backdrop-filter: blur(22px) saturate(155%);
-  box-shadow:
-    inset 0 1px 0 var(--glass-highlight),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.025),
-    var(--glass-shadow-soft);
+.liquid-footer {
+  border-top: 1px solid var(--border);
+  background: rgba(9, 13, 20, 0.72);
 }
 
-/* Nested glass should remain lighter so cards do not become visually heavy. */
-.liquid-shell :is(section, article)[class*="rounded-3xl"] :is(div, section)[class*="rounded-xl"][class*="border"],
-.liquid-shell :is(section, article)[class*="rounded-2xl"] :is(div, section)[class*="rounded-xl"][class*="border"] {
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.012)),
-    rgba(7, 15, 31, 0.38) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.065),
-    0 8px 24px rgba(2, 6, 23, 0.16);
+.glass-page {
+  width: 100%;
+  min-width: 0;
 }
 
-/* Keep status chips and semantic colour surfaces readable. */
-.liquid-shell [class*="bg-emerald-"],
-.liquid-shell [class*="bg-amber-"],
-.liquid-shell [class*="bg-yellow-"],
-.liquid-shell [class*="bg-orange-"],
-.liquid-shell [class*="bg-red-"],
-.liquid-shell [class*="bg-rose-"],
-.liquid-shell [class*="bg-blue-"] {
-  -webkit-backdrop-filter: blur(14px) saturate(150%);
-  backdrop-filter: blur(14px) saturate(150%);
+.glass-panel,
+.ui-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
 }
 
-/* Liquid glass controls. */
-.liquid-shell input,
-.liquid-shell textarea,
-.liquid-shell select {
-  border-color: rgba(255, 255, 255, 0.14) !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015)),
-    rgba(3, 10, 24, 0.48) !important;
-  -webkit-backdrop-filter: blur(18px) saturate(150%);
-  backdrop-filter: blur(18px) saturate(150%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.055),
-    0 8px 24px rgba(2, 6, 23, 0.12);
-  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+.ui-panel-muted {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-muted);
 }
 
-.liquid-shell input:focus,
-.liquid-shell textarea:focus,
-.liquid-shell select:focus {
-  border-color: rgba(165, 180, 252, 0.62) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 0 0 3px rgba(99, 102, 241, 0.16),
-    0 12px 32px rgba(2, 6, 23, 0.18);
-}
-
-/* Primary actions keep their colour, but gain a glass highlight and depth. */
-.liquid-shell :is(a, button)[class*="bg-indigo-5"],
-.liquid-shell :is(a, button)[class*="bg-indigo-6"] {
-  border: 1px solid rgba(199, 210, 254, 0.22);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0) 48%),
-    linear-gradient(135deg, rgba(99, 102, 241, 0.98), rgba(124, 58, 237, 0.92)) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    0 10px 28px rgba(79, 70, 229, 0.26);
-}
-
-/* Secondary actions get a translucent glass treatment. */
-.liquid-shell :is(a, button)[class*="border-slate"][class*="bg-slate"],
-.liquid-shell :is(a, button)[class*="border-indigo"][class*="bg-indigo-5"][class*="/10"] {
-  border-color: rgba(255, 255, 255, 0.14) !important;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.018)),
-    rgba(8, 16, 34, 0.46) !important;
-  -webkit-backdrop-filter: blur(18px) saturate(155%);
-  backdrop-filter: blur(18px) saturate(155%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.075);
-}
-
-.liquid-shell :is(a, button) {
+.glass-input,
+.ui-input {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.75rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: #0b1119;
+  padding: 0.7rem 0.9rem;
+  color: var(--text);
+  outline: none;
   transition:
-    transform 160ms ease,
-    border-color 160ms ease,
-    background 160ms ease,
-    box-shadow 160ms ease,
-    color 160ms ease;
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    background 140ms ease;
 }
 
-.liquid-shell :is(a, button):hover {
-  filter: brightness(1.06);
+.glass-input::placeholder,
+.ui-input::placeholder {
+  color: var(--text-subtle);
 }
 
-.liquid-shell :is(a, button):active {
-  transform: translateY(1px) scale(0.995);
+.glass-input:focus,
+.ui-input:focus {
+  border-color: rgba(129, 140, 248, 0.68);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+  background: #0d141e;
 }
 
-.liquid-shell ::selection {
-  background: rgba(129, 140, 248, 0.38);
-  color: #ffffff;
+.glass-action,
+.ui-button-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-muted);
+  color: #dbe4ef;
+  box-shadow: var(--shadow-sm);
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
 }
 
-.liquid-shell ::-webkit-scrollbar {
-  width: 11px;
-  height: 11px;
+.glass-action:hover,
+.ui-button-secondary:hover {
+  border-color: rgba(148, 163, 184, 0.34);
+  background: var(--surface-strong);
+  color: #fff;
 }
 
-.liquid-shell ::-webkit-scrollbar-track {
-  background: rgba(2, 6, 23, 0.34);
+.ui-button-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(165, 180, 252, 0.32);
+  border-radius: var(--radius-md);
+  background: var(--accent-strong);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    transform 140ms ease;
 }
 
-.liquid-shell ::-webkit-scrollbar-thumb {
-  border: 3px solid rgba(2, 6, 23, 0.5);
-  border-radius: 9999px;
-  background: rgba(148, 163, 184, 0.4);
+.ui-button-primary:hover {
+  background: #7478f3;
 }
 
-.liquid-shell ::-webkit-scrollbar-thumb:hover {
-  background: rgba(165, 180, 252, 0.52);
+.glass-action:active,
+.ui-button-secondary:active,
+.ui-button-primary:active {
+  transform: translateY(1px);
 }
 
-img, video, svg, input, textarea, select, button { max-width: 100%; }
-p, a, code, pre, span { overflow-wrap: anywhere; }
+.ui-eyebrow {
+  color: #a5b4fc;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
 
-@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+.ui-title {
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.ui-muted {
+  color: var(--text-muted);
+}
+
+.ui-subtle {
+  color: var(--text-subtle);
+}
+
+.ui-divider {
+  border-color: var(--border);
+}
+
+.ui-badge {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-muted);
+  padding: 0.3rem 0.65rem;
+  color: #cbd5e1;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.ui-empty {
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface-muted);
+  padding: 2rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.ui-table {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.ui-table-row + .ui-table-row {
+  border-top: 1px solid var(--border);
+}
+
+.ui-focus-ring:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid rgba(129, 140, 248, 0.85);
+  outline-offset: 2px;
+}
+
+@media (max-width: 639px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
+  .liquid-main {
+    padding-left: max(0.75rem, env(safe-area-inset-left)) !important;
+    padding-right: max(0.75rem, env(safe-area-inset-right)) !important;
+  }
+
   .liquid-nav,
-  .liquid-footer,
-  .liquid-shell :is(section, article, form, div)[class*="rounded-3xl"][class*="border"],
-  .liquid-shell :is(section, article, form, div)[class*="rounded-2xl"][class*="border"],
-  .liquid-shell :is(section, article, form, div)[class*="rounded-xl"][class*="border"] {
-    background: rgba(12, 21, 40, 0.94) !important;
-  }
-}
-
-@media (max-width: 767px) {
-  input, textarea, select { font-size: 16px; }
-  button, a { touch-action: manipulation; }
-
-  body.liquid-shell {
-    background:
-      radial-gradient(circle at 12% 4%, rgba(99, 102, 241, 0.22), transparent 20rem),
-      radial-gradient(circle at 92% 24%, rgba(168, 85, 247, 0.15), transparent 22rem),
-      linear-gradient(155deg, #06101f 0%, #091326 48%, #050b16 100%);
-  }
-
-  .liquid-shell :is(section, article, form, div)[class*="rounded-3xl"][class*="border"],
-  .liquid-shell :is(section, article, form, div)[class*="rounded-2xl"][class*="border"] {
-    -webkit-backdrop-filter: blur(18px) saturate(145%);
-    backdrop-filter: blur(18px) saturate(145%);
+  .liquid-footer {
+    padding-left: max(0.75rem, env(safe-area-inset-left)) !important;
+    padding-right: max(0.75rem, env(safe-area-inset-right)) !important;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .liquid-shell *,
-  .liquid-shell *::before,
-  .liquid-shell *::after {
+  *,
+  *::before,
+  *::after {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
 }
-
-
-/* Explicit per-page Liquid Glass layer. Every visible route opts into glass-page. */
-.glass-page {
-  position: relative;
-  isolation: isolate;
-}
-
-.glass-page::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  top: 1rem;
-  left: 50%;
-  width: min(78vw, 58rem);
-  height: 20rem;
-  transform: translateX(-50%);
-  pointer-events: none;
-  border-radius: 9999px;
-  background:
-    radial-gradient(circle at 35% 45%, rgba(129, 140, 248, 0.16), transparent 45%),
-    radial-gradient(circle at 70% 50%, rgba(192, 132, 252, 0.12), transparent 42%);
-  filter: blur(42px);
-  opacity: 0.9;
-}
-
-.glass-page [class*="bg-slate-900"],
-.glass-page [class*="bg-slate-950"] {
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.012)),
-    rgba(6, 14, 29, 0.46) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(155%);
-  backdrop-filter: blur(20px) saturate(155%);
-}
-
-.glass-page > [class*="border-b"],
-.glass-page > [class*="border-t"] {
-  border-color: rgba(255, 255, 255, 0.11) !important;
-}
-
-.glass-page :is(nav, aside)[class*="border"],
-.glass-page :is(div, section)[class*="shadow-xl"],
-.glass-page :is(div, section)[class*="shadow-2xl"] {
-  -webkit-backdrop-filter: blur(24px) saturate(165%);
-  backdrop-filter: blur(24px) saturate(165%);
-}
-
-.glass-page :is(code, pre) {
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  background: rgba(2, 6, 23, 0.42);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
-}
-
-.glass-page hr {
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-@media (max-width: 767px) {
-  .glass-page::before {
-    top: 0;
-    width: 92vw;
-    height: 15rem;
-    filter: blur(34px);
-  }
-}
-
-
-/* Mobile-first polish for narrow phones and touch layouts. */
-@media (max-width: 639px) {
-  .liquid-nav {
-    padding-left: max(0.75rem, env(safe-area-inset-left)) !important;
-    padding-right: max(0.75rem, env(safe-area-inset-right)) !important;
-  }
-
-  .liquid-main {
-    width: 100%;
-    padding-left: max(0.75rem, env(safe-area-inset-left)) !important;
-    padding-right: max(0.75rem, env(safe-area-inset-right)) !important;
-    padding-top: 1rem !important;
-  }
-
-  .liquid-footer {
-    padding-left: max(0.75rem, env(safe-area-inset-left)) !important;
-    padding-right: max(0.75rem, env(safe-area-inset-right)) !important;
-  }
-
-  .glass-page {
-    width: 100%;
-    min-width: 0;
-  }
-
-  .glass-page :is(h1, h2, h3) { text-wrap: balance; }
-  .glass-page :is(input, textarea, select) { width: 100%; min-width: 0; }
-  .glass-page :is(pre, code) { max-width: 100%; overflow-x: auto; }
-}
-
-@media (max-width: 479px) {
-  .liquid-nav nav { gap: 0.75rem; flex-wrap: wrap; }
-  .liquid-nav nav > a:first-child { flex: 1 1 auto; min-width: 0; }
-  .liquid-nav nav > div:last-child { flex: 1 1 100%; min-width: 0; flex-wrap: wrap; justify-content: flex-start; }
-
-  .liquid-nav nav > div:last-child > a {
-    padding-left: 0.625rem;
-    padding-right: 0.625rem;
-  }
-
-
-  .liquid-nav nav > div:last-child > a[href="/login"] { white-space: nowrap; }
-
-  .glass-page h1 {
-    font-size: clamp(2rem, 10vw, 2.5rem) !important;
-    line-height: 1.08 !important;
-  }
-
-  .glass-page h2 { line-height: 1.15; }
-}
-
-
-/* Shared Liquid Glass primitives for new and polished pages. */
-.glass-panel {
-  position: relative;
-  border: 1px solid var(--glass-border);
-  border-radius: 1.5rem;
-  background:
-    linear-gradient(145deg, rgba(255,255,255,.07), rgba(255,255,255,.015) 42%, rgba(99,102,241,.035)),
-    var(--glass-fill);
-  -webkit-backdrop-filter: blur(24px) saturate(165%);
-  backdrop-filter: blur(24px) saturate(165%);
-  box-shadow: inset 0 1px 0 var(--glass-highlight), var(--glass-shadow-soft);
-}
-.glass-input {
-  width: 100%;
-  min-height: 3rem;
-  border: 1px solid var(--glass-border);
-  border-radius: 1rem;
-  background: rgba(3,10,24,.42);
-  padding: .75rem 1rem;
-  color: #fff;
-  outline: none;
-  -webkit-backdrop-filter: blur(18px) saturate(150%);
-  backdrop-filter: blur(18px) saturate(150%);
-  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
-}
-.glass-input:focus { border-color: rgba(165,180,252,.62); box-shadow: 0 0 0 3px rgba(99,102,241,.16); }
-.glass-action {
-  border: 1px solid var(--glass-border);
-  border-radius: 1rem;
-  background: rgba(255,255,255,.045);
-  color: #e2e8f0;
-  -webkit-backdrop-filter: blur(18px) saturate(155%);
-  backdrop-filter: blur(18px) saturate(155%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.07);
-  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
-}
-.glass-action:hover { border-color: rgba(165,180,252,.32); background: rgba(255,255,255,.075); }

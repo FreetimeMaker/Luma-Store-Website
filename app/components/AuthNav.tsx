@@ -130,7 +130,7 @@ export default function AuthNav() {
             {profileMenuOpen && (
               <div
                 role="menu"
-                className="absolute right-0 top-[calc(100%+0.55rem)] z-50 w-64 overflow-hidden rounded-xl border border-white/10 bg-[#0d131d] p-1.5 shadow-2xl shadow-black/30"
+                className="absolute right-0 top-[calc(100%+0.55rem)] z-50 w-64 overflow-hidden border border-white/10 bg-[#0d131d] p-1.5 shadow-2xl shadow-black/30"
               >
                 <div className="border-b border-white/10 px-3 py-3">
                   <p className="truncate text-sm font-semibold text-white">{name}</p>
@@ -144,7 +144,7 @@ export default function AuthNav() {
                     href="/dashboard"
                     role="menuitem"
                     onClick={() => setProfileMenuOpen(false)}
-                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
+                    className="flex items-center gap-2.5 px-3 py-2 text-sm text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
                   >
                     <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
                       <rect x="4" y="4" width="6" height="6" rx="1.5" />
@@ -159,7 +159,7 @@ export default function AuthNav() {
                     type="button"
                     role="menuitem"
                     onClick={handleLogout}
-                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
+                    className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
                   >
                     <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M10 7V5.75A1.75 1.75 0 0 1 11.75 4h6.5A1.75 1.75 0 0 1 20 5.75v12.5A1.75 1.75 0 0 1 18.25 20h-6.5A1.75 1.75 0 0 1 10 18.25V17" />

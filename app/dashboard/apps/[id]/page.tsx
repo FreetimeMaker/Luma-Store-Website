@@ -96,7 +96,7 @@ type PublishedApp = {
   updated_at: string | null;
 };
 
-const cardClass = "rounded-2xl border border-slate-800 bg-slate-900/80 shadow-lg shadow-black/10";
+const cardClass = "rounded-2xl border border-slate-800 bg-slate-900/80";
 
 const statusColors: Record<SubmissionStatus, string> = {
   Pending: "border-yellow-700/50 bg-yellow-900/30 text-yellow-300",

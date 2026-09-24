@@ -194,15 +194,82 @@ export default function DiscoverAppPage() {
 
   async function shareApp() { if (!pageUrl || !app) return; const data={title:app.name || "Luma Store app",text:app.short_description || "View this app on Luma Store",url:pageUrl}; if(navigator.share){try{await navigator.share(data);return}catch(error){if(error instanceof DOMException&&error.name==="AbortError")return}} await navigator.clipboard.writeText(pageUrl);setCopied(true);window.setTimeout(()=>setCopied(false),1800); }
   async function copyAppLink(){if(!pageUrl)return;await navigator.clipboard.writeText(pageUrl);setCopied(true);window.setTimeout(()=>setCopied(false),1800);}
+  async function recordSuccessfulDownload(platform: StoreAppPlatform) {
+    const response = await fetch(downloadHref(platform), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...(app.package_name ? { package_name: app.package_name } : { app_id: app.id }),
+        platform: platform.platform,
+        package_type: platform.package_type,
+      }),
+    });
+    if (!response.ok) throw new Error("Download could not be recorded.");
+  }
+
+  async function saveDesktopDownload(platform: StoreAppPlatform) {
+    if (!platform.download_url) return;
+
+    const filename = decodeURIComponent(new URL(platform.download_url).pathname.split("/").pop() || "download");
+    const picker = (window as typeof window & {
+      showSaveFilePicker?: (options?: {
+        suggestedName?: string;
+        types?: Array<{ description?: string; accept: Record<string, string[]> }>;
+      }) => Promise<{
+        createWritable: () => Promise<{
+          write: (data: Blob | ArrayBuffer | Uint8Array) => Promise<void>;
+          close: () => Promise<void>;
+        }>;
+      }>;
+    }).showSaveFilePicker;
+
+    if (picker) {
+      try {
+        const handle = await picker({ suggestedName: filename });
+        const response = await fetch(platform.download_url, { cache: "no-store" });
+        if (!response.ok) throw new Error("Artifact download failed.");
+        const blob = await response.blob();
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        await recordSuccessfulDownload(platform);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        throw error;
+      }
+      return;
+    }
+
+    const response = await fetch(platform.download_url, { cache: "no-store" });
+    if (!response.ok) throw new Error("Artifact download failed.");
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
+    await recordSuccessfulDownload(platform);
+  }
+
   function startDownload(platform: StoreAppPlatform) {
     const downloadUrl = downloadHref(platform);
-    if (platform.platform.toLowerCase() === "android") {
-      const isDesktop = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-      if (isDesktop) {
-        setAndroidQrUrl(downloadUrl);
-        return;
-      }
+    const isDesktop = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+    if (platform.platform.toLowerCase() === "android" && isDesktop) {
+      setAndroidQrUrl(downloadUrl);
+      return;
     }
+
+    if (isDesktop) {
+      void saveDesktopDownload(platform).catch((error) => {
+        console.error("desktop download", error);
+      });
+      return;
+    }
+
     window.location.assign(downloadUrl);
   }
   useEffect(()=>{if(!androidQrUrl)return;const close=(event:KeyboardEvent)=>{if(event.key==="Escape")setAndroidQrUrl(null)};window.addEventListener("keydown",close);return()=>window.removeEventListener("keydown",close)},[androidQrUrl]);

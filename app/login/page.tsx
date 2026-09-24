@@ -62,17 +62,15 @@ function LoginContent() {
 
   return (
     <main className="glass-page flex min-h-[70vh] items-center justify-center px-3 py-8 sm:px-6">
-      <div className="glass-panel relative w-full max-w-md overflow-hidden p-6 sm:p-8">
-        <div aria-hidden="true" className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-indigo-500/15 blur-3xl"/><div className="relative mb-6 inline-flex rounded-full border border-indigo-500/30 bg-indigo-950/40 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-indigo-300">
-          Choose your login
-        </div>
+      <div className="glass-panel w-full max-w-md p-6 sm:p-8">
+        <p className="ui-eyebrow mb-3">Developer access</p>
         <h1 className="text-2xl font-semibold text-white">Sign in to Luma Store</h1>
         <p className="mt-2 text-sm leading-6 text-slate-400">
           Sign in with GitHub or GitLab to access the Developer Dashboard.
         </p>
 
         <div className="mt-6 flex flex-col gap-3">
-          <button onClick={() => redirectTo("github")} className="glass-action flex min-h-12 items-center gap-3 px-4 py-3 text-left"><ProviderIcon provider="github" /><span className="font-medium text-slate-200">Sign in with GitHub</span></button><button onClick={() => redirectTo("gitlab")} className="flex items-center gap-3 rounded-xl border border-slate-700 px-4 py-3 text-left transition hover:border-slate-600 hover:bg-slate-800"><ProviderIcon provider="gitlab" /><span className="font-medium text-slate-200">Sign in with GitLab</span></button>
+          <button onClick={() => redirectTo("github")} className="ui-button-primary min-h-12 w-full justify-start px-4 py-3 text-left"><ProviderIcon provider="github" /><span className="font-medium text-slate-200">Sign in with GitHub</span></button><button onClick={() => redirectTo("gitlab")} className="ui-button-secondary min-h-12 w-full justify-start px-4 py-3 text-left"><ProviderIcon provider="gitlab" /><span className="font-medium text-slate-200">Sign in with GitLab</span></button>
         </div>
       </div>
     </main>

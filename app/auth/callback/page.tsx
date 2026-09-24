@@ -42,15 +42,19 @@ function AuthCallbackContent() {
   }, [router, searchParams, supabase]);
 
   return (
-    <div className="glass-page flex min-h-[70vh] items-center justify-center text-slate-300">
-      Authentication is being processed...
+    <div className="glass-page flex min-h-[70vh] items-center justify-center px-4">
+      <div className="glass-panel w-full max-w-sm p-6 text-center">
+        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-700 border-t-indigo-400" />
+        <p className="mt-4 text-sm font-medium text-slate-200">Finishing sign in</p>
+        <p className="mt-1 text-xs text-slate-500">You will be redirected automatically.</p>
+      </div>
     </div>
   );
 }
 
 export default function AuthCallbackPage() {
   return (
-    <Suspense fallback={<div className="glass-page flex min-h-[70vh] items-center justify-center text-slate-300">Loading...</div>}>
+    <Suspense fallback={<div className="glass-page flex min-h-[70vh] items-center justify-center text-sm text-slate-500">Loading…</div>}>
       <AuthCallbackContent />
     </Suspense>
   );

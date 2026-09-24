@@ -69,9 +69,14 @@ export default function AuthNav() {
       <div className="flex items-center gap-1.5">
         <Link
           href="/discover"
-          className="rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/[0.04] hover:text-white"
+          aria-label="Discover apps"
+          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/[0.04] hover:text-white"
         >
-          Discover
+          <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <circle cx="11" cy="11" r="6.5" />
+            <path strokeLinecap="round" d="m16 16 4 4" />
+          </svg>
+          <span className="hidden sm:inline">Discover</span>
         </Link>
 
         {!loading && user && (
@@ -116,9 +121,14 @@ export default function AuthNav() {
         ) : (
           <Link
             href="/login"
+            aria-label="Sign in"
             className="ui-button-primary px-3.5 py-2 text-sm"
           >
-            Sign in
+            <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10 7V5.75A1.75 1.75 0 0 1 11.75 4h6.5A1.75 1.75 0 0 1 20 5.75v12.5A1.75 1.75 0 0 1 18.25 20h-6.5A1.75 1.75 0 0 1 10 18.25V17" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M14 12H4m0 0 3.5-3.5M4 12l3.5 3.5" />
+            </svg>
+            <span className="hidden sm:inline">Sign in</span>
           </Link>
         )}
       </div>

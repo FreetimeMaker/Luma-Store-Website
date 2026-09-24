@@ -168,6 +168,46 @@ function BarChart({
     </div>
   );
 }
+function SeriesTimeline({
+  title,
+  subtitle,
+  series,
+  max,
+}: {
+  title: string;
+  subtitle: string;
+  series: Array<{ key: string; label: string; values: DailyPoint[]; total: number }>;
+  max: number;
+}) {
+  return (
+    <section className="glass-panel p-5 sm:p-6">
+      <p className="text-xs uppercase tracking-wider text-slate-500">{subtitle}</p>
+      <h2 className="mt-1 text-xl font-semibold text-white">{title}</h2>
+
+      {series.length ? (
+        <div className="mt-6 space-y-6">
+          {series.map((item) => (
+            <div key={item.key}>
+              <div className="mb-2 flex items-center justify-between gap-3 text-xs">
+                <span className="min-w-0 truncate font-medium text-slate-300">
+                  {item.label}
+                </span>
+                <span className="shrink-0 text-slate-500">
+                  {formatNumber(item.total)} downloads
+                </span>
+              </div>
+
+              <BarChart points={item.values} max={max} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="ui-empty mt-5 p-6 text-sm">No downloads in this period.</div>
+      )}
+    </section>
+  );
+}
+
 
 export default function AnalyticsPage() {
   const supabase = useMemo(() => createClient(), []);
@@ -264,6 +304,58 @@ export default function AnalyticsPage() {
       .reduce((sum, row) => sum + Number(row.downloads || 0), 0),
   }));
 
+  const appTimelineRows = data.daily.filter(
+    (row) => platformFilter === "all" || row.platform === platformFilter,
+  );
+
+  const appSeries = data.apps
+    .filter((app) => appFilter === "all" || app.id === appFilter)
+    .map((app) => {
+      const values = buildDailySeries(
+        appTimelineRows.filter((row) => row.app_id === app.id),
+        days,
+      );
+
+      return {
+        key: app.id,
+        label: app.name || app.package_name || "App",
+        values,
+        total: values.reduce((sum, point) => sum + point.downloads, 0),
+      };
+    })
+    .filter((item) => item.total > 0 || appFilter === item.key);
+
+  const platformTimelineRows = data.daily.filter(
+    (row) => appFilter === "all" || row.app_id === appFilter,
+  );
+
+  const platformSeries = platformOptions
+    .filter((platform) => platformFilter === "all" || platform === platformFilter)
+    .map((platform) => {
+      const values = buildDailySeries(
+        platformTimelineRows.filter((row) => row.platform === platform),
+        days,
+      );
+
+      return {
+        key: platform,
+        label: platform,
+        values,
+        total: values.reduce((sum, point) => sum + point.downloads, 0),
+      };
+    })
+    .filter((item) => item.total > 0 || platformFilter === item.key);
+
+  const maxAppDaily = Math.max(
+    1,
+    ...appSeries.flatMap((item) => item.values.map((point) => point.downloads)),
+  );
+
+  const maxPlatformDaily = Math.max(
+    1,
+    ...platformSeries.flatMap((item) => item.values.map((point) => point.downloads)),
+  );
+
   const topApp = data.apps[0];
 
   return (
@@ -330,6 +422,20 @@ export default function AnalyticsPage() {
         <BarChart points={daily} max={maxDaily} />
         <div className="h-5" />
       </section>
+
+      <SeriesTimeline
+        subtitle="App timeline"
+        title={`Downloads per app · last ${days} days`}
+        series={appSeries}
+        max={maxAppDaily}
+      />
+
+      <SeriesTimeline
+        subtitle="Platform timeline"
+        title={`Downloads per platform · last ${days} days`}
+        series={platformSeries}
+        max={maxPlatformDaily}
+      />
 
       <section className="glass-panel p-5 sm:p-6">
         <p className="text-xs uppercase tracking-wider text-slate-500">Platform analytics</p>

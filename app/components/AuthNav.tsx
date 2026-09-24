@@ -50,28 +50,26 @@ export default function AuthNav() {
     .toUpperCase();
 
   return (
-    <nav className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 sm:gap-3">
-      <Link href="/" className="group flex min-w-0 items-center gap-3">
+    <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4">
+      <Link href="/" className="group flex min-w-0 items-center gap-3" aria-label="Luma Store home">
         <Image
           src="/android-chrome-192x192.png"
           alt="Luma Store"
           width={36}
           height={36}
           priority
-          className="h-9 w-9 shrink-0 rounded-xl object-cover shadow-sm shadow-indigo-950/40 ring-1 ring-white/10"
+          className="h-9 w-9 shrink-0 rounded-lg object-cover ring-1 ring-white/10"
         />
         <div className="min-w-0">
-          <div className="truncate text-sm font-semibold text-white transition-colors group-hover:text-indigo-200 sm:text-base">
-            Luma Store
-          </div>
-          <div className="block text-[11px] text-slate-500">Apps & developer tools</div>
+          <div className="truncate text-sm font-semibold tracking-tight text-white transition-colors group-hover:text-indigo-200 sm:text-base">Luma Store</div>
+          <div className="hidden text-[11px] text-slate-500 sm:block">Open-source app distribution</div>
         </div>
       </Link>
 
-      <div className="flex flex-wrap items-center gap-1 sm:gap-3">
+      <div className="flex items-center gap-1.5">
         <Link
           href="/discover"
-          className="rounded-lg px-2.5 py-2 text-sm font-medium text-slate-300 transition hover:bg-indigo-500/10 hover:text-indigo-200 sm:px-3"
+          className="rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/[0.04] hover:text-white"
         >
           Discover
         </Link>
@@ -79,7 +77,7 @@ export default function AuthNav() {
         {!loading && user && (
           <Link
             href="/dashboard"
-            className="inline-flex rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-indigo-500/10 hover:text-indigo-200"
+            className="rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/[0.04] hover:text-white"
           >
             Dashboard
           </Link>
@@ -88,7 +86,7 @@ export default function AuthNav() {
         {loading ? (
           <span className="inline text-sm text-slate-500">Checking login...</span>
         ) : user ? (
-          <div className="glass-action flex items-center gap-2 p-1.5 pl-2 sm:gap-3">
+          <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-[#0c121b] p-1.5 pl-2">
             {avatarUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -107,10 +105,10 @@ export default function AuthNav() {
                 {initials || "U"}
               </div>
             )}
-            <span className="inline max-w-36 truncate text-sm text-slate-200">{name}</span>
+            <span className="hidden max-w-32 truncate text-sm text-slate-300 md:inline">{name}</span>
             <button
               onClick={handleLogout}
-              className="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-400 transition hover:bg-rose-500/10 hover:text-rose-300"
+              className="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-400 transition hover:bg-white/[0.04] hover:text-white"
             >
               Logout
             </button>
@@ -118,7 +116,7 @@ export default function AuthNav() {
         ) : (
           <Link
             href="/login"
-            className="glass-action rounded-xl px-3 py-2 text-sm font-medium text-indigo-200 hover:text-white"
+            className="ui-button-primary px-3.5 py-2 text-sm"
           >
             Sign in
           </Link>

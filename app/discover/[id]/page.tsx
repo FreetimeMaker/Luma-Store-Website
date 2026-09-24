@@ -195,6 +195,7 @@ export default function DiscoverAppPage() {
   async function shareApp() { if (!pageUrl || !app) return; const data={title:app.name || "Luma Store app",text:app.short_description || "View this app on Luma Store",url:pageUrl}; if(navigator.share){try{await navigator.share(data);return}catch(error){if(error instanceof DOMException&&error.name==="AbortError")return}} await navigator.clipboard.writeText(pageUrl);setCopied(true);window.setTimeout(()=>setCopied(false),1800); }
   async function copyAppLink(){if(!pageUrl)return;await navigator.clipboard.writeText(pageUrl);setCopied(true);window.setTimeout(()=>setCopied(false),1800);}
   async function recordSuccessfulDownload(platform: StoreAppPlatform) {
+    if (!app) return;
     const response = await fetch(downloadHref(platform), {
       method: "POST",
       headers: { "Content-Type": "application/json" },

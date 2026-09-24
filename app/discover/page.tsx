@@ -20,8 +20,19 @@ type StoreApp = {
   updated_at: string | null;
   [key: string]: unknown;
 };
-type DiscoverMetric={app_id:string;total_downloads:number|string;recent_downloads:number|string;platforms:string[]};
-type RecentApp={id:string;name:string;package_name:string|null;icon_url:string|null};
+type DiscoverMetric = {
+  app_id: string;
+  total_downloads: number | string;
+  recent_downloads: number | string;
+  platforms: string[];
+};
+
+type RecentApp = {
+  id: string;
+  name: string;
+  package_name: string | null;
+  icon_url: string | null;
+};
 
 function appInitials(name: string) {
   return name
@@ -42,13 +53,36 @@ export default function DiscoverPage() {
   const [developer, setDeveloper] = useState("all");
   const [platform, setPlatform] = useState("all");
   const [sort, setSort] = useState("trending");
-  const [metrics, setMetrics] = useState<Record<string,DiscoverMetric>>({});
+  const [metrics, setMetrics] = useState<Record<string, DiscoverMetric>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [recentApps,setRecentApps]=useState<RecentApp[]>([]);
-  const searchRef=useRef<HTMLInputElement>(null);
+  const [recentApps, setRecentApps] = useState<RecentApp[]>([]);
+  const searchRef = useRef<HTMLInputElement>(null);
 
-  useEffect(()=>{try{setRecentApps(JSON.parse(localStorage.getItem("luma-recent-apps")||"[]"))}catch{}const keys=(event:KeyboardEvent)=>{const target=event.target as HTMLElement|null;if(target?.matches("input, textarea, select, [contenteditable=true]"))return;if(event.key==="/"||((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="k")){event.preventDefault();searchRef.current?.focus()}};window.addEventListener("keydown",keys);return()=>window.removeEventListener("keydown",keys)},[]);
+  useEffect(() => {
+    try {
+      setRecentApps(JSON.parse(localStorage.getItem("luma-recent-apps") || "[]"));
+    } catch {
+      setRecentApps([]);
+    }
+
+    function handleShortcut(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      if (target?.matches("input, textarea, select, [contenteditable=true]")) return;
+
+      const shouldFocusSearch =
+        event.key === "/"
+        || ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k");
+
+      if (shouldFocusSearch) {
+        event.preventDefault();
+        searchRef.current?.focus();
+      }
+    }
+
+    window.addEventListener("keydown", handleShortcut);
+    return () => window.removeEventListener("keydown", handleShortcut);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -70,8 +104,15 @@ export default function DiscoverPage() {
         setApps([]);
       } else {
         setApps((data ?? []) as StoreApp[]);
-        const {data:metricRows}=await supabase.rpc("luma_discover_metrics");
-        if(!cancelled)setMetrics(Object.fromEntries(((metricRows??[]) as DiscoverMetric[]).map(row=>[row.app_id,row])));
+        const { data: metricRows } = await supabase.rpc("luma_discover_metrics");
+
+        if (!cancelled) {
+          setMetrics(
+            Object.fromEntries(
+              ((metricRows ?? []) as DiscoverMetric[]).map((row) => [row.app_id, row]),
+            ),
+          );
+        }
       }
 
       setLoading(false);
@@ -123,31 +164,104 @@ export default function DiscoverPage() {
     [apps],
   );
 
-  const platforms=useMemo(()=>Array.from(new Set(Object.values(metrics).flatMap(item=>item.platforms||[]))).sort(),[metrics]);
+  const platforms = useMemo(
+    () => Array.from(
+      new Set(Object.values(metrics).flatMap((item) => item.platforms || [])),
+    ).sort(),
+    [metrics],
+  );
 
-  const hasFilters = Boolean(search.trim()) || license !== "all" || category !== "all" || developer !== "all" || platform !== "all";
-  const resetFilters = () => { setSearch(""); setLicense("all"); setCategory("all"); setDeveloper("all"); setPlatform("all"); };
+  const hasFilters =
+    Boolean(search.trim())
+    || license !== "all"
+    || category !== "all"
+    || developer !== "all"
+    || platform !== "all";
 
-  const suggestions=useMemo(()=>{const q=search.trim().toLowerCase();if(!q)return [];return apps.filter(app=>(app.name||"").toLowerCase().includes(q)||(app.package_name||"").toLowerCase().includes(q)||(app.developer_name||"").toLowerCase().includes(q)).slice(0,5)},[apps,search]);
-  const trending=useMemo(()=>[...apps].sort((a,b)=>Number(metrics[b.id]?.recent_downloads||0)-Number(metrics[a.id]?.recent_downloads||0)).slice(0,5),[apps,metrics]);
-  const newThisWeek=useMemo(()=>apps.filter(a=>a.created_at&&Date.now()-new Date(a.created_at).getTime()<=7*86400000).slice(0,5),[apps]);
-  const recentlyUpdated=useMemo(()=>[...apps].sort((a,b)=>new Date(b.updated_at||0).getTime()-new Date(a.updated_at||0).getTime()).slice(0,5),[apps]);
+  function resetFilters() {
+    setSearch("");
+    setLicense("all");
+    setCategory("all");
+    setDeveloper("all");
+    setPlatform("all");
+  }
+
+  const trending = useMemo(
+    () => [...apps]
+      .sort((a, b) =>
+        Number(metrics[b.id]?.recent_downloads || 0)
+        - Number(metrics[a.id]?.recent_downloads || 0),
+      )
+      .slice(0, 5),
+    [apps, metrics],
+  );
+
+  const newThisWeek = useMemo(
+    () => apps
+      .filter((app) =>
+        app.created_at
+        && Date.now() - new Date(app.created_at).getTime() <= 7 * 86400000,
+      )
+      .slice(0, 5),
+    [apps],
+  );
+
+  const recentlyUpdated = useMemo(
+    () => [...apps]
+      .sort((a, b) =>
+        new Date(b.updated_at || 0).getTime()
+        - new Date(a.updated_at || 0).getTime(),
+      )
+      .slice(0, 5),
+    [apps],
+  );
 
   const filteredApps = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    const result=apps.filter((app) => {
+    const result = apps.filter((app) => {
       const appCategories = Array.isArray(app.categories) ? app.categories : [];
       const matchesLicense = license === "all" || app.license_type === license;
       const matchesCategory = category === "all" || appCategories.includes(category) || app.subcategory === category;
       const matchesDeveloper = developer === "all" || app.developer_name === developer;
-      const matchesPlatform = platform === "all" || (metrics[app.id]?.platforms||[]).includes(platform);
+      const matchesPlatform =
+        platform === "all"
+        || (metrics[app.id]?.platforms || []).includes(platform);
       if (!matchesLicense || !matchesCategory || !matchesDeveloper || !matchesPlatform) return false;
       if (!query) return true;
 
       return JSON.stringify(app).toLowerCase().includes(query);
     });
-    return result.sort((a,b)=>{const am=metrics[a.id],bm=metrics[b.id];if(sort==="trending")return Number(bm?.recent_downloads||0)-Number(am?.recent_downloads||0)||Number(bm?.total_downloads||0)-Number(am?.total_downloads||0);if(sort==="downloads")return Number(bm?.total_downloads||0)-Number(am?.total_downloads||0);if(sort==="new")return new Date(b.created_at||0).getTime()-new Date(a.created_at||0).getTime();if(sort==="updated")return new Date(b.updated_at||0).getTime()-new Date(a.updated_at||0).getTime();return (a.name||"").localeCompare(b.name||"");});
+    return result.sort((a, b) => {
+      const aMetric = metrics[a.id];
+      const bMetric = metrics[b.id];
+
+      if (sort === "trending") {
+        return (
+          Number(bMetric?.recent_downloads || 0)
+          - Number(aMetric?.recent_downloads || 0)
+          || Number(bMetric?.total_downloads || 0)
+          - Number(aMetric?.total_downloads || 0)
+        );
+      }
+
+      if (sort === "downloads") {
+        return Number(bMetric?.total_downloads || 0)
+          - Number(aMetric?.total_downloads || 0);
+      }
+
+      if (sort === "new") {
+        return new Date(b.created_at || 0).getTime()
+          - new Date(a.created_at || 0).getTime();
+      }
+
+      if (sort === "updated") {
+        return new Date(b.updated_at || 0).getTime()
+          - new Date(a.updated_at || 0).getTime();
+      }
+
+      return (a.name || "").localeCompare(b.name || "");
+    });
   }, [apps, category, developer, license, search, platform, sort, metrics]);
 
   return (
@@ -214,7 +328,13 @@ export default function DiscoverPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredApps.map((app) => {
               const name = app.name?.trim() || app.package_name || "Untitled app";
-              const metric=metrics[app.id]; const ageDays=app.created_at?Math.floor((Date.now()-new Date(app.created_at).getTime())/86400000):9999; const updateDays=app.updated_at?Math.floor((Date.now()-new Date(app.updated_at).getTime())/86400000):9999;
+              const metric = metrics[app.id];
+              const ageDays = app.created_at
+                ? Math.floor((Date.now() - new Date(app.created_at).getTime()) / 86400000)
+                : 9999;
+              const updateDays = app.updated_at
+                ? Math.floor((Date.now() - new Date(app.updated_at).getTime()) / 86400000)
+                : 9999;
 
               return (
                 <Link
@@ -264,4 +384,42 @@ export default function DiscoverPage() {
   );
 }
 
-function Collection({title,apps}:{title:string;apps:StoreApp[]}){if(!apps.length)return null;return <section><h2 className="mb-3 text-lg font-semibold text-white">{title}</h2><div className="flex snap-x gap-3 overflow-x-auto pb-2">{apps.map(app=>{const name=app.name||app.package_name||"Untitled app";return <Link key={app.id} href={`/discover/${encodeURIComponent(app.package_name||app.id)}`} className="glass-action flex min-w-56 snap-start items-center gap-3 p-3"><div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-slate-900">{app.icon_url?<img src={app.icon_url} alt="" className="h-full w-full object-cover"/>:<span className="flex h-full items-center justify-center text-xs font-bold text-indigo-200">{appInitials(name)}</span>}</div><div className="min-w-0"><strong className="block truncate text-sm text-white">{name}</strong><span className="block truncate text-xs text-slate-500">{app.developer_name||app.package_name||"Unknown developer"}</span></div></Link>})}</div></section>}
+function Collection({ title, apps }: { title: string; apps: StoreApp[] }) {
+  if (!apps.length) return null;
+
+  return (
+    <section>
+      <h2 className="mb-3 text-lg font-semibold text-white">{title}</h2>
+      <div className="flex snap-x gap-3 overflow-x-auto pb-2">
+        {apps.map((app) => {
+          const name = app.name || app.package_name || "Untitled app";
+
+          return (
+            <Link
+              key={app.id}
+              href={`/discover/${encodeURIComponent(app.package_name || app.id)}`}
+              className="glass-action flex min-w-56 snap-start items-center gap-3 p-3"
+            >
+              <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-slate-900">
+                {app.icon_url ? (
+                  <img src={app.icon_url} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <span className="flex h-full items-center justify-center text-xs font-bold text-indigo-200">
+                    {appInitials(name)}
+                  </span>
+                )}
+              </div>
+
+              <div className="min-w-0">
+                <strong className="block truncate text-sm text-white">{name}</strong>
+                <span className="block truncate text-xs text-slate-500">
+                  {app.developer_name || app.package_name || "Unknown developer"}
+                </span>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+    </section>
+  );
+}

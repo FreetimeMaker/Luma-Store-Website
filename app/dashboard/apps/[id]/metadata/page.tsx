@@ -69,8 +69,8 @@ type AppMetadata = {
 type StoreCategoryRow = { name: string | null };
 type LicenseRow = { name: string; display_name: string | null };
 
-const fieldClass = "w-full rounded-2xl border border-white/10 bg-slate-950/45 px-4 py-3 text-white shadow-inner shadow-black/10 backdrop-blur-xl outline-none transition placeholder:text-slate-600 focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-70";
-const cardClass = "rounded-3xl border border-white/10 bg-slate-900/50 shadow-lg shadow-black/10 backdrop-blur-xl";
+const fieldClass = "w-full rounded-2xl border border-white/10 bg-slate-950/45 px-4 py-3 text-white shadow-inner shadow-black/10 outline-none transition placeholder:text-slate-600 focus:border-indigo-400/60 focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-70";
+const cardClass = "glass-panel";
 
 function clean(value: string) {
   const trimmed = value.trim();
@@ -604,7 +604,7 @@ export default function AppMetadataPage() {
             <div><label className="mb-2 block text-sm text-slate-300">Version</label><input required value={form.version} onChange={(e) => setField("version", e.target.value)} className={fieldClass} /></div>
             <div><label className="mb-2 block text-sm text-slate-300">Open-source license</label><select required value={form.licenseType} onChange={(e) => setField("licenseType", e.target.value)} className={fieldClass}><option value="">Select a license</option>{availableLicenses.map((license) => <option key={license.name} value={license.name}>{license.display_name || license.name} ({license.name})</option>)}</select></div>
             <div className="md:col-span-2"><label className="mb-2 block text-sm text-slate-300">App icon URL</label><input type="url" required value={form.iconUrl} onChange={(e) => { setField("iconUrl", e.target.value); setIconPreviewError(false); }} className={fieldClass} /></div>
-            <div className="md:col-span-2 rounded-2xl border border-white/10 bg-slate-950/30 p-4">
+            <div className="md:col-span-2 ui-panel-muted p-4">
               <div className="flex items-center gap-4">
                 <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-slate-900">
                   {form.iconUrl.trim() && !iconPreviewError ? <img src={form.iconUrl.trim()} alt="App icon preview" className="h-full w-full object-cover" onError={() => setIconPreviewError(true)} /> : <span className="text-xs text-slate-500">No icon</span>}
@@ -616,7 +616,7 @@ export default function AppMetadataPage() {
 
           <div className="mt-6">
             <h3 className="font-semibold text-white">Categories</h3>
-            <div className="mt-3 grid max-h-72 gap-2 overflow-y-auto rounded-2xl border border-white/10 bg-slate-950/35 p-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-3 grid max-h-72 gap-2 overflow-y-auto ui-panel-muted p-4 sm:grid-cols-2 lg:grid-cols-3">
               {availableCategories.map((category) => (
                 <label key={category} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-300 hover:bg-white/5">
                   <input type="checkbox" checked={form.categories.includes(category)} onChange={() => toggleCategory(category)} className="h-4 w-4 accent-indigo-500" />
@@ -634,7 +634,7 @@ export default function AppMetadataPage() {
           <div className="mt-5 grid gap-5 lg:grid-cols-2">
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-300">Platforms</label>
-              <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/35">
+              <div className="overflow-hidden ui-panel-muted">
                 {(["Android", "Windows", "Linux"] as AppPlatform[]).map((platform) => (
                   <label key={platform} className="flex cursor-pointer items-center gap-3 border-b border-white/10 px-4 py-3 text-sm text-slate-200 last:border-b-0 hover:bg-white/5">
                     <input type="checkbox" checked={form.selectedPlatforms.includes(platform)} onChange={() => togglePlatform(platform)} className="h-4 w-4 accent-indigo-500" />
@@ -747,13 +747,13 @@ export default function AppMetadataPage() {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-indigo-500/20 bg-indigo-500/5 p-5 backdrop-blur-xl">
+        <section className="rounded-3xl border border-indigo-500/20 bg-indigo-500/5 p-5">
           <h2 className="font-semibold text-white">Developer funding</h2>
           <p className="mt-1 text-sm text-slate-400">Donation methods remain managed once for your developer profile and apply to all platform listings.</p>
           <Link href="/dashboard/funding" className="mt-3 inline-flex rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">Manage developer funding</Link>
         </section>
 
-        <div className="sticky bottom-4 z-20 flex flex-col gap-3 rounded-3xl border border-white/10 bg-slate-950/80 p-4 shadow-2xl shadow-black/30 backdrop-blur-2xl sm:flex-row sm:items-center sm:justify-between">
+        <div className="sticky bottom-4 z-20 flex flex-col gap-3 rounded-3xl border border-white/10 bg-slate-950/80 p-4 shadow-2xl shadow-black/30 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs leading-5 text-slate-400">Android Fastlane is fetched again when saving, so stale manual Android metadata can never be submitted.</p>
           <button type="submit" disabled={saving || form.categories.length === 0 || form.selectedPlatforms.length === 0 || (isAndroid && Boolean(androidFastlaneError))} className="shrink-0 rounded-xl bg-indigo-600 px-5 py-2.5 font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40">{saving ? "Saving…" : "Save app metadata"}</button>
         </div>

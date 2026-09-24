@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -10,6 +10,8 @@ import { createClient } from "@/lib/supabase/client";
 export default function AuthNav() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
 
@@ -29,7 +31,28 @@ export default function AuthNav() {
     return () => subscription.unsubscribe();
   }, [supabase]);
 
+  useEffect(() => {
+    function handlePointerDown(event: MouseEvent) {
+      if (!profileMenuRef.current?.contains(event.target as Node)) {
+        setProfileMenuOpen(false);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setProfileMenuOpen(false);
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
   async function handleLogout() {
+    setProfileMenuOpen(false);
     await supabase.auth.signOut();
     router.push("/login");
     router.refresh();
@@ -78,44 +101,75 @@ export default function AuthNav() {
           </svg>
         </Link>
 
-        {!loading && user && (
-          <Link
-            href="/dashboard"
-            className="rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/[0.04] hover:text-white"
-          >
-            Dashboard
-          </Link>
-        )}
-
         {loading ? (
           <span className="inline text-sm text-slate-500">Checking login...</span>
         ) : user ? (
-          <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-[#0c121b] p-1.5 pl-2">
-            {avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={avatarUrl}
-                alt={`${name} profile`}
-                className="h-8 w-8 rounded-lg object-cover ring-1 ring-indigo-400/20"
-                onError={(event) => {
-                  event.currentTarget.style.display = "none";
-                }}
-              />
-            ) : (
+          <div ref={profileMenuRef} className="relative">
+            <button
+              type="button"
+              aria-label="Open profile menu"
+              aria-haspopup="menu"
+              aria-expanded={profileMenuOpen}
+              onClick={() => setProfileMenuOpen((open) => !open)}
+              className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-white/[0.04] text-slate-200 transition hover:border-white/20 hover:bg-white/[0.08]"
+            >
+              {avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span className="flex h-full w-full items-center justify-center bg-indigo-500/15 text-xs font-semibold text-indigo-100">
+                  {initials || "U"}
+                </span>
+              )}
+            </button>
+
+            {profileMenuOpen && (
               <div
-                aria-hidden
-                className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/15 text-xs font-semibold text-indigo-200 ring-1 ring-indigo-400/20"
+                role="menu"
+                className="absolute right-0 top-[calc(100%+0.55rem)] z-50 w-64 overflow-hidden rounded-xl border border-white/10 bg-[#0d131d] p-1.5 shadow-2xl shadow-black/30"
               >
-                {initials || "U"}
+                <div className="border-b border-white/10 px-3 py-3">
+                  <p className="truncate text-sm font-semibold text-white">{name}</p>
+                  {user.email && user.email !== name && (
+                    <p className="mt-0.5 truncate text-xs text-slate-500">{user.email}</p>
+                  )}
+                </div>
+
+                <div className="py-1.5">
+                  <Link
+                    href="/dashboard"
+                    role="menuitem"
+                    onClick={() => setProfileMenuOpen(false)}
+                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+                      <rect x="4" y="4" width="6" height="6" rx="1.5" />
+                      <rect x="14" y="4" width="6" height="6" rx="1.5" />
+                      <rect x="4" y="14" width="6" height="6" rx="1.5" />
+                      <rect x="14" y="14" width="6" height="6" rx="1.5" />
+                    </svg>
+                    Dashboard
+                  </Link>
+
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={handleLogout}
+                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm text-slate-300 transition hover:bg-white/[0.05] hover:text-white"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10 7V5.75A1.75 1.75 0 0 1 11.75 4h6.5A1.75 1.75 0 0 1 20 5.75v12.5A1.75 1.75 0 0 1 18.25 20h-6.5A1.75 1.75 0 0 1 10 18.25V17" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M14 12H4m0 0 3.5-3.5M4 12l3.5 3.5" />
+                    </svg>
+                    Logout
+                  </button>
+                </div>
               </div>
             )}
-            <span className="hidden max-w-32 truncate text-sm text-slate-300 md:inline">{name}</span>
-            <button
-              onClick={handleLogout}
-              className="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-400 transition hover:bg-white/[0.04] hover:text-white"
-            >
-              Logout
-            </button>
           </div>
         ) : (
           <Link

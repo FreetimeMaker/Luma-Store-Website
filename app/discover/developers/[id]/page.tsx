@@ -72,11 +72,11 @@ export default function DiscoverDeveloperPage() {
       <div className="relative flex flex-col items-start gap-5 sm:flex-row">{profile?.avatar_url&&<img src={profile.avatar_url} alt="" className="h-20 w-20 rounded-3xl border border-slate-700 object-cover"/>}<div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-200">Luma Store Developer</p><div className="mt-3 flex flex-wrap items-center gap-2"><h1 className="text-3xl font-bold text-white sm:text-4xl">{developerName}</h1>{profile?.verified&&<span className="rounded-full bg-sky-500/10 px-2.5 py-1 text-xs font-semibold text-sky-200">✓ Verified</span>}</div>{profile?.bio&&<p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">{profile.bio}</p>}<div className="mt-3 flex flex-wrap gap-2">
           {profile?.website_url&&<a href={profile.website_url} target="_blank" rel="noreferrer" className="text-sm text-indigo-300">Website ↗</a>}
           {profile?.github_url&&<a href={profile.github_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-sm text-slate-200 transition hover:bg-white/[0.06]">
-            <img src="https://github.com/favicon.ico" alt="" className="h-4 w-4 rounded-sm" />
+            <img src="/github.svg" alt="" className="h-4 w-4 rounded-sm" />
             GitHub
           </a>}
           {profile?.gitlab_url&&<a href={profile.gitlab_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-sm text-slate-200 transition hover:bg-white/[0.06]">
-            <img src="https://about.gitlab.com/images/press/gitlab-logo-700-rgb.svg" alt="" className="h-4 w-4 object-contain" />
+            <img src="/gitlab.svg" alt="" className="h-4 w-4 object-contain" />
             GitLab
           </a>}
         </div><div className="mt-4 flex flex-wrap gap-2"><span className="rounded-full border border-white/10 bg-slate-950/35 px-3 py-1.5 text-sm text-slate-300">{apps.length} published {apps.length === 1 ? "app" : "apps"}</span><span className="rounded-full border border-white/10 bg-slate-950/35 px-3 py-1.5 text-sm text-slate-300">↓ {totalDownloads === null ? "—" : totalDownloads.toLocaleString()} downloads</span>{memberSince&&<span className="rounded-full border border-white/10 bg-slate-950/35 px-3 py-1.5 text-sm text-slate-300">Member since {memberSince}</span>}{latestUpdate&&<span className="rounded-full border border-white/10 bg-slate-950/35 px-3 py-1.5 text-sm text-slate-300">Updated {new Intl.DateTimeFormat("en",{month:"short",day:"numeric",year:"numeric"}).format(new Date(latestUpdate))}</span>}</div></div></div>

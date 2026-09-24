@@ -102,10 +102,8 @@ function InviteContent() {
 
   return (
     <main className="glass-page flex min-h-[70vh] items-center justify-center px-4 py-8 sm:p-6">
-      <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-xl sm:p-8">
-        <div className="mb-5 inline-flex rounded-full border border-indigo-500/30 bg-indigo-950/40 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-indigo-300">
-          Invite required
-        </div>
+      <div className="glass-panel w-full max-w-md p-6 sm:p-8">
+        <p className="ui-eyebrow mb-3">Invite required</p>
 
         <h1 className="text-2xl font-semibold text-white">Enter your invite code</h1>
         <p className="mt-2 text-sm leading-6 text-slate-400">
@@ -128,7 +126,7 @@ function InviteContent() {
               spellCheck={false}
               required
               placeholder="Enter invite code"
-              className="w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-base text-white outline-none transition placeholder:text-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+              className="glass-input text-base"
             />
           </div>
 
@@ -141,7 +139,7 @@ function InviteContent() {
           <button
             type="submit"
             disabled={submitting || !code.trim()}
-            className="w-full rounded-xl bg-indigo-600 px-4 py-3 font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="ui-button-primary w-full px-4 py-3 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {submitting ? "Checking…" : "Continue"}
           </button>
@@ -150,7 +148,7 @@ function InviteContent() {
         <button
           type="button"
           onClick={signOut}
-          className="mt-3 w-full rounded-xl border border-slate-700 px-4 py-3 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
+          className="ui-button-secondary mt-3 w-full px-4 py-3 text-sm"
         >
           Sign out and use another account
         </button>

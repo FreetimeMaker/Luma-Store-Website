@@ -132,7 +132,8 @@ export default function DeveloperStatusPage() {
     <div className="glass-page mx-auto min-w-0 max-w-6xl space-y-5 pb-16 sm:space-y-6 sm:pb-20">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold leading-tight text-white sm:text-3xl">
+          <p className="ui-eyebrow">Publishing workflow</p>
+          <h1 className="ui-title mt-1 text-2xl leading-tight sm:text-3xl">
             {selectedSubmissionId ? (selectedSubmission ? `${selectedSubmission.name} timeline` : "App timeline") : "Submission status"}
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base sm:leading-7">
@@ -143,7 +144,7 @@ export default function DeveloperStatusPage() {
         </div>
         <Link
           href={selectedSubmissionId ? `/dashboard/apps/${selectedSubmissionId}` : "/dashboard"}
-          className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-center text-sm font-medium text-slate-200 transition hover:bg-slate-800 sm:w-auto"
+          className="ui-button-secondary min-h-11 w-full px-4 py-2.5 text-center text-sm sm:w-auto"
         >
           {selectedSubmissionId ? "Back to app details" : "Back to Developer Dashboard"}
         </Link>
@@ -234,13 +235,13 @@ export default function DeveloperStatusPage() {
                 <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-slate-300 sm:mb-5 sm:text-sm">Timeline</h3>
                 <div>
                   {events.length === 0 ? (
-                    <p className="rounded-xl border border-dashed border-slate-800 bg-slate-950/30 px-4 py-4 text-sm text-slate-500">No timeline entries are available yet.</p>
+                    <p className="ui-empty px-4 py-4 text-sm text-slate-500">No timeline entries are available yet.</p>
                   ) : (
                     events.map((event, index) => (
                       <div key={event.id} className="relative grid min-w-0 grid-cols-[18px_minmax(0,1fr)] gap-3 pb-6 last:pb-0 sm:grid-cols-[20px_minmax(0,1fr)] sm:gap-4">
                         {index < events.length - 1 && <div className="absolute bottom-0 left-[8px] top-4 w-px bg-slate-700 sm:left-[9px]" />}
-                        <div className="relative z-10 mt-1 h-[18px] w-[18px] rounded-full border-2 border-indigo-400 bg-slate-900 sm:h-5 sm:w-5" />
-                        <div className="min-w-0 rounded-xl bg-slate-950/35 px-3 py-3 sm:px-4">
+                        <div className="relative z-10 mt-1 h-[18px] w-[18px] rounded-full border-2 border-indigo-400 bg-[#0d131d] sm:h-5 sm:w-5" />
+                        <div className="min-w-0 ui-panel-muted px-3 py-3 sm:px-4">
                           <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
                             <p className="text-sm font-semibold text-white sm:text-base">{event.status}</p>
                             <span className="break-words text-xs leading-5 text-slate-500">{formatDate(event.created_at)}</span>

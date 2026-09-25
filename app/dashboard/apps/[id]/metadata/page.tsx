@@ -8,7 +8,7 @@ import { fetchFastlaneMetadata, type FastlaneMetadata } from "@/lib/luma/fastlan
 
 type SubmissionStatus = "Draft" | "Pending" | "In Review" | "Changes Requested" | "Approved" | "Rejected" | "Archived";
 type AppPlatform = "Android" | "Windows" | "Linux";
-type PackageType = "apk" | "exe" | "msi" | "deb" | "rpm";
+type PackageType = "apk" | "exe" | "msi" | "deb" | "rpm" | "appimage";
 
 type ListingForm = {
   repoUrl: string;
@@ -112,7 +112,7 @@ function parsePlatformArtifacts(value: unknown, legacyPlatform: string | null, l
         row.packageType ?? row.package_type ??
         (platform === "Android" ? "apk" : platform === "Windows" ? "exe" : legacyLinuxBase === "RPM-based" ? "rpm" : "deb")
       );
-      if (!["apk", "exe", "msi", "deb", "rpm"].includes(rawType)) return [];
+      if (!["apk", "exe", "msi", "deb", "rpm", "appimage"].includes(rawType)) return [];
       const packageType = rawType as PackageType;
 
       const downloadUrl = String(row.downloadUrl ?? row.download_url ?? "");
@@ -256,6 +256,7 @@ export default function AppMetadataPage() {
     windowsMsiUrl: "",
     linuxDebUrl: "",
     linuxRpmUrl: "",
+    linuxAppImageUrl: "",
     authorName: "",
     authorEmail: "",
     authorWebsite: "",
@@ -373,6 +374,7 @@ export default function AppMetadataPage() {
         windowsMsiUrl: artifacts.find((item) => item.platform === "Windows" && item.packageType === "msi")?.downloadUrl || "",
         linuxDebUrl: artifacts.find((item) => item.platform === "Linux" && item.packageType === "deb")?.downloadUrl || "",
         linuxRpmUrl: artifacts.find((item) => item.platform === "Linux" && item.packageType === "rpm")?.downloadUrl || "",
+        linuxAppImageUrl: artifacts.find((item) => item.platform === "Linux" && item.packageType === "appimage")?.downloadUrl || "",
         authorName: row.author_name || "",
         authorEmail: row.author_email || "",
         authorWebsite: row.author_website || "",
@@ -469,7 +471,7 @@ export default function AppMetadataPage() {
 
       if (isAndroid && !form.androidDownloadUrl.trim()) throw new Error("Android requires an APK download URL.");
       if (isWindows && !form.windowsExeUrl.trim() && !form.windowsMsiUrl.trim()) throw new Error("Windows requires an EXE or MSI download URL.");
-      if (isLinux && !form.linuxDebUrl.trim() && !form.linuxRpmUrl.trim()) throw new Error("Linux requires a DEB or RPM download URL.");
+      if (isLinux && !form.linuxDebUrl.trim() && !form.linuxRpmUrl.trim() && !form.linuxAppImageUrl.trim()) throw new Error("Linux requires a DEB or RPM download URL.");
 
       if (isAndroid && (!form.packageName.trim() || !/^([A-Za-z][A-Za-z0-9_]*\.)+[A-Za-z][A-Za-z0-9_]*$/.test(form.packageName.trim()))) {
         throw new Error("Android requires a valid package name.");

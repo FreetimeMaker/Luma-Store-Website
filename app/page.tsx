@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { fetchFastlaneIconUrl } from "@/lib/luma/fastlane";
+import { detectClientPlatform } from "@/lib/client-platform";
 
 type StoreApp = {
   id: string;
@@ -130,10 +131,9 @@ function DiscoverContent() {
   }, [searchParams]);
 
   useEffect(() => {
-    const ua = navigator.userAgent.toLowerCase();
-    const navigatorPlatform = (navigator.platform || "").toLowerCase();
-    if (!ua.includes("android") && (ua.includes("linux") || navigatorPlatform.includes("linux"))) {
-      setPlatform("Linux");
+    const detectedPlatform = detectClientPlatform();
+    if (detectedPlatform === "Android" || detectedPlatform === "Linux") {
+      setPlatform(detectedPlatform);
     }
   }, []);
 

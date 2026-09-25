@@ -37,6 +37,21 @@ type RecentApp = {
   icon_url: string | null;
 };
 
+type PlatformListingRow = {
+  app_id: string;
+  platform: string;
+  listing_metadata: unknown;
+};
+
+function featureGraphicFromMetadata(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const row = value as Record<string, unknown>;
+  const featureGraphic = row.featureGraphic ?? row.feature_graphic;
+  return typeof featureGraphic === "string" && featureGraphic.trim()
+    ? featureGraphic.trim()
+    : null;
+}
+
 function appInitials(name: string) {
   return name
     .split(/\s+/)
@@ -62,6 +77,7 @@ function DiscoverContent() {
   const [error, setError] = useState<string | null>(null);
   const [recentApps, setRecentApps] = useState<RecentApp[]>([]);
   const [fastlaneIconMap, setFastlaneIconMap] = useState<Record<string, string>>({});
+  const [featureGraphics, setFeatureGraphics] = useState<Record<string, string>>({});
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -115,15 +131,30 @@ function DiscoverContent() {
         setError(loadError.message);
         setApps([]);
       } else {
-        setApps((data ?? []) as StoreApp[]);
-        const { data: metricRows } = await supabase.rpc("luma_discover_metrics");
+        const loadedApps = (data ?? []) as StoreApp[];
+        setApps(loadedApps);
+
+        const [metricResult, listingResult] = await Promise.all([
+          supabase.rpc("luma_discover_metrics"),
+          supabase
+            .from("store_app_platforms")
+            .select("app_id,platform,listing_metadata")
+            .eq("platform", "Android"),
+        ]);
 
         if (!cancelled) {
           setMetrics(
             Object.fromEntries(
-              ((metricRows ?? []) as DiscoverMetric[]).map((row) => [row.app_id, row]),
+              ((metricResult.data ?? []) as DiscoverMetric[]).map((row) => [row.app_id, row]),
             ),
           );
+
+          const graphics = Object.fromEntries(
+            ((listingResult.data ?? []) as PlatformListingRow[])
+              .map((row) => [row.app_id, featureGraphicFromMetadata(row.listing_metadata)] as const)
+              .filter((entry): entry is readonly [string, string] => Boolean(entry[1])),
+          );
+          setFeatureGraphics(graphics);
         }
       }
 
@@ -425,6 +456,7 @@ function DiscoverContent() {
             {filteredApps.map((app) => {
               const name = app.name?.trim() || app.package_name || "Untitled app";
               const iconSrc = resolveAppIcon(app);
+              const featureGraphic = featureGraphics[app.id] || null;
               const metric = metrics[app.id];
               const ageDays = app.created_at
                 ? Math.floor((Date.now() - new Date(app.created_at).getTime()) / 86400000)
@@ -439,21 +471,17 @@ function DiscoverContent() {
                   href={`/discover/${encodeURIComponent(app.package_name || app.id)}`}
                   className="group ui-panel p-4 transition-colors hover:border-indigo-400/30 hover:bg-[#151f2b]"
                 >
-                  <div className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-950">
-                    {iconSrc ? (
+                  <div className="aspect-[1024/500] overflow-hidden rounded-2xl border border-slate-700 bg-slate-950">
+                    {featureGraphic ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={iconSrc}
-                        alt={`${name} thumbnail`}
-                        className="block rounded-2xl object-cover"
-                        style={{ width: "350.33px", height: "197.06px" }}
+                        src={featureGraphic}
+                        alt={`${name} feature graphic`}
+                        className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.01]"
                       />
                     ) : (
-                      <div
-                        className="flex items-center justify-center rounded-2xl text-sm font-bold text-indigo-200"
-                        style={{ width: "350.33px", height: "197.06px" }}
-                      >
-                        {appInitials(name) || "A"}
+                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-900 to-slate-950 text-sm font-semibold text-slate-500">
+                        No feature graphic
                       </div>
                     )}
                   </div>

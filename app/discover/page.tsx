@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { fetchFastlaneIconUrl } from "@/lib/luma/fastlane";
 
 type StoreApp = {
   id: string;
@@ -14,6 +15,7 @@ type StoreApp = {
   icon_url: string | null;
   version: string | null;
   package_name: string | null;
+  repo_url: string | null;
   license_type: string | null;
   subcategory: string | null;
   categories: string[];
@@ -59,6 +61,7 @@ export default function DiscoverPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [recentApps, setRecentApps] = useState<RecentApp[]>([]);
+  const [fastlaneIconMap, setFastlaneIconMap] = useState<Record<string, string>>({});
   const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -227,6 +230,35 @@ export default function DiscoverPage() {
 
   const hasActiveSearch = search.trim().length > 0;
 
+  const resolveAppIcon = (app: StoreApp) => app.icon_url || fastlaneIconMap[app.id] || null;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadFastlaneIcons() {
+      const missing = apps.filter((app) => !app.icon_url && app.repo_url);
+      if (!missing.length) {
+        if (!cancelled) setFastlaneIconMap({});
+        return;
+      }
+
+      const nextMap: Record<string, string> = {};
+      for (const app of missing) {
+        const iconUrl = await fetchFastlaneIconUrl(app.repo_url);
+        if (!cancelled && iconUrl) {
+          nextMap[app.id] = iconUrl;
+        }
+      }
+
+      if (!cancelled) setFastlaneIconMap(nextMap);
+    }
+
+    void loadFastlaneIcons();
+    return () => {
+      cancelled = true;
+    };
+  }, [apps]);
+
   const filteredApps = useMemo(() => {
     const query = search.trim().toLowerCase();
 
@@ -392,6 +424,7 @@ export default function DiscoverPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredApps.map((app) => {
               const name = app.name?.trim() || app.package_name || "Untitled app";
+              const iconSrc = resolveAppIcon(app);
               const metric = metrics[app.id];
               const ageDays = app.created_at
                 ? Math.floor((Date.now() - new Date(app.created_at).getTime()) / 86400000)
@@ -404,12 +437,31 @@ export default function DiscoverPage() {
                 <Link
                   key={app.id}
                   href={`/discover/${encodeURIComponent(app.package_name || app.id)}`}
-                  className="group ui-panel p-5 transition-colors hover:border-indigo-400/30 hover:bg-[#151f2b]"
+                  className="group ui-panel p-4 transition-colors hover:border-indigo-400/30 hover:bg-[#151f2b]"
                 >
-                  <div className="flex items-start gap-4">
-                    {app.icon_url ? (
+                  <div className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-950">
+                    {iconSrc ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={app.icon_url} alt={`${name} icon`} className="h-14 w-14 shrink-0 rounded-2xl border border-slate-700 bg-slate-950 object-cover" />
+                      <img
+                        src={iconSrc}
+                        alt={`${name} thumbnail`}
+                        className="block rounded-2xl object-cover"
+                        style={{ width: "350.33px", height: "197.06px" }}
+                      />
+                    ) : (
+                      <div
+                        className="flex items-center justify-center rounded-2xl text-sm font-bold text-indigo-200"
+                        style={{ width: "350.33px", height: "197.06px" }}
+                      >
+                        {appInitials(name) || "A"}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-4 flex items-start gap-4">
+                    {iconSrc ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={iconSrc} alt={`${name} icon`} className="h-14 w-14 shrink-0 rounded-2xl border border-slate-700 bg-slate-950 object-cover" />
                     ) : (
                       <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-slate-700 bg-slate-950 text-sm font-bold text-indigo-200">
                         {appInitials(name) || "A"}

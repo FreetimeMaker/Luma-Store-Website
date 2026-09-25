@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { fetchFastlaneIconUrl } from "@/lib/luma/fastlane";
 
 type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
@@ -182,6 +183,7 @@ export default function DiscoverAppPage() {
   const [copied, setCopied] = useState(false);
   const [androidQrUrl, setAndroidQrUrl] = useState<string | null>(null);
   const [screenshotIndex, setScreenshotIndex] = useState<number | null>(null);
+  const [appIcon, setAppIcon] = useState<string | null>(null);
   const ratingApi = "https://api.free-time.me/lumastore";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -302,6 +304,11 @@ export default function DiscoverAppPage() {
       } else {
         const loadedApp = appResult.data as StoreApp;
         setApp(loadedApp);
+        setAppIcon(loadedApp.icon_url ?? null);
+        if (!loadedApp.icon_url && loadedApp.repo_url) {
+          const fallbackIcon = await fetchFastlaneIconUrl(loadedApp.repo_url);
+          if (!cancelled) setAppIcon(fallbackIcon ?? null);
+        }
         try {
           const key = "luma-recent-apps";
           const current = JSON.parse(localStorage.getItem(key) || "[]") as Array<{id:string;name:string;package_name:string|null;icon_url:string|null}>;

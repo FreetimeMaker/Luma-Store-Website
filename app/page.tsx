@@ -619,7 +619,7 @@ function PlayStoreCard({
       className="group block min-w-0"
     >
       {showThumbnail && (
-        <div className="aspect-[1024/500] overflow-hidden rounded-xl bg-[#101722] shadow-[0_1px_2px_rgba(0,0,0,0.22)]">
+        <div className="mx-auto aspect-[16/7] w-[92%] overflow-hidden rounded-xl bg-[#101722] shadow-[0_1px_2px_rgba(0,0,0,0.22)] sm:w-[90%]">
           {featureGraphic ? (
             <img
               src={featureGraphic}

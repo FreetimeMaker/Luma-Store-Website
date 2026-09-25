@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.freetime.lumastore",
+      "sha256_cert_fingerprints": [
+        "B2:D8:82:22:55:65:F0:A6:E5:DD:E6:2D:E1:E3:A0:86:91:77:C0:8B:71:3F:8B:CC:DA:E5:7D:8A:D2:9F:1E:F2"
+      ]
+    }
+  }
+]

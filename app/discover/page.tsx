@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -47,7 +47,7 @@ function appInitials(name: string) {
     .toUpperCase();
 }
 
-export default function DiscoverPage() {
+function DiscoverContent() {
   const supabase = useMemo(() => createClient(), []);
   const searchParams = useSearchParams();
   const [apps, setApps] = useState<StoreApp[]>([]);
@@ -537,5 +537,25 @@ function Collection({ title, apps }: { title: string; apps: StoreApp[] }) {
         })}
       </div>
     </section>
+  );
+}
+
+
+export default function DiscoverPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="glass-page mx-auto max-w-6xl space-y-5 pb-20">
+          <div className="glass-panel h-36 animate-pulse" />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="glass-panel h-40 animate-pulse" />
+            ))}
+          </div>
+        </div>
+      }
+    >
+      <DiscoverContent />
+    </Suspense>
   );
 }

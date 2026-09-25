@@ -395,7 +395,7 @@ export default function DiscoverAppPage() {
       const listingPlatforms = Array.from(
         new Set(
           loadedPlatforms
-            .filter((item) => platformListing(item.listing_metadata))
+            .filter((item) => Boolean(item.download_url) || Boolean(platformListing(item.listing_metadata)))
             .map((item) => item.platform),
         ),
       );
@@ -481,7 +481,7 @@ export default function DiscoverAppPage() {
     const listingPlatforms = Array.from(
       new Set(
         platforms
-          .filter((item) => platformListing(item.listing_metadata))
+          .filter((item) => Boolean(item.download_url) || Boolean(platformListing(item.listing_metadata)))
           .map((item) => item.platform),
       ),
     );
@@ -529,8 +529,17 @@ export default function DiscoverAppPage() {
   }
 
   const cryptoLabels:Record<string,string>={bitcoin:"Bitcoin (BTC)",ethereum:"Ethereum (ETH)",tether:"Tether (USDT)",usdc:"USD Coin (USDC)",bnb:"BNB",solana:"Solana (SOL)",cardano:"Cardano (ADA)",dogecoin:"Dogecoin (DOGE)",tron:"TRON (TRX)",polkadot:"Polkadot (DOT)",avalanche:"AvalAX (AVAX)",chainlink:"Chainlink (LINK)",polygon:"Polygon (POL)",litecoin:"Litecoin (LTC)",bitcoin_cash:"Bitcoin Cash (BCH)",stellar:"Stellar (XLM)",monero:"Monero (XMR)",toncoin:"Toncoin (TON)",shiba_inu:"Shiba Inu (SHIB)"}; const cryptoEntries=Object.entries(funding?.crypto_addresses||{}).filter(([key,value])=>Boolean(value)&&!key.startsWith("xrp::")&&key!=="bnb::BNB Beacon Chain");
-  const listingPlatforms = Array.from(new Set(platforms.filter((item) => platformListing(item.listing_metadata)).map((item) => item.platform)));
-  const activePlatformRow = selectedListingPlatform ? platforms.find((item) => item.platform === selectedListingPlatform && platformListing(item.listing_metadata)) : undefined;
+  const listingPlatforms = Array.from(
+    new Set(
+      platforms
+        .filter((item) => Boolean(item.download_url) || Boolean(platformListing(item.listing_metadata)))
+        .map((item) => item.platform),
+    ),
+  );
+  const activePlatformRow = selectedListingPlatform
+    ? platforms.find((item) => item.platform === selectedListingPlatform && platformListing(item.listing_metadata))
+      ?? platforms.find((item) => item.platform === selectedListingPlatform)
+    : undefined;
   const activeListing = activePlatformRow ? platformListing(activePlatformRow.listing_metadata) : null;
   const screenshots = activeListing?.screenshots.length ? activeListing.screenshots : stringArray(app.screenshots);
   const antiFeatures = stringArray(app.ant_features);

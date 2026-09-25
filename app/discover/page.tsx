@@ -487,14 +487,24 @@ function DiscoverContent() {
                   </div>
 
                   <div className="mt-4 flex items-start gap-4">
-                    {iconSrc ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={iconSrc} alt={`${name} icon`} className="h-14 w-14 shrink-0 rounded-2xl border border-slate-700 bg-slate-950 object-cover" />
-                    ) : (
-                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-slate-700 bg-slate-950 text-sm font-bold text-indigo-200">
-                        {appInitials(name) || "A"}
-                      </div>
-                    )}
+                    <div className="relative shrink-0">
+                      <div
+                        aria-hidden="true"
+                        className="absolute inset-1 rounded-2xl bg-indigo-500/30 blur-xl transition duration-300 group-hover:bg-indigo-400/40"
+                      />
+                      {iconSrc ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={iconSrc}
+                          alt={`${name} icon`}
+                          className="relative h-14 w-14 rounded-2xl border border-indigo-300/20 bg-slate-950 object-cover shadow-[0_0_24px_rgba(99,102,241,0.20)]"
+                        />
+                      ) : (
+                        <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-indigo-300/20 bg-slate-950 text-sm font-bold text-indigo-200 shadow-[0_0_24px_rgba(99,102,241,0.20)]">
+                          {appInitials(name) || "A"}
+                        </div>
+                      )}
+                    </div>
 
                     <div className="min-w-0 flex-1">
                       <h3 className="truncate text-lg font-semibold text-white group-hover:text-indigo-200">{name}</h3>

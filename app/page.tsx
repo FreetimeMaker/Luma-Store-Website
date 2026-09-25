@@ -492,23 +492,6 @@ function DiscoverContent() {
           )}
 
           <section>
-            <div className="mb-5 flex items-end justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-semibold text-white sm:text-2xl">
-                  {hasActiveSearch
-                    ? `Search results for “${search.trim()}”`
-                    : sort === "downloads"
-                      ? "Top charts"
-                      : sort === "new"
-                        ? "New releases"
-                        : sort === "updated"
-                          ? "Recently updated"
-                          : "All apps"}
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">{filteredApps.length} apps</p>
-              </div>
-            </div>
-
             <div className="grid gap-x-10 gap-y-2 md:grid-cols-2">
               {filteredApps.map((app, index) => (
                 <PlayStoreCard

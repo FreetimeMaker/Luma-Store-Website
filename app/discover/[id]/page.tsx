@@ -409,7 +409,17 @@ export default function DiscoverAppPage() {
 
   return (
     <div className="glass-page mx-auto max-w-6xl space-y-5 px-3 pb-20 sm:space-y-6 sm:px-4">
-      <Link href="/discover" className="inline-flex text-sm font-medium text-indigo-300 transition hover:text-indigo-200">← Back to Discover</Link>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link href="/discover" className="inline-flex text-sm font-medium text-indigo-300 transition hover:text-indigo-200">← Back to Discover</Link>
+        {app.package_name && (
+          <a
+            href={`lumastore://app/${encodeURIComponent(app.package_name)}`}
+            className="ui-button-primary inline-flex min-h-10 items-center justify-center px-4 py-2 text-sm font-semibold text-white"
+          >
+            Open in Luma Store
+          </a>
+        )}
+      </div>
 
       <section className="grid gap-8 py-2 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-start">
         <div className="min-w-0">

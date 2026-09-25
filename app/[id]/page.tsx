@@ -526,21 +526,21 @@ export default function DiscoverAppPage() {
 
   return (
     <div className="store-page mx-auto max-w-7xl space-y-5 px-3 pb-20 sm:space-y-6 sm:px-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-2">
         <Link href="/" className="inline-flex text-sm font-medium text-indigo-300 transition hover:text-indigo-200">← Back to apps</Link>
         {app.package_name && (
           <a
             href={`lumastore://app/${encodeURIComponent(app.package_name)}`}
-            className="ui-button-primary inline-flex min-h-10 items-center justify-center px-4 py-2 text-sm font-semibold text-white"
+            className="ui-button-primary inline-flex min-h-10 shrink-0 items-center justify-center px-3 py-2 text-xs font-semibold text-white sm:px-4 sm:text-sm"
           >
             Open in Luma Store
           </a>
         )}
       </div>
 
-      <section className="grid gap-8 py-2 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-start">
+      <section className="grid gap-5 py-2 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-start">
         <div className="min-w-0">
-          <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">{name}</h1>
+          <h1 className="break-words text-3xl font-bold tracking-tight text-white sm:text-5xl">{name}</h1>
 
           {app.developer_id ? (
             <Link
@@ -555,7 +555,7 @@ export default function DiscoverAppPage() {
             </p>
           )}
 
-          <div className="mt-7 flex flex-wrap items-center gap-6 sm:gap-8">
+          <div className="mt-6 grid grid-cols-2 gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:mt-7 sm:flex sm:flex-wrap sm:items-center sm:gap-8 sm:border-0 sm:bg-transparent sm:p-0">
             <div>
               <p className="text-sm font-semibold text-white">
                 {ratingCount ? ratingAverage.toFixed(1) : "—"}★
@@ -564,7 +564,7 @@ export default function DiscoverAppPage() {
                 {ratingCount ? `${ratingCount.toLocaleString()} ratings` : "No ratings"}
               </p>
             </div>
-            <div className="h-10 w-px bg-white/10" />
+            <div className="hidden h-10 w-px bg-white/10 sm:block" />
             <div>
               <p className="text-sm font-semibold text-white">{downloadCount.toLocaleString()}+</p>
               <p className="mt-1 text-xs text-slate-500">Downloads</p>
@@ -580,21 +580,21 @@ export default function DiscoverAppPage() {
             )}
           </div>
 
-          <div className="mt-7 flex flex-wrap items-center gap-3">
+          <div className="mt-6 grid grid-cols-2 gap-2 sm:mt-7 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
             {visibleDownloads.length > 0 ? (
               visibleDownloads.map((platform) => (
                 <button
                   key={platform.id}
                   type="button"
                   onClick={() => startDownload(platform)}
-                  className="inline-flex min-h-12 items-center justify-center rounded-xl bg-indigo-500 px-7 py-3 text-sm font-semibold text-white transition hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-300/60"
+                  className="col-span-2 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-indigo-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-300/60 sm:col-span-1 sm:w-auto sm:px-7"
                 >
                   Install {artifactLabel(platform)}
                   {platform.file_size_mb !== null ? ` · ${platform.file_size_mb.toFixed(2)} MB` : ""}
                 </button>
               ))
             ) : (
-              <div className="rounded-xl border border-white/10 bg-slate-900/40 px-4 py-3 text-sm text-slate-500">
+              <div className="col-span-2 rounded-xl border border-white/10 bg-slate-900/40 px-4 py-3 text-center text-sm text-slate-500 sm:col-span-1">
                 No download available
               </div>
             )}
@@ -602,7 +602,7 @@ export default function DiscoverAppPage() {
             <button
               type="button"
               onClick={shareApp}
-              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-medium text-slate-200 transition hover:bg-white/[0.06] hover:text-white"
+              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3 text-sm font-medium text-slate-200 transition hover:bg-white/[0.06] hover:text-white sm:w-auto sm:px-4"
             >
               <span aria-hidden="true">↗</span>
               Share
@@ -611,7 +611,7 @@ export default function DiscoverAppPage() {
             <button
               type="button"
               onClick={copyAppLink}
-              className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm font-medium text-slate-200 transition hover:bg-white/[0.06] hover:text-white"
+              className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3 text-sm font-medium text-slate-200 transition hover:bg-white/[0.06] hover:text-white sm:w-auto sm:px-4"
             >
               {copied ? "Copied!" : "Copy link"}
             </button>
@@ -624,7 +624,7 @@ export default function DiscoverAppPage() {
           )}
 
           {listingPlatforms.length > 1 && (
-            <div className="mt-5 flex flex-wrap gap-2">
+            <div className="mt-5 grid grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-white/[0.02] p-1 sm:flex sm:w-fit sm:flex-wrap sm:border-0 sm:bg-transparent sm:p-0">
               {listingPlatforms.map((platform) => (
                 <button
                   type="button"
@@ -633,7 +633,7 @@ export default function DiscoverAppPage() {
                     setSelectedListingPlatform(platform);
                     setScreenshotIndex(null);
                   }}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${selectedListingPlatform === platform ? "border-indigo-400/40 bg-indigo-500/15 text-indigo-100" : "border-slate-700 bg-slate-950/40 text-slate-400 hover:text-white"}`}
+                  className={`min-h-11 w-full rounded-xl border px-3 py-2 text-xs font-semibold transition sm:min-h-0 sm:w-auto sm:rounded-full sm:py-1.5 ${selectedListingPlatform === platform ? "border-indigo-400/40 bg-indigo-500/15 text-indigo-100" : "border-slate-700 bg-slate-950/40 text-slate-400 hover:text-white"}`}
                 >
                   {platform}
                 </button>
@@ -642,18 +642,18 @@ export default function DiscoverAppPage() {
           )}
         </div>
 
-        <div className="flex justify-start lg:justify-end">
+        <div className="order-first flex justify-center lg:order-none lg:justify-end">
           {appIcon ? (
             <div className="relative">
               <div aria-hidden="true" className="absolute inset-4 rounded-[2rem] bg-indigo-500/30 blur-3xl" />
               <img
                 src={appIcon}
                 alt={`${name} icon`}
-                className="relative h-40 w-40 rounded-[2rem] border border-indigo-300/20 bg-slate-950 object-cover shadow-[0_20px_60px_rgba(79,70,229,0.28)] sm:h-44 sm:w-44"
+                className="relative h-28 w-28 rounded-[1.6rem] border border-indigo-300/20 bg-slate-950 object-cover shadow-[0_16px_45px_rgba(79,70,229,0.24)] sm:h-44 sm:w-44 sm:rounded-[2rem]"
               />
             </div>
           ) : (
-            <div className="relative flex h-40 w-40 items-center justify-center rounded-[2rem] border border-indigo-300/20 bg-slate-950 text-5xl font-bold text-indigo-200 shadow-[0_20px_60px_rgba(79,70,229,0.28)] sm:h-44 sm:w-44">
+            <div className="relative flex h-28 w-28 items-center justify-center rounded-[1.6rem] border border-indigo-300/20 bg-slate-950 text-4xl font-bold text-indigo-200 shadow-[0_16px_45px_rgba(79,70,229,0.24)] sm:h-44 sm:w-44 sm:rounded-[2rem] sm:text-5xl">
               <div aria-hidden="true" className="absolute inset-4 rounded-[2rem] bg-indigo-500/30 blur-3xl" />
               <span className="relative">{name.slice(0, 1).toUpperCase()}</span>
             </div>
@@ -665,7 +665,7 @@ export default function DiscoverAppPage() {
         <div className="min-w-0 space-y-8">
           {screenshots.length > 0 && (
             <section>
-              <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3">
+              <div className="-mx-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-3 sm:mx-0 sm:gap-4 sm:px-0">
                 {screenshots.map((url, index) => (
                   <button
                     type="button"
@@ -676,7 +676,7 @@ export default function DiscoverAppPage() {
                     <img
                       src={url}
                       alt={`${name} screenshot ${index + 1}`}
-                      className="h-72 w-auto max-w-[80vw] object-contain sm:h-96"
+                      className="h-64 w-auto max-w-[86vw] object-contain sm:h-96 sm:max-w-[80vw]"
                     />
                   </button>
                 ))}

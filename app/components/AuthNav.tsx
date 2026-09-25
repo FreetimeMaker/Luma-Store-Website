@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { AuthChangeEvent, Session, User, UserResponse } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 
@@ -18,7 +18,9 @@ export default function AuthNav() {
   const searchRef = useRef<HTMLDivElement>(null);
   const helpRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const pathname = usePathname();
   const supabase = useMemo(() => createClient(), []);
+  const isAppsActive = pathname === "/";
 
   function handleSearchSubmit() {
     const trimmed = searchValue.trim();
@@ -118,10 +120,17 @@ export default function AuthNav() {
       </Link>
 
       <div className="hidden items-center gap-1 md:flex">
-        <Link href="/" className="rounded-full px-4 py-2 text-sm font-medium text-indigo-200 transition hover:bg-indigo-500/10 hover:text-white">
+        <Link
+          href="/"
+          aria-current={isAppsActive ? "page" : undefined}
+          className={`nav-tab ${isAppsActive ? "active" : ""}`}
+        >
           Apps
         </Link>
-        <Link href="/login?next=/dashboard" className="rounded-full px-4 py-2 text-sm font-medium text-slate-400 transition hover:bg-white/[0.04] hover:text-white">
+        <Link
+          href="/login?next=/dashboard"
+          className="nav-tab text-slate-400 hover:text-white"
+        >
           Developers
         </Link>
       </div>

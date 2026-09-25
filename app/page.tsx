@@ -276,6 +276,11 @@ function DiscoverContent() {
   );
 
   const hasActiveSearch = search.trim().length > 0;
+  const showFeaturedSection = !hasActiveSearch
+    && platform === "all"
+    && license === "all"
+    && category === "all"
+    && developer === "all";
 
   const resolveAppIcon = (app: StoreApp) => app.icon_url || fastlaneIconMap[app.id] || null;
 
@@ -402,7 +407,8 @@ function DiscoverContent() {
           <button
             type="button"
             onClick={() => setPlatform("Linux")}
-            className={`store-chip shrink-0 ${platform === "Linux" ? "store-chip-active" : ""}`}
+            aria-pressed={platform === "Linux"}
+            className={`store-chip shrink-0 ${platform === "Linux" ? "active store-chip-active" : ""}`}
           >
             <span className="flex items-center gap-2">
               <img src="/desktop.png" alt="Linux-PC" className="h-4 w-4 object-contain" />
@@ -412,7 +418,8 @@ function DiscoverContent() {
           <button
             type="button"
             onClick={() => setPlatform("Android")}
-            className={`store-chip shrink-0 ${platform === "Android" ? "store-chip-active" : ""}`}
+            aria-pressed={platform === "Android"}
+            className={`store-chip shrink-0 ${platform === "Android" ? "active store-chip-active" : ""}`}
           >
             <span className="flex items-center gap-2">
               <img src="/android.png" alt="Android" className="h-4 w-4 object-contain" />
@@ -462,7 +469,7 @@ function DiscoverContent() {
         </div>
       ) : (
         <>
-          {!hasActiveSearch && featuredApps.length > 0 && (
+          {showFeaturedSection && featuredApps.length > 0 && (
             <div className="grid gap-5 pb-3 md:grid-cols-2 xl:grid-cols-3">
               {featuredApps.map((app) => (
                 <div key={app.id} className="w-full">
@@ -632,6 +639,21 @@ function Collection({
 }) {
   if (!apps.length) return null;
 
+  const columnSize = 3;
+  const columns = [
+    apps.slice(0, columnSize),
+    apps.slice(columnSize, columnSize * 2),
+    apps.slice(columnSize * 2, columnSize * 3),
+  ];
+
+  const paddedColumns = columns.map((columnApps, columnIndex) => {
+    const items = [...columnApps];
+    while (items.length < columnSize) {
+      items.push(null as never);
+    }
+    return { columnIndex, items };
+  });
+
   return (
     <section>
       <div className="mb-4 flex items-center justify-between gap-4">
@@ -639,48 +661,60 @@ function Collection({
         <span className="text-sm font-medium text-indigo-300">More</span>
       </div>
 
-      <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3">
-        {apps.map((app) => {
-          const name = app.name || app.package_name || "Untitled app";
-          const rating = ratings[app.id];
-          const iconSrc = resolveIcon(app);
+      <div className="grid gap-4 md:grid-cols-3">
+        {paddedColumns.map(({ columnIndex, items }) => (
+          <div key={columnIndex} className="space-y-2">
+            {items.map((app, itemIndex) => {
+              if (!app) {
+                return <div key={`empty-${columnIndex}-${itemIndex}`} className="h-[78px]" />;
+              }
 
-          return (
-            <Link
-              key={app.id}
-              href={`/${encodeURIComponent(app.package_name || app.id)}`}
-              className="group flex min-w-[82vw] snap-start items-center gap-3 rounded-2xl px-2.5 py-3 transition hover:bg-white/[0.035] sm:min-w-[21rem] sm:gap-4 sm:px-3 lg:min-w-[23rem]"
-            >
-              <div className="relative shrink-0">
-                <div aria-hidden="true" className="absolute inset-2 rounded-2xl bg-indigo-500/15 blur-xl" />
-                {iconSrc ? (
-                  <img
-                    src={iconSrc}
-                    alt=""
-                    className="relative h-16 w-16 rounded-2xl object-cover shadow-[0_6px_22px_rgba(0,0,0,0.22)]"
-                  />
-                ) : (
-                  <span className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[#101722] text-sm font-bold text-indigo-200">
-                    {appInitials(name)}
-                  </span>
-                )}
-              </div>
+              const name = app.name || app.package_name || "Untitled app";
+              const rating = ratings[app.id];
+              const iconSrc = resolveIcon(app);
+              const rank = columnIndex * columnSize + itemIndex + 1;
 
-              <div className="min-w-0 flex-1">
-                <strong className="block truncate text-sm font-semibold text-white">
-                  {name}
-                </strong>
-                <span className="mt-1 block truncate text-xs text-slate-500">
-                  {app.developer_name || app.package_name || "Unknown developer"}
-                </span>
-                <span className="mt-1.5 block text-xs text-slate-500">
-                  {rating ? `${rating.average.toFixed(1)} ★` : "— ★"}
-                  {app.subcategory ? ` · ${app.subcategory}` : ""}
-                </span>
-              </div>
-            </Link>
-          );
-        })}
+              return (
+                <Link
+                  key={app.id}
+                  href={`/${encodeURIComponent(app.package_name || app.id)}`}
+                  className="group flex items-center gap-3 rounded-xl px-2 py-2 transition hover:bg-white/[0.035]"
+                >
+                  <div className="w-6 shrink-0 text-right text-base font-bold text-slate-300">
+                    {rank}
+                  </div>
+
+                  <div className="relative shrink-0">
+                    {iconSrc ? (
+                      <img
+                        src={iconSrc}
+                        alt=""
+                        className="relative h-14 w-14 rounded-[0.9rem] object-cover shadow-[0_4px_14px_rgba(0,0,0,0.18)]"
+                      />
+                    ) : (
+                      <span className="relative flex h-14 w-14 items-center justify-center rounded-[0.9rem] bg-[#101722] text-sm font-bold text-indigo-200">
+                        {appInitials(name)}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium text-white">{name}</div>
+                    <div className="mt-0.5 truncate text-xs text-slate-400">
+                      {app.subcategory || app.developer_name || "Unknown developer"}
+                    </div>
+                    <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-300">
+                      <span>{rating ? rating.average.toFixed(1) : "—"}</span>
+                      <svg viewBox="0 0 24 24" aria-hidden="true" className="h-3.5 w-3.5 fill-current text-yellow-400">
+                        <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                      </svg>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </div>
     </section>
   );

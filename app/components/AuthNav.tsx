@@ -95,7 +95,7 @@ export default function AuthNav() {
     .toUpperCase();
 
   return (
-    <nav className="relative flex w-full items-start justify-between gap-4">
+    <nav className="relative flex w-full items-center justify-between gap-2 sm:gap-4">
       <Link href="/" className="group flex min-w-0 items-center gap-3" aria-label="Luma Store home">
         <Image
           src="/apple-touch-icon.png"
@@ -103,10 +103,10 @@ export default function AuthNav() {
           width={40}
           height={40}
           priority
-          className="h-10 w-10 shrink-0 object-cover"
+          className="h-9 w-9 shrink-0 object-cover sm:h-10 sm:w-10"
         />
         <div className="min-w-0">
-          <div className="truncate text-[22px] font-semibold tracking-tight text-white transition-colors group-hover:text-indigo-200" style={{ fontFamily: "'Google Sans', sans-serif" }}>Luma Store</div>
+          <div className="truncate text-[18px] font-semibold tracking-tight text-white transition-colors group-hover:text-indigo-200 sm:text-[22px]" style={{ fontFamily: "'Google Sans', sans-serif" }}>Luma Store</div>
           <div className="hidden text-[11px] text-slate-500 sm:block"></div>
         </div>
       </Link>
@@ -122,7 +122,7 @@ export default function AuthNav() {
 
       <div className="ml-auto flex items-center gap-1.5">
         {showSearch ? (
-          <div ref={searchRef} className="absolute left-1/2 top-1/2 flex w-[42rem] max-w-[70vw] -translate-x-1/2 -translate-y-1/2 items-center overflow-hidden rounded-full border border-white/10 bg-[#111923] shadow-xl shadow-black/20">
+          <div ref={searchRef} className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 flex items-center overflow-hidden rounded-2xl border border-white/10 bg-[#111923] shadow-xl shadow-black/30 sm:left-1/2 sm:right-auto sm:top-1/2 sm:w-[42rem] sm:max-w-[70vw] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-full">
             <Image
               src="/search.png"
               alt="Search"
@@ -169,7 +169,7 @@ export default function AuthNav() {
             type="button"
             aria-label="Discover apps"
             onClick={() => setShowSearch(true)}
-            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/[0.04] hover:text-white"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium text-slate-300 transition hover:bg-white/[0.04] hover:text-white sm:h-auto sm:w-auto sm:rounded-lg sm:px-3 sm:py-2"
           >
             <Image
               src="/search.png"
@@ -184,7 +184,7 @@ export default function AuthNav() {
         <button
           type="button"
           aria-label="Help"
-          className="flex items-center gap-2 rounded-lg px-3.5 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/[0.04] hover:text-white"
+          className="hidden items-center gap-2 rounded-lg px-3.5 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/[0.04] hover:text-white sm:flex"
         >
           <Image
             src="/helpp.png"
@@ -196,7 +196,7 @@ export default function AuthNav() {
         </button>
 
         {loading ? (
-          <span className="inline text-sm text-slate-500">Checking login...</span>
+          <span className="hidden text-sm text-slate-500 sm:inline">Checking login...</span>
         ) : user ? (
           <div ref={profileMenuRef} className="relative">
             <button

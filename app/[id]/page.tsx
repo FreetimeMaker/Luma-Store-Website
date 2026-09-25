@@ -467,7 +467,8 @@ export default function DiscoverAppPage() {
   }, [params.id, supabase]);
 
   useEffect(() => {
-    if (clientOs === "Other" || platforms.length === 0) return;
+    if (platforms.length === 0) return;
+
     const listingPlatforms = Array.from(
       new Set(
         platforms
@@ -475,8 +476,24 @@ export default function DiscoverAppPage() {
           .map((item) => item.platform),
       ),
     );
-    if (listingPlatforms.includes(clientOs)) {
-      setSelectedListingPlatform(clientOs);
+
+    const mobileTouchAndroidFallback =
+      typeof window !== "undefined"
+      && navigator.maxTouchPoints > 0
+      && window.matchMedia("(pointer: coarse)").matches
+      && window.matchMedia("(max-width: 900px)").matches
+      && listingPlatforms.includes("Android");
+
+    const preferredPlatform = mobileTouchAndroidFallback
+      ? "Android"
+      : clientOs !== "Other" && listingPlatforms.includes(clientOs)
+        ? clientOs
+        : listingPlatforms.includes("Android")
+          ? "Android"
+          : listingPlatforms[0] ?? null;
+
+    if (preferredPlatform) {
+      setSelectedListingPlatform(preferredPlatform);
       setScreenshotIndex(null);
     }
   }, [clientOs, platforms]);

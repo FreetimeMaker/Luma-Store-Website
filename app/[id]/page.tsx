@@ -628,7 +628,7 @@ export default function DiscoverAppPage() {
           {app.package_name && (
             <a
               href={`lumastore://app/${encodeURIComponent(app.package_name)}`}
-              className="ui-button-primary inline-flex min-h-11 w-full items-center justify-center px-4 py-2.5 text-sm font-semibold text-white sm:hidden"
+              className="ui-button-primary inline-flex min-h-11 w-full items-center justify-center px-4 py-2.5 text-sm font-semibold text-white sm:w-auto"
             >
               Open in Luma Store
             </a>

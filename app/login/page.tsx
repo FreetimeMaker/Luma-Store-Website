@@ -17,7 +17,7 @@ function ProviderIcon({ provider }: { provider: "github" | "gitlab" }) {
 }
 
 function safeNext(value: string | null) {
-  return value?.startsWith("/") && !value.startsWith("//") ? value : "/discover";
+  return value?.startsWith("/") && !value.startsWith("//") ? value : "/";
 }
 
 function authOrigin() {

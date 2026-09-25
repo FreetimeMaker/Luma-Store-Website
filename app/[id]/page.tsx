@@ -485,7 +485,7 @@ export default function DiscoverAppPage() {
       <div className="store-page mx-auto max-w-3xl rounded-2xl border border-rose-500/25 bg-rose-950/20 p-6">
         <h1 className="text-xl font-semibold text-rose-200">App not found</h1>
         <p className="mt-2 text-sm text-rose-100/70">{error || "This app could not be loaded."}</p>
-        <Link href="/discover" className="mt-4 inline-flex text-sm font-medium text-indigo-300 hover:text-indigo-200">← Back to Discover</Link>
+        <Link href="/" className="mt-4 inline-flex text-sm font-medium text-indigo-300 hover:text-indigo-200">← Back to apps</Link>
       </div>
     );
   }
@@ -526,7 +526,7 @@ export default function DiscoverAppPage() {
 
           {app.developer_id ? (
             <Link
-              href={`/discover/developers/${encodeURIComponent(app.developer_name || app.developer_id)}`}
+              href={`/developers/${encodeURIComponent(app.developer_name || app.developer_id)}`}
               className="mt-4 inline-flex text-base font-semibold text-indigo-300 transition hover:text-indigo-200"
             >
               {app.developer_name || app.author_name || "Unknown developer"}
@@ -813,7 +813,7 @@ export default function DiscoverAppPage() {
                 {relatedDeveloperApps.slice(0, 3).map((item) => {
                   const itemName = item.name || item.package_name || "Untitled app";
                   return (
-                    <Link key={item.id} href={`/discover/${encodeURIComponent(item.package_name || item.id)}`} className="flex items-center gap-3 rounded-xl p-1 transition hover:bg-white/[0.03]">
+                    <Link key={item.id} href={`/${encodeURIComponent(item.package_name || item.id)}`} className="flex items-center gap-3 rounded-xl p-1 transition hover:bg-white/[0.03]">
                       {item.icon_url ? (
                         <img src={item.icon_url} alt="" className="h-12 w-12 rounded-xl border border-white/10 object-cover" />
                       ) : (
@@ -837,7 +837,7 @@ export default function DiscoverAppPage() {
                 {similarApps.slice(0, 3).map((item) => {
                   const itemName = item.name || item.package_name || "Untitled app";
                   return (
-                    <Link key={item.id} href={`/discover/${encodeURIComponent(item.package_name || item.id)}`} className="flex items-center gap-3 rounded-xl p-1 transition hover:bg-white/[0.03]">
+                    <Link key={item.id} href={`/${encodeURIComponent(item.package_name || item.id)}`} className="flex items-center gap-3 rounded-xl p-1 transition hover:bg-white/[0.03]">
                       {item.icon_url ? (
                         <img src={item.icon_url} alt="" className="h-12 w-12 rounded-xl border border-white/10 object-cover" />
                       ) : (

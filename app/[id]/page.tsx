@@ -477,12 +477,12 @@ export default function DiscoverAppPage() {
   }, [params.id, supabase]);
 
   if (loading) {
-    return <div className="store-page mx-auto max-w-7xl space-y-5 px-3 pb-20 sm:px-4"><div className="h-5 w-32 animate-pulse rounded bg-slate-800/70"/><div className="rounded-[2rem] border border-white/10 bg-slate-900/50 p-5 sm:p-8"><div className="flex gap-5"><div className="h-24 w-24 animate-pulse rounded-3xl bg-slate-800/80"/><div className="flex-1 space-y-3 py-2"><div className="h-8 max-w-sm animate-pulse rounded bg-slate-800/80"/><div className="h-4 max-w-xs animate-pulse rounded bg-slate-800/60"/><div className="h-14 max-w-xl animate-pulse rounded-xl bg-slate-800/40"/></div></div></div><div className="h-44 animate-pulse rounded-3xl border border-white/10 bg-slate-900/40"/></div>;
+    return <div className="store-page mx-auto max-w-7xl space-y-5 pb-14 sm:px-4 sm:pb-20"><div className="h-5 w-32 animate-pulse rounded bg-slate-800/70"/><div className="rounded-[2rem] border border-white/10 bg-slate-900/50 p-5 sm:p-8"><div className="flex gap-5"><div className="h-20 w-20 sm:h-24 sm:w-24 animate-pulse rounded-3xl bg-slate-800/80"/><div className="flex-1 space-y-3 py-2"><div className="h-8 max-w-sm animate-pulse rounded bg-slate-800/80"/><div className="h-4 max-w-xs animate-pulse rounded bg-slate-800/60"/><div className="h-14 max-w-xl animate-pulse rounded-xl bg-slate-800/40"/></div></div></div><div className="h-44 animate-pulse rounded-3xl border border-white/10 bg-slate-900/40"/></div>;
   }
 
   if (error || !app) {
     return (
-      <div className="store-page mx-auto max-w-3xl rounded-2xl border border-rose-500/25 bg-rose-950/20 p-6">
+      <div className="store-page mx-auto max-w-3xl rounded-2xl border border-rose-500/25 bg-rose-950/20 p-4 sm:p-6">
         <h1 className="text-xl font-semibold text-rose-200">App not found</h1>
         <p className="mt-2 text-sm text-rose-100/70">{error || "This app could not be loaded."}</p>
         <Link href="/" className="mt-4 inline-flex text-sm font-medium text-indigo-300 hover:text-indigo-200">← Back to apps</Link>
@@ -675,7 +675,7 @@ export default function DiscoverAppPage() {
             </section>
           )}
 
-          <section className="glass-panel p-5 sm:p-6">
+          <section className="glass-panel p-4 sm:p-6">
             <h2 className="text-xl font-semibold text-white">App details</h2>
             <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <Field label="Package name" value={app.package_name} mono />
@@ -690,7 +690,7 @@ export default function DiscoverAppPage() {
             </dl>
           </section>
 
-          <section className="glass-panel p-5 sm:p-6">
+          <section className="glass-panel p-4 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[.16em] text-indigo-300">Trust & transparency</p>
@@ -717,7 +717,7 @@ export default function DiscoverAppPage() {
           </section>
 
           {versionHistory.length > 0 && (
-            <section className="glass-panel p-5 sm:p-6">
+            <section className="glass-panel p-4 sm:p-6">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Releases</p>
               <h2 className="mt-1 text-xl font-semibold text-white">Version history</h2>
               <div className="mt-4 space-y-3">
@@ -742,13 +742,13 @@ export default function DiscoverAppPage() {
           )}
 
           {changelog && (
-            <section className="glass-panel p-5 sm:p-6">
+            <section className="glass-panel p-4 sm:p-6">
               <h2 className="text-xl font-semibold text-white">Changelog</h2>
               <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-300">{changelog}</p>
             </section>
           )}
 
-          <section className="glass-panel p-5 sm:p-6">
+          <section className="glass-panel p-4 sm:p-6">
             <h2 className="text-xl font-semibold text-white">Anti-features</h2>
             {antiFeatures.length > 0 ? (
               <div className="mt-4 flex flex-wrap gap-2">
@@ -762,7 +762,7 @@ export default function DiscoverAppPage() {
           </section>
 
           {pageUrl && platforms.some((p) => p.platform.toLowerCase() === "android") && (
-            <section className="rounded-3xl border border-indigo-400/15 bg-indigo-500/5 p-5 sm:p-6">
+            <section className="rounded-2xl border sm:rounded-3xl border-indigo-400/15 bg-indigo-500/5 p-5 sm:p-6">
               <div className="grid gap-6 sm:grid-cols-[1fr_auto] sm:items-center">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-300">Continue on Android</p>

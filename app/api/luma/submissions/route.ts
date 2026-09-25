@@ -21,12 +21,12 @@ function parseGitHubRepository(value: unknown) {
   return { owner: parts[0], repo: parts[1].replace(/\.git$/i, "") };
 }
 
-async function githubJson(path: string, token: string) {
+async function githubJson(path: string, token?: string | null) {
   const response = await fetch(`https://api.github.com${path}`, {
     cache: "no-store",
     headers: {
       Accept: "application/vnd.github+json",
-      Authorization: `Bearer ${token}`,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       "X-GitHub-Api-Version": "2022-11-28",
     },
   });
@@ -80,7 +80,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ submission: draftResult.data });
     }
 
-    if (!githubToken) return NextResponse.json({ error: "GitHub authentication is required." }, { status: 401 });
+    const githubIdentity = authData.user.identities?.find((identity) => identity.provider === "github");
+    const identityData = githubIdentity?.identity_data as Record<string, unknown> | undefined;
+    const githubLogin = String(identityData?.user_name ?? identityData?.preferred_username ?? identityData?.login ?? "").trim();
     const separatePlatformRepos = submission.separate_platform_repos === true;
     submission.separate_platform_repos = separatePlatformRepos;
     if (separatePlatformRepos) {
@@ -99,16 +101,16 @@ export async function POST(request: Request) {
     }
     const primaryRepoUrl = separatePlatformRepos ? platforms.find((item) => item.repoUrl)?.repoUrl : String(submission.repo_url ?? submission.link ?? "");
     const { owner, repo } = parseGitHubRepository(primaryRepoUrl);
-    const [githubUser, githubRepo] = await Promise.all([
-      githubJson("/user", githubToken),
-      githubJson(`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`, githubToken),
-    ]) as [Record<string, unknown>, Record<string, unknown>];
+    const githubRepo = await githubJson(
+      `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`,
+      githubToken,
+    ) as Record<string, unknown>;
 
     if (githubRepo.private === true) {
       return NextResponse.json({ error: "The submitted repository must be public." }, { status: 400 });
     }
 
-    const login = typeof githubUser.login === "string" ? githubUser.login : "";
+    const login = githubLogin;
     const repoOwner = githubRepo.owner && typeof githubRepo.owner === "object" && "login" in githubRepo.owner
       ? String((githubRepo.owner as { login?: unknown }).login ?? "")
       : "";
@@ -119,6 +121,12 @@ export async function POST(request: Request) {
     const canWrite = permissions.push === true || permissions.maintain === true || permissions.admin === true;
 
     if (!ownsRepository && !canWrite) {
+      if (!githubToken) {
+        return NextResponse.json(
+          { error: "This repository is not owned by your linked GitHub account. Sign in with GitHub again only if you need to verify collaborator write access." },
+          { status: 403 },
+        );
+      }
       return NextResponse.json({ error: "Your GitHub account must own this repository or have write access to it." }, { status: 403 });
     }
 

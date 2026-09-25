@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { fetchFastlaneIconUrl } from "@/lib/luma/fastlane";
+import { detectClientPlatform, type ClientPlatform } from "@/lib/client-platform";
 
 type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
@@ -48,7 +49,6 @@ type StoreApp = {
 type RelatedApp = { id:string; name:string|null; package_name:string|null; short_description:string|null; icon_url:string|null; version:string|null; };
 type PlatformDownloadCount = { platform:string; downloads:number|string; };
 type VersionHistoryItem = { version:string|null; version_code:number|string|null; changelog:string|null; published_at:string|null; };
-type ClientOs = "Android" | "Windows" | "Linux" | "Other";
 
 type DeveloperFunding = { donate_url: string | null; liberapay: string | null; opencollective: string | null; bitcoin: string | null; litecoin: string | null; crypto_addresses: Record<string,string> | null; };
 
@@ -191,7 +191,7 @@ export default function DiscoverAppPage() {
   const [androidQrUrl, setAndroidQrUrl] = useState<string | null>(null);
   const [screenshotIndex, setScreenshotIndex] = useState<number | null>(null);
   const [appIcon, setAppIcon] = useState<string | null>(null);
-  const [clientOs, setClientOs] = useState<ClientOs>("Other");
+  const [clientOs, setClientOs] = useState<ClientPlatform>("Other");
   const ratingApi = "https://api.free-time.me/lumastore";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -199,17 +199,7 @@ export default function DiscoverAppPage() {
   useEffect(() => {
     setPageUrl(window.location.href);
 
-    const ua = navigator.userAgent.toLowerCase();
-    const platform = (navigator.platform || "").toLowerCase();
-    const detected: ClientOs =
-      ua.includes("android")
-        ? "Android"
-        : ua.includes("windows") || platform.includes("win")
-          ? "Windows"
-          : ua.includes("linux") || platform.includes("linux")
-            ? "Linux"
-            : "Other";
-    setClientOs(detected);
+    setClientOs(detectClientPlatform());
 
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: "auto" }));

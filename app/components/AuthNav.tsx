@@ -230,33 +230,69 @@ export default function AuthNav() {
                 </button>
               </div>
 
-              <div className="mt-4 grid gap-2">
-                <Link
-                  href="/"
-                  onClick={() => setShowHelp(false)}
-                  className="rounded-xl px-3 py-3 transition hover:bg-white/[0.04]"
-                >
-                  <p className="text-sm font-medium text-white">Browse apps</p>
-                  <p className="mt-0.5 text-xs text-slate-500">Discover and search apps in Luma Store.</p>
-                </Link>
+              <div className="mt-4 space-y-2">
+                <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
+                  <summary className="cursor-pointer list-none text-sm font-medium text-white">
+                    How do I install an app?
+                  </summary>
+                  <p className="mt-2 text-xs leading-5 text-slate-400">
+                    Open an app page and use the download button for your platform. On Android, download the APK and install it after allowing installs from your browser or file manager if Android asks.
+                  </p>
+                </details>
 
-                <Link
-                  href="/dashboard"
-                  onClick={() => setShowHelp(false)}
-                  className="rounded-xl px-3 py-3 transition hover:bg-white/[0.04]"
-                >
-                  <p className="text-sm font-medium text-white">Developer Dashboard</p>
-                  <p className="mt-0.5 text-xs text-slate-500">Submit apps, updates and manage your listings.</p>
-                </Link>
+                <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
+                  <summary className="cursor-pointer list-none text-sm font-medium text-white">
+                    How do I search for an app?
+                  </summary>
+                  <p className="mt-2 text-xs leading-5 text-slate-400">
+                    Use the search icon in the top bar. You can search by app name, package name, developer, category, or description.
+                  </p>
+                </details>
 
-                <Link
-                  href="/dashboard/funding"
-                  onClick={() => setShowHelp(false)}
-                  className="rounded-xl px-3 py-3 transition hover:bg-white/[0.04]"
-                >
-                  <p className="text-sm font-medium text-white">Developer funding</p>
-                  <p className="mt-0.5 text-xs text-slate-500">Manage donation links and wallet addresses.</p>
-                </Link>
+                <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
+                  <summary className="cursor-pointer list-none text-sm font-medium text-white">
+                    How do I submit my app?
+                  </summary>
+                  <p className="mt-2 text-xs leading-5 text-slate-400">
+                    Sign in with GitHub or GitLab, open the Developer Dashboard, and complete the submission form. Android metadata is read from Fastlane, while Windows and Linux metadata can be entered manually.
+                  </p>
+                </details>
+
+                <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
+                  <summary className="cursor-pointer list-none text-sm font-medium text-white">
+                    Can I upload release files instead of using links?
+                  </summary>
+                  <p className="mt-2 text-xs leading-5 text-slate-400">
+                    Yes. In the submission form, choose between using download links or uploading release files directly. APK, EXE, DEB, RPM, and AppImage files are supported.
+                  </p>
+                </details>
+
+                <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
+                  <summary className="cursor-pointer list-none text-sm font-medium text-white">
+                    How do app updates work?
+                  </summary>
+                  <p className="mt-2 text-xs leading-5 text-slate-400">
+                    Open your existing app in the Developer Dashboard and submit an update. The update goes through the normal review flow before replacing the published version.
+                  </p>
+                </details>
+
+                <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
+                  <summary className="cursor-pointer list-none text-sm font-medium text-white">
+                    How do donations work?
+                  </summary>
+                  <p className="mt-2 text-xs leading-5 text-slate-400">
+                    Developers can configure donation links and crypto wallet addresses once in Developer Funding. These support options are then shown on their published apps.
+                  </p>
+                </details>
+
+                <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
+                  <summary className="cursor-pointer list-none text-sm font-medium text-white">
+                    Is Luma Store only for Android?
+                  </summary>
+                  <p className="mt-2 text-xs leading-5 text-slate-400">
+                    No. Luma Store supports Android, Windows, and Linux releases, and the app detail page shows the download that matches your operating system when available.
+                  </p>
+                </details>
               </div>
             </section>
           )}

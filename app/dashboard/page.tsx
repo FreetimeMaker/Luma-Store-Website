@@ -811,14 +811,13 @@ export default function LumaDeveloperPortal() {
 
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("Your login session expired. Please sign in again.");
-      if (!session.provider_token) throw new Error("GitHub authorization is required. Please sign out and sign in with GitHub again.");
 
       const response = await fetch("/api/luma/submissions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
-          "X-GitHub-Token": session.provider_token,
+          ...(session.provider_token ? { "X-GitHub-Token": session.provider_token } : {}),
         },
         body: JSON.stringify({ submission: appMetadata, editingId: draftId || editingId, editingStatus: draftId ? "Draft" : editingStatus }),
       });

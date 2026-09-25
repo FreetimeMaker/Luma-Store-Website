@@ -394,69 +394,162 @@ export default function DiscoverAppPage() {
     <div className="glass-page mx-auto max-w-6xl space-y-5 px-3 pb-20 sm:space-y-6 sm:px-4">
       <Link href="/discover" className="inline-flex text-sm font-medium text-indigo-300 transition hover:text-indigo-200">← Back to Discover</Link>
 
-      {activeListing?.featureGraphic && (
-        <section className="overflow-hidden border border-white/10 bg-slate-950">
-          <img
-            src={activeListing.featureGraphic}
-            alt={`${name} feature graphic`}
-            className="aspect-[1024/500] w-full object-cover"
-          />
-        </section>
-      )}
+      <section className="space-y-4">
+        {activeListing?.featureGraphic && (
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950 shadow-lg shadow-black/20">
+            <img
+              src={activeListing.featureGraphic}
+              alt={`${name} feature graphic`}
+              className="aspect-[1024/500] w-full object-cover"
+            />
+          </div>
+        )}
 
-      <section className="glass-panel p-5 sm:p-8">
-        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-            {app.icon_url ? (
+        <div className="glass-panel p-4 sm:p-5">
+          <div className="flex items-center gap-4">
+            {appIcon ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={app.icon_url} alt={`${name} icon`} className="h-24 w-24 rounded-3xl border border-slate-700 bg-slate-950 object-cover" />
+              <img
+                src={appIcon}
+                alt={`${name} icon`}
+                className="h-16 w-16 shrink-0 rounded-2xl border border-white/10 bg-slate-950 object-cover shadow-md shadow-black/20 sm:h-18 sm:w-18"
+              />
             ) : (
-              <div className="flex h-24 w-24 items-center justify-center rounded-3xl border border-slate-700 bg-slate-950 text-3xl font-bold text-indigo-200">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-slate-950 text-xl font-bold text-indigo-200 sm:h-18 sm:w-18">
                 {name.slice(0, 1).toUpperCase()}
               </div>
             )}
 
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">{name}</h1>
-                <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-200">Open source</span>
+                <h1 className="truncate text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+                  {name}
+                </h1>
+                <span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-200">
+                  Open source
+                </span>
               </div>
-              {app.developer_id ? <Link href={`/discover/developers/${encodeURIComponent(app.developer_name || app.developer_id)}`} className="mt-2 inline-flex text-sm text-indigo-300 hover:text-indigo-200">{app.developer_name || app.author_name || "Unknown developer"} →</Link> : <p className="mt-2 text-sm text-slate-400">{app.developer_name || app.author_name || "Unknown developer"}</p>}
-              {shortDescription && <p className="mt-4 max-w-3xl text-base leading-7 text-slate-300">{shortDescription}</p>}
-              <div className="mt-4 flex flex-wrap items-center gap-2"><div className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-950/50 px-3 py-1.5 text-sm text-slate-300"><span aria-hidden="true">↓</span><span>{downloadCount.toLocaleString()} downloads</span></div><div className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-950/50 px-3 py-1.5 text-sm text-slate-300"><span className="text-amber-300">★</span><span>{ratingCount ? ratingAverage.toFixed(1) : "No ratings"}{ratingCount ? ` · ${ratingCount}` : ""}</span></div></div>
 
-              {listingPlatforms.length > 1 && <div className="mt-4 flex flex-wrap gap-2">{listingPlatforms.map((platform)=><button type="button" key={platform} onClick={()=>{setSelectedListingPlatform(platform);setScreenshotIndex(null);}} className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${selectedListingPlatform===platform?"border-indigo-400/40 bg-indigo-500/15 text-indigo-100":"border-slate-700 bg-slate-950/40 text-slate-400 hover:text-white"}`}>{platform} listing</button>)}</div>}
-              <div className="mt-3 flex flex-wrap gap-2">{platforms.map((platform)=><span key={platform.id} className="rounded-full border border-slate-700 bg-slate-950/40 px-2.5 py-1 text-xs text-slate-300">{artifactLabel(platform)}</span>)}</div>
-              {platformDownloadCounts.length>0&&<div className="mt-3 flex flex-wrap gap-2">{platformDownloadCounts.map((item)=><span key={item.platform} className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-xs text-indigo-200">{item.platform}: {Number(item.downloads).toLocaleString()} downloads</span>)}</div>}
-
-              <div className="mt-5 flex flex-wrap gap-2">
-                {app.categories?.map((category) => (
-                  <span key={category} className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-xs text-indigo-200">{category}</span>
-                ))}
-                {app.subcategory && <span className="rounded-full border border-slate-700 px-2.5 py-1 text-xs text-slate-300">{app.subcategory}</span>}
-              </div>
+              {app.developer_id ? (
+                <Link
+                  href={`/discover/developers/${encodeURIComponent(app.developer_name || app.developer_id)}`}
+                  className="mt-1 inline-flex text-sm text-slate-400 transition hover:text-indigo-300"
+                >
+                  {app.developer_name || app.author_name || "Unknown developer"}
+                </Link>
+              ) : (
+                <p className="mt-1 text-sm text-slate-400">
+                  {app.developer_name || app.author_name || "Unknown developer"}
+                </p>
+              )}
             </div>
           </div>
 
-          <div className="flex w-full shrink-0 flex-col gap-2 rounded-2xl border border-white/10 bg-slate-950/25 p-3 lg:w-72">
-            <div className="grid grid-cols-2 gap-2"><button type="button" onClick={shareApp} className="rounded-xl border border-slate-700 bg-slate-950/50 px-3 py-2.5 text-sm font-medium text-slate-200 transition hover:border-indigo-400/40 hover:text-white">Share</button><button type="button" onClick={copyAppLink} className="rounded-xl border border-slate-700 bg-slate-950/50 px-3 py-2.5 text-sm font-medium text-slate-200 transition hover:border-indigo-400/40 hover:text-white">{copied?"Copied!":"Copy link"}</button></div>
-            {downloadablePlatforms.length > 0 ? (
-              downloadablePlatforms.map((platform) => (
-                <button
-                  key={platform.id}
-                  type="button"
-                  onClick={()=>startDownload(platform)}
-                  className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-indigo-500 px-5 py-3 text-center text-sm font-bold text-white shadow-lg shadow-indigo-950/30 transition hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-300/60"
-                >
-                  Download {artifactLabel(platform)}
-                  {platform.file_size_mb !== null ? ` · ${platform.file_size_mb.toFixed(2)} MB` : ""}
-                </button>
-              ))
-            ) : (
-              <div className="rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-3 text-center text-sm text-slate-500">
-                No download available
+          <div className="mt-5 grid gap-5 border-t border-white/10 pt-5 lg:grid-cols-[1fr_18rem]">
+            <div>
+              {shortDescription && (
+                <p className="max-w-3xl text-sm leading-6 text-slate-300 sm:text-base">
+                  {shortDescription}
+                </p>
+              )}
+
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <div className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-950/50 px-3 py-1.5 text-sm text-slate-300">
+                  <span aria-hidden="true">↓</span>
+                  <span>{downloadCount.toLocaleString()} downloads</span>
+                </div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-slate-700 bg-slate-950/50 px-3 py-1.5 text-sm text-slate-300">
+                  <span className="text-amber-300">★</span>
+                  <span>{ratingCount ? ratingAverage.toFixed(1) : "No ratings"}{ratingCount ? ` · ${ratingCount}` : ""}</span>
+                </div>
               </div>
-            )}
+
+              {listingPlatforms.length > 1 && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {listingPlatforms.map((platform) => (
+                    <button
+                      type="button"
+                      key={platform}
+                      onClick={() => {
+                        setSelectedListingPlatform(platform);
+                        setScreenshotIndex(null);
+                      }}
+                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${selectedListingPlatform === platform ? "border-indigo-400/40 bg-indigo-500/15 text-indigo-100" : "border-slate-700 bg-slate-950/40 text-slate-400 hover:text-white"}`}
+                    >
+                      {platform} listing
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                {platforms.map((platform) => (
+                  <span key={platform.id} className="rounded-full border border-slate-700 bg-slate-950/40 px-2.5 py-1 text-xs text-slate-300">
+                    {artifactLabel(platform)}
+                  </span>
+                ))}
+              </div>
+
+              {platformDownloadCounts.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {platformDownloadCounts.map((item) => (
+                    <span key={item.platform} className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-xs text-indigo-200">
+                      {item.platform}: {Number(item.downloads).toLocaleString()} downloads
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                {app.categories?.map((category) => (
+                  <span key={category} className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-xs text-indigo-200">
+                    {category}
+                  </span>
+                ))}
+                {app.subcategory && (
+                  <span className="rounded-full border border-slate-700 px-2.5 py-1 text-xs text-slate-300">
+                    {app.subcategory}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex w-full shrink-0 flex-col gap-2">
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={shareApp}
+                  className="rounded-xl border border-slate-700 bg-slate-950/50 px-3 py-2.5 text-sm font-medium text-slate-200 transition hover:border-indigo-400/40 hover:text-white"
+                >
+                  Share
+                </button>
+                <button
+                  type="button"
+                  onClick={copyAppLink}
+                  className="rounded-xl border border-slate-700 bg-slate-950/50 px-3 py-2.5 text-sm font-medium text-slate-200 transition hover:border-indigo-400/40 hover:text-white"
+                >
+                  {copied ? "Copied!" : "Copy link"}
+                </button>
+              </div>
+
+              {downloadablePlatforms.length > 0 ? (
+                downloadablePlatforms.map((platform) => (
+                  <button
+                    key={platform.id}
+                    type="button"
+                    onClick={() => startDownload(platform)}
+                    className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-indigo-500 px-5 py-3 text-center text-sm font-bold text-white transition hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-300/60"
+                  >
+                    Download {artifactLabel(platform)}
+                    {platform.file_size_mb !== null ? ` · ${platform.file_size_mb.toFixed(2)} MB` : ""}
+                  </button>
+                ))
+              ) : (
+                <div className="rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-3 text-center text-sm text-slate-500">
+                  No download available
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </section>

@@ -551,7 +551,7 @@ function DiscoverContent() {
                     <Link
                       key={app.id}
                       href={`/${encodeURIComponent(app.package_name || app.id)}`}
-                      className="group overflow-hidden rounded-3xl border border-white/10 bg-[#101722] transition hover:border-indigo-400/30 hover:bg-[#131d29]"
+                      className="group overflow-hidden rounded-3xl bg-[#101722] transition hover:bg-[#131d29]"
                     >
                       <div className="aspect-[1024/500] overflow-hidden bg-slate-950">
                         <img
@@ -560,11 +560,11 @@ function DiscoverContent() {
                           className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.015]"
                         />
                       </div>
-                      <div className="flex items-center gap-3 p-4">
+                      <div className="flex items-center gap-4 p-4">
                         {iconSrc ? (
-                          <img src={iconSrc} alt="" className="h-14 w-14 rounded-2xl border border-white/10 object-cover" />
+                          <img src={iconSrc} alt="" className="h-16 w-16 rounded-2xl object-cover shadow-[0_8px_24px_rgba(0,0,0,0.22)]" />
                         ) : (
-                          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 font-semibold text-indigo-200">
+                          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-900 font-semibold text-indigo-200">
                             {appInitials(name)}
                           </div>
                         )}
@@ -612,7 +612,7 @@ function DiscoverContent() {
               </div>
             </div>
 
-            <div className="grid gap-x-8 gap-y-2 md:grid-cols-2">
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
               {filteredApps.map((app, index) => {
                 const name = app.name?.trim() || app.package_name || "Untitled app";
                 const iconSrc = resolveAppIcon(app);
@@ -623,7 +623,7 @@ function DiscoverContent() {
                   <Link
                     key={app.id}
                     href={`/${encodeURIComponent(app.package_name || app.id)}`}
-                    className="group flex items-center gap-4 rounded-2xl px-2 py-3 transition hover:bg-white/[0.035]"
+                    className="group flex min-h-28 items-center gap-4 rounded-3xl bg-[#101722] p-4 transition hover:bg-[#131d29]"
                   >
                     {sort === "downloads" && (
                       <span className="w-5 shrink-0 text-center text-sm font-medium text-slate-500">
@@ -633,27 +633,27 @@ function DiscoverContent() {
 
                     {iconSrc ? (
                       <div className="relative shrink-0">
-                        <div aria-hidden="true" className="absolute inset-1 rounded-2xl bg-indigo-500/20 blur-lg" />
+                        <div aria-hidden="true" className="absolute inset-2 rounded-2xl bg-indigo-500/15 blur-xl" />
                         <img
                           src={iconSrc}
                           alt={`${name} icon`}
-                          className="relative h-16 w-16 rounded-2xl border border-white/10 object-cover"
+                          className="relative h-20 w-20 rounded-2xl object-cover shadow-[0_8px_28px_rgba(0,0,0,0.24)]"
                         />
                       </div>
                     ) : (
-                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-slate-900 font-semibold text-indigo-200">
+                      <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-slate-900 font-semibold text-indigo-200">
                         {appInitials(name)}
                       </div>
                     )}
 
                     <div className="min-w-0 flex-1">
-                      <h3 className="truncate text-sm font-semibold text-white group-hover:text-indigo-200">
+                      <h3 className="truncate text-base font-semibold text-white group-hover:text-indigo-200">
                         {name}
                       </h3>
-                      <p className="mt-1 truncate text-xs text-slate-500">
+                      <p className="mt-1 truncate text-sm text-slate-400">
                         {app.developer_name || app.package_name || "Unknown developer"}
                       </p>
-                      <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
                         <span>
                           <span className="text-amber-300">★</span>{" "}
                           {rating ? rating.average.toFixed(1) : "—"}
@@ -735,7 +735,7 @@ function Collection({
         <span className="text-sm font-medium text-indigo-300">More</span>
       </div>
 
-      <div className="grid gap-x-8 gap-y-2 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
         {apps.map((app) => {
           const name = app.name || app.package_name || "Untitled app";
           const rating = ratings[app.id];
@@ -745,18 +745,18 @@ function Collection({
             <Link
               key={app.id}
               href={`/${encodeURIComponent(app.package_name || app.id)}`}
-              className="group flex items-center gap-3 rounded-2xl px-2 py-3 transition hover:bg-white/[0.035]"
+              className="group flex min-h-24 items-center gap-4 rounded-3xl bg-[#101722] p-4 transition hover:bg-[#131d29]"
             >
               {iconSrc ? (
-                <img src={iconSrc} alt="" className="h-14 w-14 rounded-2xl border border-white/10 object-cover" />
+                <img src={iconSrc} alt="" className="h-16 w-16 rounded-2xl object-cover shadow-[0_8px_24px_rgba(0,0,0,0.2)]" />
               ) : (
-                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-sm font-bold text-indigo-200">
+                <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-900 text-sm font-bold text-indigo-200">
                   {appInitials(name)}
                 </span>
               )}
 
               <div className="min-w-0">
-                <strong className="block truncate text-sm text-white group-hover:text-indigo-200">{name}</strong>
+                <strong className="block truncate text-sm font-semibold text-white group-hover:text-indigo-200">{name}</strong>
                 <span className="mt-1 block truncate text-xs text-slate-500">
                   {app.developer_name || app.package_name || "Unknown developer"}
                 </span>

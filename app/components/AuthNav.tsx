@@ -12,9 +12,11 @@ export default function AuthNav() {
   const [loading, setLoading] = useState(true);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
+  const helpRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
 
@@ -55,12 +57,16 @@ export default function AuthNav() {
       if (showSearch && searchRef.current && !searchRef.current.contains(target)) {
         setShowSearch(false);
       }
+      if (showHelp && helpRef.current && !helpRef.current.contains(target)) {
+        setShowHelp(false);
+      }
     }
 
     function handleEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setProfileMenuOpen(false);
         setShowSearch(false);
+        setShowHelp(false);
       }
     }
 
@@ -71,7 +77,7 @@ export default function AuthNav() {
       document.removeEventListener("mousedown", handlePointerDown);
       document.removeEventListener("keydown", handleEscape);
     };
-  }, [showSearch]);
+  }, [showHelp, showSearch]);
 
   async function handleLogout() {
     setProfileMenuOpen(false);
@@ -181,19 +187,80 @@ export default function AuthNav() {
           </button>
         )}
 
-        <button
-          type="button"
-          aria-label="Help"
-          className="hidden items-center gap-2 rounded-lg px-3.5 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/[0.04] hover:text-white sm:flex"
-        >
-          <Image
-            src="/helpp.png"
-            alt="Help"
-            width={20}
-            height={20}
-            className="h-4.5 w-4.5 object-contain"
-          />
-        </button>
+        <div ref={helpRef} className="relative">
+          <button
+            type="button"
+            aria-label="Help"
+            aria-expanded={showHelp}
+            onClick={() => {
+              setShowHelp((open) => !open);
+              setShowSearch(false);
+              setProfileMenuOpen(false);
+            }}
+            className={`flex h-10 w-10 items-center justify-center rounded-full text-slate-300 transition hover:bg-white/[0.04] hover:text-white sm:h-auto sm:w-auto sm:rounded-lg sm:px-3.5 sm:py-2.5 ${showHelp ? "bg-white/[0.06] text-white" : ""}`}
+          >
+            <Image
+              src="/helpp.png"
+              alt="Help"
+              width={20}
+              height={20}
+              className="h-[18px] w-[18px] object-contain"
+            />
+          </button>
+
+          {showHelp && (
+            <section
+              aria-label="Help"
+              className="fixed left-3 right-3 top-[4.5rem] z-50 rounded-2xl border border-white/10 bg-[#0d131d] p-4 shadow-2xl shadow-black/35 sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+0.65rem)] sm:w-[22rem]"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-white">Help</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    Quick links for using Luma Store.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowHelp(false)}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-lg text-slate-400 transition hover:bg-white/[0.05] hover:text-white"
+                  aria-label="Close help"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="mt-4 grid gap-2">
+                <Link
+                  href="/"
+                  onClick={() => setShowHelp(false)}
+                  className="rounded-xl px-3 py-3 transition hover:bg-white/[0.04]"
+                >
+                  <p className="text-sm font-medium text-white">Browse apps</p>
+                  <p className="mt-0.5 text-xs text-slate-500">Discover and search apps in Luma Store.</p>
+                </Link>
+
+                <Link
+                  href="/dashboard"
+                  onClick={() => setShowHelp(false)}
+                  className="rounded-xl px-3 py-3 transition hover:bg-white/[0.04]"
+                >
+                  <p className="text-sm font-medium text-white">Developer Dashboard</p>
+                  <p className="mt-0.5 text-xs text-slate-500">Submit apps, updates and manage your listings.</p>
+                </Link>
+
+                <Link
+                  href="/dashboard/funding"
+                  onClick={() => setShowHelp(false)}
+                  className="rounded-xl px-3 py-3 transition hover:bg-white/[0.04]"
+                >
+                  <p className="text-sm font-medium text-white">Developer funding</p>
+                  <p className="mt-0.5 text-xs text-slate-500">Manage donation links and wallet addresses.</p>
+                </Link>
+              </div>
+            </section>
+          )}
+        </div>
 
         {loading ? (
           <span className="hidden text-sm text-slate-500 sm:inline">Checking login...</span>

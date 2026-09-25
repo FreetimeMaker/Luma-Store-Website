@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 
 type SubmissionStatus = "Draft" | "Pending" | "In Review" | "Changes Requested" | "Approved" | "Rejected" | "Archived";
 type AppPlatform = "Android" | "Windows" | "Linux";
+type ArtifactInputMode = "link" | "upload";
 type PlatformMetadataInput = { repoUrl: string; title: string; shortDescription: string; fullDescription: string; changelog: string; screenshotsText: string; featureGraphicUrl: string };
 type PlatformArtifact = { platform: AppPlatform; packageType: "apk" | "exe" | "deb" | "rpm"; downloadUrl: string; repoUrl?: string; metadata?: Omit<PlatformMetadataInput,"repoUrl"|"screenshotsText"|"featureGraphicUrl"> & { screenshots: string[]; featureGraphic: string | null } };
 
@@ -375,6 +376,10 @@ export default function LumaDeveloperPortal() {
   const [draftId, setDraftId] = useState<string | null>(null);
   const [savingDraft, setSavingDraft] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
+  const [artifactInputMode, setArtifactInputMode] = useState<ArtifactInputMode>("link");
+  const [uploadingArtifact, setUploadingArtifact] = useState<string | null>(null);
+  const [artifactUploadError, setArtifactUploadError] = useState<string | null>(null);
+  const formTopRef = React.useRef<HTMLFormElement>(null);
 
   const isAndroid = appPlatforms.includes("Android");
   const isWindows = appPlatforms.includes("Windows");
@@ -417,6 +422,56 @@ export default function LumaDeveloperPortal() {
       },
     };
   };
+  const uploadArtifactFile = async (
+    file: File,
+    platform: AppPlatform,
+    packageType: "apk" | "exe" | "deb" | "rpm",
+    setUrl: (value: string) => void,
+  ) => {
+    const uploadKey = `${platform}-${packageType}`;
+    setUploadingArtifact(uploadKey);
+    setArtifactUploadError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Your login session expired. Please sign in again.");
+
+      const response = await fetch("/api/luma/upload-url", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          fileName: file.name,
+          platform,
+          packageType,
+        }),
+      });
+      const payload = await response.json() as {
+        path?: string;
+        token?: string;
+        publicUrl?: string;
+        error?: string;
+      };
+      if (!response.ok || !payload.path || !payload.token || !payload.publicUrl) {
+        throw new Error(payload.error || "Could not prepare file upload.");
+      }
+
+      const { error: uploadError } = await supabase.storage
+        .from("luma-apps")
+        .uploadToSignedUrl(payload.path, payload.token, file, {
+          contentType: file.type || "application/octet-stream",
+        });
+      if (uploadError) throw uploadError;
+
+      setUrl(payload.publicUrl);
+    } catch (error) {
+      setArtifactUploadError(error instanceof Error ? error.message : "File upload failed.");
+    } finally {
+      setUploadingArtifact(null);
+    }
+  };
+
   const buildPlatformArtifacts = (androidOverride: FastlaneMetadata | null = fastlaneMetadata): PlatformArtifact[] => [
     ...(isAndroid && androidDownloadUrl.trim() ? [{ platform: "Android" as const, packageType: "apk" as const, downloadUrl: androidDownloadUrl.trim(), ...platformDetails("Android", androidOverride) }] : []),
     ...(isWindows && windowsDownloadUrl.trim() ? [{ platform: "Windows" as const, packageType: "exe" as const, downloadUrl: windowsDownloadUrl.trim(), ...platformDetails("Windows", androidOverride) }] : []),
@@ -454,7 +509,7 @@ export default function LumaDeveloperPortal() {
     void saveDraft(nextStep);
     setStep(nextStep);
     requestAnimationFrame(() => {
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      formTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   };
 
@@ -517,6 +572,7 @@ export default function LumaDeveloperPortal() {
     setDonateUrl(""); setLiberapay(""); setOpencollective(""); setBitcoin(""); setLitecoin("");
     setClosedTitle(""); setClosedShortDescription(""); setClosedFullDescription(""); setClosedChangelog(""); setClosedScreenshotsText(""); setAdditionalClosedMetadata([]);
     setFastlaneMetadata(null); setFastlaneError(null); setEditingId(null); setEditingStatus(null); setDraftId(null); setDraftSavedAt(null);
+    setArtifactInputMode("link"); setUploadingArtifact(null); setArtifactUploadError(null);
   };
 
   const beginEdit = (app: AppSubmission) => {
@@ -541,7 +597,8 @@ export default function LumaDeveloperPortal() {
     setClosedScreenshotsText((manualPlatform?.screenshots || english?.screenshots || app.screenshots).join("\\n"));
     setAdditionalClosedMetadata(app.localizedMetadata.filter((item) => item !== english).map((item) => ({ ...item, screenshotsText: item.screenshots.join("\\n") })));
     setFastlaneMetadata(null); setFastlaneError(null); setStep(1); setSubmitted(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setArtifactInputMode("link"); setUploadingArtifact(null); setArtifactUploadError(null);
+    requestAnimationFrame(() => formTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
 
   const removeSubmission = async (app: AppSubmission) => {
@@ -642,9 +699,9 @@ export default function LumaDeveloperPortal() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
       if (!appPlatforms.length) throw new Error("Please select at least one platform.");
-      if (isAndroid && !androidDownloadUrl.trim()) throw new Error("Android requires a download URL.");
-      if (isWindows && !windowsDownloadUrl.trim()) throw new Error("Windows requires a download URL.");
-      if (isLinux && !linuxDebUrl.trim() && !linuxRpmUrl.trim()) throw new Error("Linux requires a .deb and/or .rpm download URL.");
+      if (isAndroid && !androidDownloadUrl.trim()) throw new Error("Android requires an uploaded APK or a download URL.");
+      if (isWindows && !windowsDownloadUrl.trim()) throw new Error("Windows requires an uploaded EXE or a download URL.");
+      if (isLinux && !linuxDebUrl.trim() && !linuxRpmUrl.trim()) throw new Error("Linux requires an uploaded .deb/.rpm file or a download URL.");
       if (!validAndroidMetadata) throw new Error("Android apps require a valid package name and positive versionCode.");
       if (!appCategories.length || appCategories.some((category) => !FDROID_CATEGORIES.includes(category as typeof FDROID_CATEGORIES[number]))) throw new Error("Please select at least one valid F-Droid category.");
       if (!appLicenseType) throw new Error("Please select an open-source license.");
@@ -815,7 +872,7 @@ export default function LumaDeveloperPortal() {
         <main className="space-y-8">
           <section className={cardClass}>
             <div className="flex items-center justify-between border-b border-slate-800 px-6 py-5"><div><h2 className="font-semibold text-white">{isApprovedUpdate ? "Submit App Update" : isRequestedChange ? "Fix Requested Changes" : editingId ? "Edit Rejected Submission" : "New App Submission"}</h2><p className="mt-1 text-xs text-slate-500">Step {step} of 3</p></div><div className="flex gap-1.5">{[1,2,3].map((item)=><div key={item} className={`h-1.5 w-9 rounded-full ${item<=step?"bg-indigo-500":"bg-slate-700"}`}/>)}</div></div>
-            <form onSubmit={handleSubmit} className="p-6 md:p-8">
+            <form ref={formTopRef} onSubmit={handleSubmit} className="scroll-mt-24 p-6 md:p-8">
               <div className="mb-5 flex flex-wrap items-center justify-end gap-3"><span className="text-xs text-slate-500">{draftSavedAt ? `Draft saved ${draftSavedAt}` : "Not saved yet"}</span><button type="button" onClick={()=>void saveDraft()} disabled={savingDraft} className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm text-slate-200 hover:text-white disabled:opacity-40">{savingDraft ? "Saving…" : "Save draft"}</button></div>
               {step === 1 && <div className="space-y-6">
                 
@@ -843,8 +900,95 @@ https://.../screenshot2.png"/></div></div></div>
                   <button type="button" onClick={addClosedLanguage} className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm text-slate-200">+ Add language</button>
                 </div>}
 
+                <div className="ui-panel-muted p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <h3 className="font-semibold text-white">App files</h3>
+                      <p className="mt-1 text-sm text-slate-400">
+                        Choose whether Luma Store should use your download links or upload the release files directly.
+                      </p>
+                    </div>
+                    <div className="inline-flex rounded-xl border border-slate-700 bg-slate-950/70 p-1">
+                      <button
+                        type="button"
+                        onClick={() => { setArtifactInputMode("link"); setArtifactUploadError(null); }}
+                        className={`rounded-lg px-3 py-2 text-sm font-medium transition ${artifactInputMode === "link" ? "bg-indigo-500 text-white" : "text-slate-400 hover:text-white"}`}
+                      >
+                        Use links
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setArtifactInputMode("upload"); setArtifactUploadError(null); }}
+                        className={`rounded-lg px-3 py-2 text-sm font-medium transition ${artifactInputMode === "upload" ? "bg-indigo-500 text-white" : "text-slate-400 hover:text-white"}`}
+                      >
+                        Upload files
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 grid gap-4 md:grid-cols-2">
+                    {artifactInputMode === "link" ? (
+                      <>
+                        {isAndroid && <div><label className="mb-2 block text-sm text-slate-300">Android APK URL</label><input type="url" required value={androidDownloadUrl} onChange={(e)=>setAndroidDownloadUrl(e.target.value)} className={fieldClass}/></div>}
+                        {isWindows && <div><label className="mb-2 block text-sm text-slate-300">Windows EXE URL</label><input type="url" required value={windowsDownloadUrl} onChange={(e)=>setWindowsDownloadUrl(e.target.value)} className={fieldClass}/></div>}
+                        {isLinux && <><div><label className="mb-2 block text-sm text-slate-300">Linux .deb URL</label><input type="url" value={linuxDebUrl} onChange={(e)=>setLinuxDebUrl(e.target.value)} className={fieldClass}/></div><div><label className="mb-2 block text-sm text-slate-300">Linux .rpm URL</label><input type="url" value={linuxRpmUrl} onChange={(e)=>setLinuxRpmUrl(e.target.value)} className={fieldClass}/></div></>}
+                      </>
+                    ) : (
+                      <>
+                        {isAndroid && <div>
+                          <label className="mb-2 block text-sm text-slate-300">Android APK</label>
+                          <input
+                            type="file"
+                            accept=".apk,application/vnd.android.package-archive"
+                            required={!androidDownloadUrl.trim()}
+                            disabled={uploadingArtifact !== null}
+                            onChange={(e)=>{const file=e.target.files?.[0]; if(file) void uploadArtifactFile(file,"Android","apk",setAndroidDownloadUrl);}}
+                            className={fieldClass}
+                          />
+                          {androidDownloadUrl && <p className="mt-2 break-all text-xs text-emerald-300">Uploaded · {androidDownloadUrl}</p>}
+                        </div>}
+                        {isWindows && <div>
+                          <label className="mb-2 block text-sm text-slate-300">Windows EXE</label>
+                          <input
+                            type="file"
+                            accept=".exe,application/vnd.microsoft.portable-executable,application/x-msdownload"
+                            required={!windowsDownloadUrl.trim()}
+                            disabled={uploadingArtifact !== null}
+                            onChange={(e)=>{const file=e.target.files?.[0]; if(file) void uploadArtifactFile(file,"Windows","exe",setWindowsDownloadUrl);}}
+                            className={fieldClass}
+                          />
+                          {windowsDownloadUrl && <p className="mt-2 break-all text-xs text-emerald-300">Uploaded · {windowsDownloadUrl}</p>}
+                        </div>}
+                        {isLinux && <><div>
+                          <label className="mb-2 block text-sm text-slate-300">Linux .deb</label>
+                          <input
+                            type="file"
+                            accept=".deb,application/vnd.debian.binary-package"
+                            disabled={uploadingArtifact !== null}
+                            onChange={(e)=>{const file=e.target.files?.[0]; if(file) void uploadArtifactFile(file,"Linux","deb",setLinuxDebUrl);}}
+                            className={fieldClass}
+                          />
+                          {linuxDebUrl && <p className="mt-2 break-all text-xs text-emerald-300">Uploaded · {linuxDebUrl}</p>}
+                        </div><div>
+                          <label className="mb-2 block text-sm text-slate-300">Linux .rpm</label>
+                          <input
+                            type="file"
+                            accept=".rpm,application/x-rpm"
+                            disabled={uploadingArtifact !== null}
+                            onChange={(e)=>{const file=e.target.files?.[0]; if(file) void uploadArtifactFile(file,"Linux","rpm",setLinuxRpmUrl);}}
+                            className={fieldClass}
+                          />
+                          {linuxRpmUrl && <p className="mt-2 break-all text-xs text-emerald-300">Uploaded · {linuxRpmUrl}</p>}
+                        </div></>}
+                      </>
+                    )}
+                  </div>
+
+                  {uploadingArtifact && <p className="mt-3 text-sm text-indigo-300">Uploading {uploadingArtifact}…</p>}
+                  {artifactUploadError && <p className="mt-3 text-sm text-rose-400">{artifactUploadError}</p>}
+                </div>
+
                 <div className="grid gap-5 md:grid-cols-2">
-                  <div className="space-y-3">{isAndroid&&<div><label className="mb-2 block text-sm text-slate-300">Android APK URL</label><input type="url" required value={androidDownloadUrl} onChange={(e)=>setAndroidDownloadUrl(e.target.value)} className={fieldClass}/></div>}{isWindows&&<div><label className="mb-2 block text-sm text-slate-300">Windows download URL</label><input type="url" required value={windowsDownloadUrl} onChange={(e)=>setWindowsDownloadUrl(e.target.value)} className={fieldClass}/></div>}{isLinux&&<><div><label className="mb-2 block text-sm text-slate-300">Linux .deb URL</label><input type="url" value={linuxDebUrl} onChange={(e)=>setLinuxDebUrl(e.target.value)} className={fieldClass}/></div><div><label className="mb-2 block text-sm text-slate-300">Linux .rpm URL</label><input type="url" value={linuxRpmUrl} onChange={(e)=>setLinuxRpmUrl(e.target.value)} className={fieldClass}/></div></>}</div>
                   <div><label className="mb-2 block text-sm text-slate-300">Version</label><input required value={appVersion} onChange={(e)=>setAppVersion(e.target.value)} className={fieldClass}/></div>
                   {isAndroid && <><div><label className="mb-2 block text-sm text-slate-300">Android Package Name</label><input required value={appPackageName} onChange={(e)=>setAppPackageName(e.target.value)} className={fieldClass}/></div><div><label className="mb-2 block text-sm text-slate-300">Android versionCode</label><input type="number" min={1} required value={appVersionCode} onChange={(e)=>{setAppVersionCode(e.target.value);invalidateFastlane();}} className={fieldClass}/></div></>}
                 </div>
@@ -861,7 +1005,7 @@ https://.../screenshot2.png"/></div></div></div>
                 </div>
               </div>}
 
-              {step === 3 && <div className="space-y-6"><div className="ui-panel-muted p-5"><dl className="grid gap-4 text-sm md:grid-cols-2"><div><dt className="text-slate-500">Title</dt><dd className="text-white">{fastlaneMetadata?.title}</dd></div><div><dt className="text-slate-500">Platform</dt><dd className="text-white">{appPlatforms.join(" · ")}</dd></div><div><dt className="text-slate-500">Categories</dt><dd className="text-white">{appCategories.join(", ")}</dd></div><div><dt className="text-slate-500">Source model</dt><dd className="text-white">Open source</dd></div><div><dt className="text-slate-500">License</dt><dd className="text-white">{appLicenseType}</dd></div><div><dt className="text-slate-500">Version</dt><dd className="text-white">{appVersion}</dd></div>{isAndroid&&<div><dt className="text-slate-500">Package</dt><dd className="break-all text-white">{appPackageName}</dd></div>}<div><dt className="text-slate-500">Author</dt><dd className="text-white">{authorName||"—"}</dd></div><div><dt className="text-slate-500">Website</dt><dd className="break-all text-white">{websiteUrl||"—"}</dd></div></dl></div><div className="flex justify-between"><button type="button" onClick={()=>setStep(2)} className="ui-button-secondary px-5 py-2.5 text-white">Back</button><button type="submit" disabled={isSubmitting||!fastlaneMetadata} className="rounded-xl bg-emerald-600 px-5 py-2.5 font-medium text-white disabled:opacity-40">{isSubmitting?"Saving…":isApprovedUpdate?"Submit Update":isRequestedChange?"Resubmit Changes":"Submit App"}</button></div></div>}
+              {step === 3 && <div className="space-y-6"><div className="ui-panel-muted p-5"><dl className="grid gap-4 text-sm md:grid-cols-2"><div><dt className="text-slate-500">Title</dt><dd className="text-white">{fastlaneMetadata?.title}</dd></div><div><dt className="text-slate-500">Platform</dt><dd className="text-white">{appPlatforms.join(" · ")}</dd></div><div><dt className="text-slate-500">Categories</dt><dd className="text-white">{appCategories.join(", ")}</dd></div><div><dt className="text-slate-500">Source model</dt><dd className="text-white">Open source</dd></div><div><dt className="text-slate-500">License</dt><dd className="text-white">{appLicenseType}</dd></div><div><dt className="text-slate-500">Version</dt><dd className="text-white">{appVersion}</dd></div>{isAndroid&&<div><dt className="text-slate-500">Package</dt><dd className="break-all text-white">{appPackageName}</dd></div>}<div><dt className="text-slate-500">Author</dt><dd className="text-white">{authorName||"—"}</dd></div><div><dt className="text-slate-500">Website</dt><dd className="break-all text-white">{websiteUrl||"—"}</dd></div></dl></div><div className="flex justify-between"><button type="button" onClick={()=>goToStep(2)} className="ui-button-secondary px-5 py-2.5 text-white">Back</button><button type="submit" disabled={isSubmitting||!fastlaneMetadata} className="rounded-xl bg-emerald-600 px-5 py-2.5 font-medium text-white disabled:opacity-40">{isSubmitting?"Saving…":isApprovedUpdate?"Submit Update":isRequestedChange?"Resubmit Changes":"Submit App"}</button></div></div>}
             </form>
           </section>
 

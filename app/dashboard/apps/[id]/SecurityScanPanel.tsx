@@ -78,9 +78,9 @@ export default function SecurityScanPanel({ submissionId, initialScan }: { submi
   const permissions = stringArray(scan?.permissions);
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 shadow-lg shadow-black/10">
-      <div className="border-b border-slate-800 px-5 py-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+    <section className="min-w-0 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 shadow-lg shadow-black/10">
+      <div className="border-b border-slate-800 px-4 py-4 sm:px-5">
+        <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <div>
             <h2 className="font-semibold text-white">Security scan</h2>
             <p className="mt-1 text-xs text-slate-500">VirusTotal scans start automatically after every new submission and update.</p>
@@ -91,14 +91,14 @@ export default function SecurityScanPanel({ submissionId, initialScan }: { submi
         </div>
       </div>
 
-      <div className="space-y-5 p-5">
+      <div className="space-y-4 p-4 sm:space-y-5 sm:p-5">
         {error && <div className="rounded-xl border border-red-800/50 bg-red-950/30 p-3 text-sm text-red-200">{error}</div>}
         {scan?.error_message && <div className="rounded-xl border border-red-800/50 bg-red-950/30 p-3 text-sm text-red-200">{scan.error_message}</div>}
 
-        <div className="flex flex-wrap gap-2">
-          <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${scanColors[scan?.status || "Not Scanned"]}`}>{scan?.status || "Not Scanned"}</span>
-          <span className="rounded-full border border-slate-700 bg-slate-950/40 px-3 py-1 text-xs text-slate-300">Risk: {scan?.risk_level || "Unknown"}</span>
-          <span className="rounded-full border border-slate-700 bg-slate-950/40 px-3 py-1 text-xs text-slate-400">Provider: VirusTotal</span>
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+          <span className={`inline-flex min-h-9 items-center justify-center rounded-xl border px-3 py-1.5 text-center text-xs font-semibold sm:min-h-0 sm:rounded-full sm:py-1 ${scanColors[scan?.status || "Not Scanned"]}`}>{scan?.status || "Not Scanned"}</span>
+          <span className="inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-700 bg-slate-950/40 px-3 py-1.5 text-center text-xs text-slate-300 sm:min-h-0 sm:rounded-full sm:py-1">Risk: {scan?.risk_level || "Unknown"}</span>
+          <span className="col-span-2 inline-flex min-h-9 items-center justify-center rounded-xl border border-slate-700 bg-slate-950/40 px-3 py-1.5 text-center text-xs text-slate-400 sm:col-span-1 sm:min-h-0 sm:rounded-full sm:py-1">Provider: VirusTotal</span>
         </div>
 
         <p className="text-xs text-slate-500">Scanned: {formatDate(scan?.scanned_at)}</p>
@@ -113,7 +113,7 @@ export default function SecurityScanPanel({ submissionId, initialScan }: { submi
         )}
 
         {scan?.virus_total_permalink && (
-          <a href={scan.virus_total_permalink} target="_blank" rel="noopener noreferrer" className="inline-flex rounded-xl border border-indigo-700/50 bg-indigo-950/30 px-4 py-2 text-sm font-medium text-indigo-200 transition hover:bg-indigo-900/40">
+          <a href={scan.virus_total_permalink} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-indigo-700/50 bg-indigo-950/30 px-4 py-2 text-center text-sm font-medium text-indigo-200 transition hover:bg-indigo-900/40 sm:w-auto">
             Open VirusTotal report
           </a>
         )}
@@ -123,9 +123,9 @@ export default function SecurityScanPanel({ submissionId, initialScan }: { submi
           {findings.length ? (
             <div className="mt-2 space-y-2">
               {findings.map((finding, index) => (
-                <div key={index} className="rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-sm text-slate-300">
-                  <p className="font-medium text-white">{String(finding.engine_name ?? finding.title ?? finding.name ?? `Finding ${index + 1}`)}</p>
-                  <p className="mt-1 text-slate-400">{[finding.category, finding.result].filter(Boolean).map(String).join(" · ") || String(finding.description ?? "Suspicious or malicious result")}</p>
+                <div key={index} className="min-w-0 rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-sm text-slate-300">
+                  <p className="min-w-0 [overflow-wrap:anywhere] font-medium text-white">{String(finding.engine_name ?? finding.title ?? finding.name ?? `Finding ${index + 1}`)}</p>
+                  <p className="mt-1 min-w-0 [overflow-wrap:anywhere] text-slate-400">{[finding.category, finding.result].filter(Boolean).map(String).join(" · ") || String(finding.description ?? "Suspicious or malicious result")}</p>
                 </div>
               ))}
             </div>

@@ -51,8 +51,8 @@ function LoginContent() {
   }
 
   return (
-    <main className="glass-page flex min-h-[70vh] items-center justify-center px-3 py-8 sm:px-6">
-      <div className="glass-panel w-full max-w-md p-6 sm:p-8">
+    <main className="glass-page flex min-h-[65vh] items-center justify-center py-5 sm:min-h-[70vh] sm:px-6 sm:py-8">
+      <div className="glass-panel w-full max-w-md p-5 sm:p-8">
         <p className="ui-eyebrow mb-3">Developer access</p>
         <h1 className="text-2xl font-semibold text-white">Sign in to Luma Store</h1>
         <p className="mt-2 text-sm leading-6 text-slate-400">

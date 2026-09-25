@@ -533,64 +533,28 @@ function DiscoverContent() {
         <>
           {!hasActiveSearch && featuredApps.length > 0 && (
             <section>
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <h1 className="text-2xl font-semibold text-white">Featured apps</h1>
-                  <p className="mt-1 text-sm text-slate-500">Handy picks from the Luma Store catalog.</p>
-                </div>
+              <div className="mb-4">
+                <h1 className="text-2xl font-semibold text-white">Featured apps</h1>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {featuredApps.map((app) => {
-                  const name = app.name?.trim() || app.package_name || "Untitled app";
-                  const iconSrc = resolveAppIcon(app);
-                  const rating = ratings[app.id];
-                  const featureGraphic = featureGraphics[app.id];
-
-                  return (
-                    <Link
-                      key={app.id}
-                      href={`/${encodeURIComponent(app.package_name || app.id)}`}
-                      className="group overflow-hidden rounded-3xl bg-[#101722] transition hover:bg-[#131d29]"
-                    >
-                      <div className="aspect-[1024/500] overflow-hidden bg-slate-950">
-                        <img
-                          src={featureGraphic}
-                          alt={`${name} feature graphic`}
-                          className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.015]"
-                        />
-                      </div>
-                      <div className="flex items-center gap-4 p-4">
-                        {iconSrc ? (
-                          <img src={iconSrc} alt="" className="h-16 w-16 rounded-2xl object-cover shadow-[0_8px_24px_rgba(0,0,0,0.22)]" />
-                        ) : (
-                          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-900 font-semibold text-indigo-200">
-                            {appInitials(name)}
-                          </div>
-                        )}
-                        <div className="min-w-0">
-                          <h2 className="truncate text-base font-semibold text-white">{name}</h2>
-                          <p className="mt-0.5 truncate text-sm text-slate-400">
-                            {app.developer_name || "Unknown developer"}
-                          </p>
-                          <p className="mt-1 text-xs text-slate-500">
-                            <span className="text-amber-300">★</span>{" "}
-                            {rating ? rating.average.toFixed(1) : "—"}
-                            {rating ? ` · ${rating.count} rating${rating.count === 1 ? "" : "s"}` : ""}
-                          </p>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
+              <div className="grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+                {featuredApps.map((app) => (
+                  <PlayStoreCard
+                    key={app.id}
+                    app={app}
+                    iconSrc={resolveAppIcon(app)}
+                    featureGraphic={featureGraphics[app.id] || null}
+                    rating={ratings[app.id]}
+                  />
+                ))}
               </div>
             </section>
           )}
 
           {!hasActiveSearch && (
             <div className="space-y-10">
-              <Collection title="Recommended for you" apps={trending} ratings={ratings} resolveIcon={resolveAppIcon} />
-              <Collection title="New & updated" apps={recentlyUpdated} ratings={ratings} resolveIcon={resolveAppIcon} />
+              <Collection title="Recommended for you" apps={trending} ratings={ratings} resolveIcon={resolveAppIcon} featureGraphics={featureGraphics} />
+              <Collection title="New & updated" apps={recentlyUpdated} ratings={ratings} resolveIcon={resolveAppIcon} featureGraphics={featureGraphics} />
             </div>
           )}
 
@@ -612,62 +576,19 @@ function DiscoverContent() {
               </div>
             </div>
 
-            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-              {filteredApps.map((app, index) => {
-                const name = app.name?.trim() || app.package_name || "Untitled app";
-                const iconSrc = resolveAppIcon(app);
-                const rating = ratings[app.id];
-                const metric = metrics[app.id];
-
-                return (
-                  <Link
-                    key={app.id}
-                    href={`/${encodeURIComponent(app.package_name || app.id)}`}
-                    className="group flex min-h-28 items-center gap-4 rounded-3xl bg-[#101722] p-4 transition hover:bg-[#131d29]"
-                  >
-                    {sort === "downloads" && (
-                      <span className="w-5 shrink-0 text-center text-sm font-medium text-slate-500">
-                        {index + 1}
-                      </span>
-                    )}
-
-                    {iconSrc ? (
-                      <div className="relative shrink-0">
-                        <div aria-hidden="true" className="absolute inset-2 rounded-2xl bg-indigo-500/15 blur-xl" />
-                        <img
-                          src={iconSrc}
-                          alt={`${name} icon`}
-                          className="relative h-20 w-20 rounded-2xl object-cover shadow-[0_8px_28px_rgba(0,0,0,0.24)]"
-                        />
-                      </div>
-                    ) : (
-                      <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-slate-900 font-semibold text-indigo-200">
-                        {appInitials(name)}
-                      </div>
-                    )}
-
-                    <div className="min-w-0 flex-1">
-                      <h3 className="truncate text-base font-semibold text-white group-hover:text-indigo-200">
-                        {name}
-                      </h3>
-                      <p className="mt-1 truncate text-sm text-slate-400">
-                        {app.developer_name || app.package_name || "Unknown developer"}
-                      </p>
-                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                        <span>
-                          <span className="text-amber-300">★</span>{" "}
-                          {rating ? rating.average.toFixed(1) : "—"}
-                        </span>
-                        {app.subcategory && <span>· {app.subcategory}</span>}
-                        {Number(metric?.total_downloads || 0) > 0 && (
-                          <span>· {Number(metric.total_downloads).toLocaleString()} downloads</span>
-                        )}
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
+            <div className="grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredApps.map((app, index) => (
+                <PlayStoreCard
+                  key={app.id}
+                  app={app}
+                  iconSrc={resolveAppIcon(app)}
+                  featureGraphic={featureGraphics[app.id] || null}
+                  rating={ratings[app.id]}
+                  rank={sort === "downloads" ? index + 1 : undefined}
+                  downloads={Number(metrics[app.id]?.total_downloads || 0)}
+                />
+              ))}
+            </div>>
           </section>
 
           {!hasActiveSearch && recentApps.length > 0 && (
@@ -715,16 +636,98 @@ function DiscoverContent() {
   );
 }
 
+function PlayStoreCard({
+  app,
+  iconSrc,
+  featureGraphic,
+  rating,
+  rank,
+  downloads,
+}: {
+  app: StoreApp;
+  iconSrc: string | null;
+  featureGraphic: string | null;
+  rating?: RatingSummary;
+  rank?: number;
+  downloads?: number;
+}) {
+  const name = app.name || app.package_name || "Untitled app";
+
+  return (
+    <Link
+      href={`/${encodeURIComponent(app.package_name || app.id)}`}
+      className="group block min-w-0"
+    >
+      <div className="aspect-[1024/500] overflow-hidden rounded-2xl bg-[#101722] shadow-[0_1px_3px_rgba(0,0,0,0.28)]">
+        {featureGraphic ? (
+          <img
+            src={featureGraphic}
+            alt={`${name} feature graphic`}
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.012]"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#101722] to-[#0d131d] text-sm font-medium text-slate-600">
+            No feature graphic
+          </div>
+        )}
+      </div>
+
+      <div className="mt-3 flex items-center gap-3 px-0.5">
+        <div className="relative shrink-0">
+          <div aria-hidden="true" className="absolute inset-1 rounded-2xl bg-indigo-500/20 blur-lg" />
+          {iconSrc ? (
+            <img
+              src={iconSrc}
+              alt={`${name} icon`}
+              className="relative h-16 w-16 rounded-2xl object-cover shadow-[0_4px_14px_rgba(0,0,0,0.24)]"
+            />
+          ) : (
+            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[#101722] font-semibold text-indigo-200">
+              {appInitials(name)}
+            </div>
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-center gap-2">
+            {rank !== undefined && (
+              <span className="shrink-0 text-sm font-medium text-slate-500">{rank}</span>
+            )}
+            <h3 className="truncate text-base font-medium text-white group-hover:text-indigo-200">
+              {name}
+            </h3>
+          </div>
+          <p className="mt-0.5 truncate text-sm text-slate-400">
+            {app.developer_name || app.package_name || "Unknown developer"}
+          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+            <span>
+              <span className="text-amber-300">★</span>{" "}
+              {rating ? rating.average.toFixed(1) : "—"}
+            </span>
+            {rating && <span>· {rating.count} rating{rating.count === 1 ? "" : "s"}</span>}
+            {downloads !== undefined && downloads > 0 && (
+              <span>· {downloads.toLocaleString()} downloads</span>
+            )}
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 function Collection({
   title,
   apps,
   ratings,
   resolveIcon,
+  featureGraphics,
 }: {
   title: string;
   apps: StoreApp[];
   ratings: Record<string, RatingSummary>;
   resolveIcon: (app: StoreApp) => string | null;
+  featureGraphics: Record<string, string>;
 }) {
   if (!apps.length) return null;
 
@@ -735,40 +738,17 @@ function Collection({
         <span className="text-sm font-medium text-indigo-300">More</span>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-        {apps.map((app) => {
-          const name = app.name || app.package_name || "Untitled app";
-          const rating = ratings[app.id];
-          const iconSrc = resolveIcon(app);
-
-          return (
-            <Link
-              key={app.id}
-              href={`/${encodeURIComponent(app.package_name || app.id)}`}
-              className="group flex min-h-24 items-center gap-4 rounded-3xl bg-[#101722] p-4 transition hover:bg-[#131d29]"
-            >
-              {iconSrc ? (
-                <img src={iconSrc} alt="" className="h-16 w-16 rounded-2xl object-cover shadow-[0_8px_24px_rgba(0,0,0,0.2)]" />
-              ) : (
-                <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-900 text-sm font-bold text-indigo-200">
-                  {appInitials(name)}
-                </span>
-              )}
-
-              <div className="min-w-0">
-                <strong className="block truncate text-sm font-semibold text-white group-hover:text-indigo-200">{name}</strong>
-                <span className="mt-1 block truncate text-xs text-slate-500">
-                  {app.developer_name || app.package_name || "Unknown developer"}
-                </span>
-                <span className="mt-1.5 block text-xs text-slate-500">
-                  <span className="text-amber-300">★</span>{" "}
-                  {rating ? rating.average.toFixed(1) : "—"}
-                  {app.subcategory ? ` · ${app.subcategory}` : ""}
-                </span>
-              </div>
-            </Link>
-          );
-        })}
+      <div className="flex snap-x gap-5 overflow-x-auto pb-3">
+        {apps.map((app) => (
+          <div key={app.id} className="min-w-[82vw] snap-start sm:min-w-[24rem] lg:min-w-[26rem]">
+            <PlayStoreCard
+              app={app}
+              iconSrc={resolveIcon(app)}
+              featureGraphic={featureGraphics[app.id] || null}
+              rating={ratings[app.id]}
+            />
+          </div>
+        ))}
       </div>
     </section>
   );

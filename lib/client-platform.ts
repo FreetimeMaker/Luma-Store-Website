@@ -16,6 +16,12 @@ export function detectClientPlatform(): ClientPlatform {
   const uaDataPlatform = (nav.userAgentData?.platform || "").toLowerCase();
   const mobileHint = nav.userAgentData?.mobile === true || /\bmobile\b/.test(userAgent);
   const hasTouch = (nav.maxTouchPoints || 0) > 0;
+  const coarsePointer = typeof window !== "undefined"
+    && window.matchMedia("(pointer: coarse)").matches;
+  const compactTouchViewport = typeof window !== "undefined"
+    && window.matchMedia("(max-width: 900px)").matches
+    && hasTouch
+    && coarsePointer;
 
   const explicitAndroid =
     /\bandroid\b/.test(userAgent)
@@ -29,13 +35,14 @@ export function detectClientPlatform(): ClientPlatform {
       || /(?:armv\d+|aarch64)/.test(legacyPlatform)
     );
 
+  const linuxLike =
+    /\blinux\b/.test(userAgent)
+    || /\blinux\b/.test(legacyPlatform)
+    || uaDataPlatform === "linux";
+
   const mobileLinuxFallback =
-    mobileHint
-    && (
-      /\blinux\b/.test(userAgent)
-      || /\blinux\b/.test(legacyPlatform)
-      || uaDataPlatform === "linux"
-    );
+    linuxLike
+    && (mobileHint || compactTouchViewport);
 
   if (explicitAndroid || androidLinuxArm || mobileLinuxFallback) return "Android";
 

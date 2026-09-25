@@ -19,8 +19,8 @@ export default function ScrollHeader() {
   return (
     <header
       className={[
-        "sticky top-0 z-50 w-full px-4 py-3 transition-all duration-200 sm:px-6",
-        showHeader ? "liquid-nav border-b" : "border-transparent bg-transparent",
+        "sticky top-0 z-50 w-full border-b border-white/10 bg-[#090d14]/95 px-4 py-3 backdrop-blur-xl transition-all duration-200 sm:px-6",
+        showHeader ? "shadow-sm shadow-black/20" : "",
       ].join(" ")}
     >
       <AuthNav />

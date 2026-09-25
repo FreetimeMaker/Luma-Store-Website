@@ -25,7 +25,7 @@ export default function AuthNav() {
       return;
     }
 
-    router.push(`/discover?search=${encodeURIComponent(trimmed)}`);
+    router.push(`/?search=${encodeURIComponent(trimmed)}`);
     setShowSearch(false);
     setSearchValue("");
   }
@@ -111,9 +111,18 @@ export default function AuthNav() {
         </div>
       </Link>
 
+      <div className="hidden items-center gap-1 md:flex">
+        <Link href="/" className="rounded-full px-4 py-2 text-sm font-medium text-indigo-200 transition hover:bg-indigo-500/10 hover:text-white">
+          Apps
+        </Link>
+        <Link href="/login?next=/dashboard" className="rounded-full px-4 py-2 text-sm font-medium text-slate-400 transition hover:bg-white/[0.04] hover:text-white">
+          Developers
+        </Link>
+      </div>
+
       <div className="ml-auto flex items-center gap-1.5">
         {showSearch ? (
-          <div ref={searchRef} className="absolute left-1/2 top-1/2 flex w-[42rem] max-w-[70vw] -translate-x-1/2 -translate-y-1/2 items-center overflow-hidden rounded-md border border-white/10 bg-[#0f172a] shadow-lg shadow-black/20">
+          <div ref={searchRef} className="absolute left-1/2 top-1/2 flex w-[42rem] max-w-[70vw] -translate-x-1/2 -translate-y-1/2 items-center overflow-hidden rounded-full border border-white/10 bg-[#111923] shadow-xl shadow-black/20">
             <Image
               src="/search.png"
               alt="Search"

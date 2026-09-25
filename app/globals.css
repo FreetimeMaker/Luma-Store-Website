@@ -297,3 +297,133 @@ a:focus-visible {
     animation-iteration-count: 1 !important;
   }
 }
+
+
+/* Public Luma Store: restrained Google Play-inspired storefront using the existing palette. */
+.store-page {
+  width: 100%;
+}
+
+.store-hero {
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background:
+    radial-gradient(circle at 85% 15%, rgba(99, 102, 241, 0.12), transparent 34%),
+    #0d131d;
+}
+
+.store-app-card {
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 1.5rem;
+  background: #101722;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+  transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+.store-app-card:hover {
+  border-color: rgba(129, 140, 248, 0.3);
+  background: #131d29;
+  transform: translateY(-1px);
+}
+
+.store-mini-card {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  border: 1px solid rgba(148, 163, 184, 0.11);
+  border-radius: 1.25rem;
+  background: #101722;
+  padding: 0.875rem;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.store-mini-card:hover {
+  border-color: rgba(129, 140, 248, 0.28);
+  background: #131d29;
+}
+
+.store-chip {
+  border: 1px solid rgba(148, 163, 184, 0.17);
+  border-radius: 999px;
+  background: transparent;
+  padding: 0.55rem 1rem;
+  color: #cbd5e1;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.store-chip:hover {
+  border-color: rgba(129, 140, 248, 0.35);
+  background: rgba(99, 102, 241, 0.08);
+  color: #fff;
+}
+
+.store-chip-active {
+  border-color: rgba(129, 140, 248, 0.38);
+  background: rgba(99, 102, 241, 0.16);
+  color: #e0e7ff;
+}
+
+.store-filter {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 1rem;
+  background: #0d131d;
+  padding: 0.25rem 0.75rem 0.25rem 0.9rem;
+  color: #94a3b8;
+  font-size: 0.75rem;
+}
+
+.store-filter select {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  padding: 0.65rem 0;
+  color: #f8fafc;
+  outline: 0;
+}
+
+.store-filter option {
+  background: #0d131d;
+  color: #f8fafc;
+}
+
+.store-empty {
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 1.5rem;
+  background: #0d131d;
+  padding: 3rem 1.5rem;
+  text-align: center;
+}
+
+.store-primary {
+  border-radius: 999px;
+  background: #6366f1;
+  padding: 0.7rem 1.2rem;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.store-page .glass-panel,
+.store-page .ui-panel,
+.store-page .ui-panel-muted {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+
+.store-page .glass-panel {
+  border-color: rgba(148, 163, 184, 0.12);
+  background: #101722;
+}
+
+.store-page .ui-panel-muted {
+  border-color: rgba(148, 163, 184, 0.1);
+  background: #0d131d;
+}

@@ -32,6 +32,11 @@ type AppSubmission = {
   category: string;
   categories: string[];
   licenseType: string;
+  closedSource: boolean;
+  sourceArchivePath: string;
+  sourceArchiveName: string;
+  sourceArchiveSizeBytes: number | null;
+  sourceArchiveReviewStatus: string;
   iconUrl: string;
   version: string;
   platform: string;
@@ -70,6 +75,10 @@ type LumaSubmissionRow = {
   categories: unknown;
   license_type: string | null;
   closed_source: boolean | null;
+  source_archive_path: string | null;
+  source_archive_name: string | null;
+  source_archive_size_bytes: number | string | null;
+  source_archive_review_status: string | null;
   icon_url: string | null;
   version: string | null;
   platform: string | null;
@@ -227,6 +236,11 @@ function rowToApp(item: LumaSubmissionRow): AppSubmission {
     category: item.category,
     categories: asStringArray(item.categories).length ? asStringArray(item.categories) : [item.category],
     licenseType: item.license_type || "",
+    closedSource: item.closed_source === true,
+    sourceArchivePath: item.source_archive_path || "",
+    sourceArchiveName: item.source_archive_name || "",
+    sourceArchiveSizeBytes: item.source_archive_size_bytes == null ? null : Number(item.source_archive_size_bytes),
+    sourceArchiveReviewStatus: item.source_archive_review_status || (item.closed_source ? "Pending" : "Not Required"),
     iconUrl: item.icon_url || "",
     version: item.version || "",
     platform: item.platform || "",
@@ -329,6 +343,7 @@ export default function LumaDeveloperPortal() {
   const [appLink, setAppLink] = useState("");
   const [appCategories, setAppCategories] = useState<string[]>([]);
   const [appLicenseType, setAppLicenseType] = useState("");
+  const [closedSource, setClosedSource] = useState(false);
   const [appIconUrl, setAppIconUrl] = useState("");
   const [iconPreviewError, setIconPreviewError] = useState(false);
   const [appVersion, setAppVersion] = useState("");
@@ -380,16 +395,23 @@ export default function LumaDeveloperPortal() {
   const [artifactInputMode, setArtifactInputMode] = useState<ArtifactInputMode>("link");
   const [uploadingArtifact, setUploadingArtifact] = useState<string | null>(null);
   const [artifactUploadError, setArtifactUploadError] = useState<string | null>(null);
+  const [sourceArchivePath, setSourceArchivePath] = useState("");
+  const [sourceArchiveName, setSourceArchiveName] = useState("");
+  const [sourceArchiveSizeBytes, setSourceArchiveSizeBytes] = useState<number | null>(null);
+  const [sourceArchiveVerified, setSourceArchiveVerified] = useState(false);
+  const [sourceArchiveInspection, setSourceArchiveInspection] = useState<{ entries: number; sourceFiles: number } | null>(null);
+  const [sourceArchiveUploading, setSourceArchiveUploading] = useState(false);
+  const [sourceArchiveError, setSourceArchiveError] = useState<string | null>(null);
   const formTopRef = React.useRef<HTMLFormElement>(null);
 
   const isAndroid = appPlatforms.includes("Android");
   const isWindows = appPlatforms.includes("Windows");
   const isLinux = appPlatforms.includes("Linux");
-  const manualStoreMetadata = isWindows || isLinux;
+  const manualStoreMetadata = closedSource || isWindows || isLinux;
   const platformDetails = (platform: AppPlatform, androidOverride: FastlaneMetadata | null = fastlaneMetadata) => {
     const item = platformMetadata[platform];
-    const repoPart = separatePlatformRepos ? { repoUrl: item.repoUrl.trim() } : {};
-    if (platform === "Android") {
+    const repoPart = separatePlatformRepos && !closedSource ? { repoUrl: item.repoUrl.trim() } : {};
+    if (platform === "Android" && !closedSource) {
       if (!androidOverride) return repoPart;
       return {
         ...repoPart,
@@ -403,7 +425,7 @@ export default function LumaDeveloperPortal() {
         },
       };
     }
-    const manual = separatePlatformRepos ? item : {
+    const manual = separatePlatformRepos && !closedSource ? item : {
       ...item,
       title: closedTitle,
       shortDescription: closedShortDescription,
@@ -473,6 +495,54 @@ export default function LumaDeveloperPortal() {
     }
   };
 
+  const uploadSourceArchive = async (file: File) => {
+    setSourceArchiveUploading(true);
+    setSourceArchiveError(null);
+    setSourceArchiveVerified(false);
+    setSourceArchiveInspection(null);
+    try {
+      if (!file.name.toLowerCase().endsWith(".zip")) throw new Error("Select a .zip source archive.");
+      if (file.size <= 0 || file.size > 100 * 1024 * 1024) throw new Error("Source ZIP must be no larger than 100 MB.");
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Your login session expired. Please sign in again.");
+
+      const prepare = await fetch("/api/luma/source-upload-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ fileName: file.name, size: file.size }),
+      });
+      const prepared = await prepare.json() as { path?: string; token?: string; error?: string };
+      if (!prepare.ok || !prepared.path || !prepared.token) throw new Error(prepared.error || "Could not prepare source upload.");
+
+      const { error: uploadError } = await supabase.storage
+        .from("luma-source-archives")
+        .uploadToSignedUrl(prepared.path, prepared.token, file, { contentType: file.type || "application/zip" });
+      if (uploadError) throw uploadError;
+
+      const verify = await fetch("/api/luma/source-verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ path: prepared.path }),
+      });
+      const verified = await verify.json() as { verified?: boolean; size?: number; inspection?: { entries: number; sourceFiles: number }; error?: string };
+      if (!verify.ok || !verified.verified) throw new Error(verified.error || "Source ZIP verification failed.");
+
+      setSourceArchivePath(prepared.path);
+      setSourceArchiveName(file.name);
+      setSourceArchiveSizeBytes(verified.size ?? file.size);
+      setSourceArchiveInspection(verified.inspection ?? null);
+      setSourceArchiveVerified(true);
+    } catch (error) {
+      setSourceArchivePath("");
+      setSourceArchiveName("");
+      setSourceArchiveSizeBytes(null);
+      setSourceArchiveError(error instanceof Error ? error.message : "Source ZIP upload failed.");
+    } finally {
+      setSourceArchiveUploading(false);
+    }
+  };
+
   const buildPlatformArtifacts = (androidOverride: FastlaneMetadata | null = fastlaneMetadata): PlatformArtifact[] => [
     ...(isAndroid && androidDownloadUrl.trim() ? [{ platform: "Android" as const, packageType: "apk" as const, downloadUrl: androidDownloadUrl.trim(), ...platformDetails("Android", androidOverride) }] : []),
     ...(isWindows && windowsDownloadUrl.trim() ? [{ platform: "Windows" as const, packageType: "exe" as const, downloadUrl: windowsDownloadUrl.trim(), ...platformDetails("Windows", androidOverride) }] : []),
@@ -490,8 +560,9 @@ export default function LumaDeveloperPortal() {
       if (!session?.access_token) throw new Error("Your login session expired. Please sign in again.");
       const submission = {
         name: appName.trim() || closedTitle.trim() || "Untitled draft", short_description: closedShortDescription.trim() || null, description: closedFullDescription.trim() || null,
-        link: appLink.trim() || null, repo_url: appLink.trim() || null, source_code_url: appLink.trim() || null,
-        categories: appCategories, category: appCategories[0] || null, subcategory: null, license_type: appLicenseType || null, closed_source: false,
+        link: closedSource ? (websiteUrl.trim() || null) : (appLink.trim() || null), repo_url: closedSource ? null : (appLink.trim() || null), source_code_url: closedSource ? null : (appLink.trim() || null),
+        categories: appCategories, category: appCategories[0] || null, subcategory: null, license_type: closedSource ? "Proprietary" : (appLicenseType || null), closed_source: closedSource,
+        source_archive_path: closedSource ? sourceArchivePath || null : null, source_archive_name: closedSource ? sourceArchiveName || null : null, source_archive_size_bytes: closedSource ? sourceArchiveSizeBytes : null,
         icon_url: appIconUrl.trim() || null, version: appVersion.trim() || null, platform: appPlatforms[0] || null, platforms: platformArtifacts, separate_platform_repos: separatePlatformRepos, linux_package_base: null,
         download_url: platformArtifacts[0]?.downloadUrl || null, package_name: isAndroid ? appPackageName.trim() || null : null,
         version_code: isAndroid && /^\d+$/.test(appVersionCode.trim()) ? Number(appVersionCode) : null,
@@ -543,7 +614,7 @@ export default function LumaDeveloperPortal() {
             .filter((id: string | null): id is string => typeof id === "string" && id.length > 0)
         );
 
-        const rows = (data as LumaSubmissionRow[]).filter((item) => item.closed_source !== true);
+        const rows = data as LumaSubmissionRow[];
         const canonicalRows = !storeAppsError
           ? rows.filter((item) => item.status !== "Approved" || canonicalSubmissionIds.has(item.id))
           : rows;
@@ -568,22 +639,23 @@ export default function LumaDeveloperPortal() {
   }, [supabase]);
 
   const resetForm = () => {
-    setStep(1); setAppName(""); setAppLink(""); setAppCategories([]); setAppLicenseType(""); setAppIconUrl(""); setIconPreviewError(false);
+    setStep(1); setAppName(""); setAppLink(""); setAppCategories([]); setAppLicenseType(""); setClosedSource(false); setAppIconUrl(""); setIconPreviewError(false);
     setAppVersion(""); setAppPlatforms([]); setSeparatePlatformRepos(false); setPlatformMetadata({Android:emptyPlatformMetadata(),Windows:emptyPlatformMetadata(),Linux:emptyPlatformMetadata()}); setAndroidDownloadUrl(""); setWindowsDownloadUrl(""); setLinuxDebUrl(""); setLinuxRpmUrl(""); setLinuxAppImageUrl(""); setAppPackageName(""); setAppVersionCode("");
     setWebsiteUrl(""); setIssueTrackerUrl(""); setTranslationUrl(""); setAuthorName(""); setAuthorEmail(""); setAuthorWebsite("");
     setDonateUrl(""); setLiberapay(""); setOpencollective(""); setBitcoin(""); setLitecoin("");
     setClosedTitle(""); setClosedShortDescription(""); setClosedFullDescription(""); setClosedChangelog(""); setClosedScreenshotsText(""); setAdditionalClosedMetadata([]);
     setFastlaneMetadata(null); setFastlaneError(null); setEditingId(null); setEditingStatus(null); setDraftId(null); setDraftSavedAt(null);
     setArtifactInputMode("link"); setUploadingArtifact(null); setArtifactUploadError(null);
+    setSourceArchivePath(""); setSourceArchiveName(""); setSourceArchiveSizeBytes(null); setSourceArchiveVerified(false); setSourceArchiveInspection(null); setSourceArchiveUploading(false); setSourceArchiveError(null);
   };
 
   const beginEdit = (app: AppSubmission) => {
     if (!(["Rejected", "Approved", "Changes Requested"] as SubmissionStatus[]).includes(app.status)) return;
     setEditingId(app.id); setEditingStatus(app.status); setAppName(app.name); setAppLink(app.repoUrl || app.link);
     setAppCategories((app.categories?.length ? app.categories : [app.category]).filter((category) => FDROID_CATEGORIES.includes(category as typeof FDROID_CATEGORIES[number])));
-    setAppLicenseType(app.licenseType || ""); setAppIconUrl(app.iconUrl); setIconPreviewError(false); setAppVersion(app.version);
+    setAppLicenseType(app.closedSource ? "Proprietary" : (app.licenseType || "")); setClosedSource(app.closedSource); setAppIconUrl(app.iconUrl); setIconPreviewError(false); setAppVersion(app.version);
     setAppPlatforms(Array.from(new Set(app.platforms.map((item)=>item.platform))));
-    setSeparatePlatformRepos(app.separatePlatformRepos);
+    setSeparatePlatformRepos(app.closedSource ? false : app.separatePlatformRepos);
     setPlatformMetadata((current)=>{const next={...current};(["Android","Windows","Linux"] as AppPlatform[]).forEach(platform=>{const item=app.platforms.find(entry=>entry.platform===platform);if(item?.metadata)next[platform]={repoUrl:item.repoUrl||app.repoUrl||app.link||"",title:item.metadata.title||"",shortDescription:item.metadata.shortDescription||"",fullDescription:item.metadata.fullDescription||"",changelog:item.metadata.changelog||"",screenshotsText:(item.metadata.screenshots||[]).join("\\n"),featureGraphicUrl:item.metadata.featureGraphic||""};else if(item?.repoUrl)next[platform]={...next[platform],repoUrl:item.repoUrl};});return next;});
     setAndroidDownloadUrl(app.platforms.find((item)=>item.platform==="Android")?.downloadUrl||""); setWindowsDownloadUrl(app.platforms.find((item)=>item.platform==="Windows")?.downloadUrl||"");
     setLinuxDebUrl(app.platforms.find((item)=>item.packageType==="deb")?.downloadUrl||""); setLinuxRpmUrl(app.platforms.find((item)=>item.packageType==="rpm")?.downloadUrl||""); setAppPackageName(app.packageName); setAppVersionCode(app.versionCode);
@@ -600,6 +672,7 @@ export default function LumaDeveloperPortal() {
     setAdditionalClosedMetadata(app.localizedMetadata.filter((item) => item !== english).map((item) => ({ ...item, screenshotsText: item.screenshots.join("\\n") })));
     setFastlaneMetadata(null); setFastlaneError(null); setStep(1); setSubmitted(false);
     setArtifactInputMode("link"); setUploadingArtifact(null); setArtifactUploadError(null);
+    setSourceArchivePath(app.sourceArchivePath); setSourceArchiveName(app.sourceArchiveName); setSourceArchiveSizeBytes(app.sourceArchiveSizeBytes); setSourceArchiveVerified(app.closedSource && Boolean(app.sourceArchivePath)); setSourceArchiveInspection(null); setSourceArchiveError(null);
     requestAnimationFrame(() => formTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
 
@@ -652,7 +725,8 @@ export default function LumaDeveloperPortal() {
   });
 
   const continueDisabled = Boolean(
-    (isAndroid && !fastlaneMetadata)
+    (isAndroid && !closedSource && !fastlaneMetadata)
+    || (closedSource && !sourceArchiveVerified)
     || (manualStoreMetadata && (
       separatePlatformRepos
         ? !separatePlatformMetadataValid
@@ -661,7 +735,7 @@ export default function LumaDeveloperPortal() {
   );
 
   const continueToReview = () => {
-    if (!isAndroid && manualStoreMetadata && !separatePlatformRepos && manualMetadataValid) {
+    if (manualStoreMetadata && !separatePlatformRepos && manualMetadataValid && (closedSource || !isAndroid)) {
       const metadata: FastlaneMetadata = {
         title: closedTitle.trim(),
         shortDescription: closedShortDescription.trim(),
@@ -706,7 +780,8 @@ export default function LumaDeveloperPortal() {
       if (isLinux && !linuxDebUrl.trim() && !linuxRpmUrl.trim() && !linuxAppImageUrl.trim()) throw new Error("Linux requires an uploaded .deb/.rpm/AppImage file or a download URL.");
       if (!validAndroidMetadata) throw new Error("Android apps require a valid package name and positive versionCode.");
       if (!appCategories.length || appCategories.some((category) => !FDROID_CATEGORIES.includes(category as typeof FDROID_CATEGORIES[number]))) throw new Error("Please select at least one valid F-Droid category.");
-      if (!appLicenseType) throw new Error("Please select an open-source license.");
+      if (!closedSource && !appLicenseType) throw new Error("Please select an open-source license.");
+      if (closedSource && (!sourceArchivePath || !sourceArchiveVerified)) throw new Error("Closed-source apps require a verified private source-code ZIP.");
       if (manualStoreMetadata && !separatePlatformRepos && !manualMetadataValid) throw new Error("Linux and Windows require complete manual store metadata.");
       if (separatePlatformRepos) {
         for (const platform of appPlatforms) {
@@ -722,14 +797,16 @@ export default function LumaDeveloperPortal() {
       }
 
       const androidRepo = separatePlatformRepos ? platformMetadata.Android.repoUrl.trim() : appLink.trim();
-      const primaryRepo = isAndroid
-        ? androidRepo
-        : separatePlatformRepos
-          ? platformMetadata[appPlatforms[0]].repoUrl.trim()
-          : appLink.trim();
-      githubRepository(primaryRepo);
+      const primaryRepo = closedSource
+        ? ""
+        : isAndroid
+          ? androidRepo
+          : separatePlatformRepos
+            ? platformMetadata[appPlatforms[0]].repoUrl.trim()
+            : appLink.trim();
+      if (!closedSource) githubRepository(primaryRepo);
 
-      const androidStoreMetadata = isAndroid ? await fetchFastlaneMetadata(androidRepo, appVersionCode) : null;
+      const androidStoreMetadata = isAndroid && !closedSource ? await fetchFastlaneMetadata(androidRepo, appVersionCode) : null;
       if (androidStoreMetadata) {
         setFastlaneMetadata(androidStoreMetadata);
         setAppName(androidStoreMetadata.title);
@@ -781,14 +858,17 @@ export default function LumaDeveloperPortal() {
         name: currentStoreMetadata.title,
         short_description: currentStoreMetadata.shortDescription,
         description: currentStoreMetadata.fullDescription,
-        link: primaryRepo,
-        repo_url: primaryRepo,
-        source_code_url: primaryRepo,
+        link: closedSource ? (websiteUrl.trim() || null) : primaryRepo,
+        repo_url: closedSource ? null : primaryRepo,
+        source_code_url: closedSource ? null : primaryRepo,
         category: appCategories[0],
         categories: appCategories,
         subcategory: null,
-        license_type: appLicenseType,
-        closed_source: false,
+        license_type: closedSource ? "Proprietary" : appLicenseType,
+        closed_source: closedSource,
+        source_archive_path: closedSource ? sourceArchivePath : null,
+        source_archive_name: closedSource ? sourceArchiveName : null,
+        source_archive_size_bytes: closedSource ? sourceArchiveSizeBytes : null,
         localized_metadata: localizedMetadata,
         icon_url: appIconUrl.trim(),
         version: appVersion.trim(),
@@ -811,14 +891,14 @@ export default function LumaDeveloperPortal() {
 
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("Your login session expired. Please sign in again.");
-      if (!session.provider_token) throw new Error("GitHub authorization is required. Please sign out and sign in with GitHub again.");
+      if (!closedSource && !session.provider_token) throw new Error("GitHub authorization is required. Please sign out and sign in with GitHub again.");
 
       const response = await fetch("/api/luma/submissions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
-          "X-GitHub-Token": session.provider_token,
+          ...(session.provider_token ? { "X-GitHub-Token": session.provider_token } : {}),
         },
         body: JSON.stringify({ submission: appMetadata, editingId: draftId || editingId, editingStatus: draftId ? "Draft" : editingStatus }),
       });
@@ -1017,7 +1097,7 @@ https://.../screenshot2.png"/></div></div></div>
                 </div>
               </div>}
 
-              {step === 3 && <div className="space-y-6"><div className="ui-panel-muted p-4 sm:p-5"><dl className="grid gap-4 text-sm md:grid-cols-2"><div><dt className="text-slate-500">Title</dt><dd className="text-white">{fastlaneMetadata?.title}</dd></div><div><dt className="text-slate-500">Platform</dt><dd className="text-white">{appPlatforms.join(" · ")}</dd></div><div><dt className="text-slate-500">Categories</dt><dd className="text-white">{appCategories.join(", ")}</dd></div><div><dt className="text-slate-500">Source model</dt><dd className="text-white">Open source</dd></div><div><dt className="text-slate-500">License</dt><dd className="text-white">{appLicenseType}</dd></div><div><dt className="text-slate-500">Version</dt><dd className="text-white">{appVersion}</dd></div>{isAndroid&&<div><dt className="text-slate-500">Package</dt><dd className="break-all text-white">{appPackageName}</dd></div>}<div><dt className="text-slate-500">Author</dt><dd className="text-white">{authorName||"—"}</dd></div><div><dt className="text-slate-500">Website</dt><dd className="break-all text-white">{websiteUrl||"—"}</dd></div></dl></div><div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between"><button type="button" onClick={()=>goToStep(2)} className="ui-button-secondary w-full px-5 py-2.5 sm:w-auto text-white">Back</button><button type="submit" disabled={isSubmitting||!fastlaneMetadata} className="rounded-xl bg-emerald-600 px-5 py-2.5 font-medium text-white disabled:opacity-40">{isSubmitting?"Saving…":isApprovedUpdate?"Submit Update":isRequestedChange?"Resubmit Changes":"Submit App"}</button></div></div>}
+              {step === 3 && <div className="space-y-6"><div className="ui-panel-muted p-4 sm:p-5"><dl className="grid gap-4 text-sm md:grid-cols-2"><div><dt className="text-slate-500">Title</dt><dd className="text-white">{fastlaneMetadata?.title}</dd></div><div><dt className="text-slate-500">Platform</dt><dd className="text-white">{appPlatforms.join(" · ")}</dd></div><div><dt className="text-slate-500">Categories</dt><dd className="text-white">{appCategories.join(", ")}</dd></div><div><dt className="text-slate-500">Source model</dt><dd className="text-white">{closedSource ? "Proprietary · private source review" : "Open source"}</dd></div><div><dt className="text-slate-500">License</dt><dd className="text-white">{closedSource ? "Proprietary" : appLicenseType}</dd></div><div><dt className="text-slate-500">Version</dt><dd className="text-white">{appVersion}</dd></div>{isAndroid&&<div><dt className="text-slate-500">Package</dt><dd className="break-all text-white">{appPackageName}</dd></div>}<div><dt className="text-slate-500">Author</dt><dd className="text-white">{authorName||"—"}</dd></div><div><dt className="text-slate-500">Website</dt><dd className="break-all text-white">{websiteUrl||"—"}</dd></div></dl></div><div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between"><button type="button" onClick={()=>goToStep(2)} className="ui-button-secondary w-full px-5 py-2.5 sm:w-auto text-white">Back</button><button type="submit" disabled={isSubmitting||!fastlaneMetadata} className="rounded-xl bg-emerald-600 px-5 py-2.5 font-medium text-white disabled:opacity-40">{isSubmitting?"Saving…":isApprovedUpdate?"Submit Update":isRequestedChange?"Resubmit Changes":"Submit App"}</button></div></div>}
             </form>
           </section>
 

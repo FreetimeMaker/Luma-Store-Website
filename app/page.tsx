@@ -700,7 +700,6 @@ function Collection({
   apps: StoreApp[];
   ratings: Record<string, RatingSummary>;
   resolveIcon: (app: StoreApp) => string | null;
-  featureGraphics: Record<string, string>;
 }) {
   if (!apps.length) return null;
 

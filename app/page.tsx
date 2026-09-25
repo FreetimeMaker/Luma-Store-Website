@@ -72,6 +72,12 @@ function appInitials(name: string) {
     .toUpperCase();
 }
 
+function compactDownloads(value: number) {
+  if (value >= 1_000_000) return `${Math.floor(value / 1_000_000)}M+`;
+  if (value >= 1_000) return `${Math.floor(value / 1_000)}K+`;
+  return value > 0 ? `${value}+` : "";
+}
+
 function DiscoverContent() {
   const supabase = useMemo(() => createClient(), []);
   const searchParams = useSearchParams();
@@ -390,7 +396,7 @@ function DiscoverContent() {
   const featuredApps = filteredApps.slice(0, 3);
 
   return (
-    <div className="store-page mx-auto max-w-7xl space-y-10 pb-20 pt-1">
+    <div className="store-page mx-auto max-w-[1440px] space-y-10 pb-20 pt-1">
       <section className="sticky top-[68px] z-20 -mx-4 border-b border-white/10 bg-[#090d14]/95 px-4 backdrop-blur-xl sm:-mx-6 sm:px-6">
         <div className="flex gap-7 overflow-x-auto">
           {[
@@ -565,12 +571,12 @@ function DiscoverContent() {
                 </button>
               </div>
 
-              <div className="flex gap-4 overflow-x-auto pb-2">
+              <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3">
                 {recentApps.map((item) => (
                   <Link
                     key={item.id}
                     href={`/${encodeURIComponent(item.package_name || item.id)}`}
-                    className="store-mini-card min-w-60"
+                    className="group flex min-w-[17rem] snap-start items-center gap-3 rounded-2xl px-3 py-3 transition hover:bg-white/[0.035]"
                   >
                     {item.icon_url ? (
                       <img src={item.icon_url} alt="" className="h-14 w-14 rounded-2xl object-cover" />
@@ -646,17 +652,17 @@ function PlayStoreCard({
         </div>
       )}
 
-      <div className={`${showThumbnail ? "mt-3 px-0.5 pb-1" : "rounded-2xl px-3 py-3 transition group-hover:bg-white/[0.035]"} flex items-center gap-3`}>
+      <div className={`${showThumbnail ? "mt-3 px-0.5 pb-1" : "rounded-2xl px-2 py-2.5 transition group-hover:bg-white/[0.035]"} flex items-center gap-3`}>
         <div className="relative shrink-0">
           <div aria-hidden="true" className="absolute inset-1 rounded-2xl bg-indigo-500/20 blur-lg" />
           {iconSrc ? (
             <img
               src={iconSrc}
               alt={`${name} icon`}
-              className={`relative ${showThumbnail ? "h-14 w-14" : "h-16 w-16"} rounded-xl object-cover shadow-[0_4px_14px_rgba(0,0,0,0.22)]`}
+              className={`relative ${showThumbnail ? "h-14 w-14" : "h-14 w-14"} rounded-xl object-cover shadow-[0_4px_14px_rgba(0,0,0,0.22)]`}
             />
           ) : (
-            <div className={`relative flex ${showThumbnail ? "h-14 w-14" : "h-16 w-16"} items-center justify-center rounded-xl bg-[#101722] font-semibold text-indigo-200`}>
+            <div className={`relative flex h-14 w-14 items-center justify-center rounded-xl bg-[#101722] font-semibold text-indigo-200`}>
               {appInitials(name)}
             </div>
           )}
@@ -675,13 +681,9 @@ function PlayStoreCard({
             {app.developer_name || app.package_name || "Unknown developer"}
           </p>
           <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
-            <span>
-              <span className="text-amber-300">★</span>{" "}
-              {rating ? rating.average.toFixed(1) : "—"}
-            </span>
-            {rating && <span>· {rating.count} rating{rating.count === 1 ? "" : "s"}</span>}
+            <span>{rating ? `${rating.average.toFixed(1)} ★` : "— ★"}</span>
             {downloads !== undefined && downloads > 0 && (
-              <span>· {downloads.toLocaleString()} downloads</span>
+              <span>· {compactDownloads(downloads)} downloads</span>
             )}
           </div>
         </div>
@@ -710,7 +712,7 @@ function Collection({
         <span className="text-sm font-medium text-indigo-300">More</span>
       </div>
 
-      <div className="grid gap-x-10 gap-y-2 md:grid-cols-2 lg:grid-cols-3">
+      <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3">
         {apps.map((app) => {
           const name = app.name || app.package_name || "Untitled app";
           const rating = ratings[app.id];
@@ -720,7 +722,7 @@ function Collection({
             <Link
               key={app.id}
               href={`/${encodeURIComponent(app.package_name || app.id)}`}
-              className="group flex items-center gap-4 rounded-2xl px-2 py-3 transition hover:bg-white/[0.035]"
+              className="group flex min-w-[78vw] snap-start items-center gap-4 rounded-2xl px-3 py-3 transition hover:bg-white/[0.035] sm:min-w-[21rem] lg:min-w-[23rem]"
             >
               <div className="relative shrink-0">
                 <div aria-hidden="true" className="absolute inset-2 rounded-2xl bg-indigo-500/15 blur-xl" />
@@ -745,8 +747,7 @@ function Collection({
                   {app.developer_name || app.package_name || "Unknown developer"}
                 </span>
                 <span className="mt-1.5 block text-xs text-slate-500">
-                  <span className="text-amber-300">★</span>{" "}
-                  {rating ? rating.average.toFixed(1) : "—"}
+                  {rating ? `${rating.average.toFixed(1)} ★` : "— ★"}
                   {app.subcategory ? ` · ${app.subcategory}` : ""}
                 </span>
               </div>

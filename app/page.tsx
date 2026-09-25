@@ -571,7 +571,7 @@ function DiscoverContent() {
 
           {!hasActiveSearch && visibleRecentApps.length > 0 && (
             <section>
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-4 flex items-center justify-between gap-4">
                 <h2 className="text-xl font-semibold text-white sm:text-2xl">Recently viewed</h2>
                 <button
                   type="button"
@@ -579,32 +579,61 @@ function DiscoverContent() {
                     localStorage.removeItem("luma-recent-apps");
                     setRecentApps([]);
                   }}
-                  className="text-sm font-medium text-indigo-300 hover:text-indigo-200"
+                  className="min-h-10 shrink-0 rounded-xl px-3 text-sm font-medium text-indigo-300 transition hover:bg-indigo-500/10 hover:text-indigo-200"
                 >
                   Clear
                 </button>
               </div>
 
-              <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3">
-                {visibleRecentApps.map((item) => (
-                  <Link
-                    key={item.id}
-                    href={`/${encodeURIComponent(item.package_name || item.id)}`}
-                    className="group flex min-w-[17rem] snap-start items-center gap-3 rounded-2xl px-3 py-3 transition hover:bg-white/[0.035]"
-                  >
-                    {item.icon_url ? (
-                      <img src={item.icon_url} alt="" className="h-14 w-14 rounded-2xl object-cover" />
-                    ) : (
-                      <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-500/10 font-semibold text-indigo-200">
-                        {appInitials(item.name)}
-                      </span>
-                    )}
-                    <div className="min-w-0">
-                      <strong className="block truncate text-sm text-white">{item.name}</strong>
-                      <span className="mt-1 block text-xs text-slate-500">Recently viewed</span>
-                    </div>
-                  </Link>
-                ))}
+              <div className="divide-y divide-white/10 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]">
+                {visibleRecentApps.map((item) => {
+                  const currentApp = apps.find((app) => app.id === item.id);
+                  const listing = currentApp ? resolveListing(currentApp) : null;
+                  const displayName = listing?.title || item.name;
+                  const iconSrc = currentApp ? resolveAppIcon(currentApp) : item.icon_url;
+                  const rating = ratings[item.id];
+                  const downloads = Number(metrics[item.id]?.total_downloads || 0);
+
+                  return (
+                    <Link
+                      key={item.id}
+                      href={`/${encodeURIComponent(item.package_name || item.id)}`}
+                      className="group flex min-w-0 items-center gap-3 px-3 py-3 transition hover:bg-white/[0.035] sm:px-4 sm:py-3.5"
+                    >
+                      {iconSrc ? (
+                        <img
+                          src={iconSrc}
+                          alt=""
+                          className="h-12 w-12 shrink-0 rounded-xl object-cover sm:h-14 sm:w-14"
+                        />
+                      ) : (
+                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-sm font-semibold text-indigo-200 sm:h-14 sm:w-14">
+                          {appInitials(displayName)}
+                        </span>
+                      )}
+
+                      <div className="min-w-0 flex-1">
+                        <strong className="block truncate text-sm font-semibold text-white group-hover:text-indigo-200">
+                          {displayName}
+                        </strong>
+                        <span className="mt-0.5 block truncate text-xs text-slate-400">
+                          {listing?.shortDescription
+                            || currentApp?.short_description
+                            || currentApp?.developer_name
+                            || item.package_name
+                            || "Recently viewed"}
+                        </span>
+                        <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+                          <span>{rating ? `${rating.average.toFixed(1)} ★` : "— ★"}</span>
+                          {downloads > 0 && <span>· {compactDownloads(downloads)} downloads</span>}
+                          <span className="hidden sm:inline">· Recently viewed</span>
+                        </div>
+                      </div>
+
+                      <span className="shrink-0 text-lg text-slate-600 transition group-hover:translate-x-0.5 group-hover:text-indigo-300" aria-hidden="true">›</span>
+                    </Link>
+                  );
+                })}
               </div>
             </section>
           )}

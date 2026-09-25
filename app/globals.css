@@ -275,6 +275,36 @@ a:focus-visible {
     font-size: 16px;
   }
 
+  .glass-panel,
+  .ui-panel {
+    border-radius: 1.125rem;
+  }
+
+  .ui-panel-muted {
+    border-radius: 1rem;
+  }
+
+  .store-chip {
+    min-height: 2.5rem;
+    padding: 0.5rem 0.85rem;
+  }
+
+  .store-empty,
+  .ui-empty {
+    padding: 2rem 1rem;
+  }
+
+  .ui-button-primary,
+  .ui-button-secondary,
+  .glass-action {
+    min-height: 2.75rem;
+  }
+
+  .store-page h1,
+  .store-page h2 {
+    text-wrap: balance;
+  }
+
   .liquid-main {
     padding-left: max(0.75rem, env(safe-area-inset-left)) !important;
     padding-right: max(0.75rem, env(safe-area-inset-right)) !important;

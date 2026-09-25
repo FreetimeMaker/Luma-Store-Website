@@ -194,6 +194,11 @@ function parsePlatformArtifacts(value: unknown, legacyPlatform: string | null, l
         fullDescription: typeof row.fullDescription === "string" ? row.fullDescription : typeof row.full_description === "string" ? row.full_description : "",
         changelog: typeof row.changelog === "string" ? row.changelog : "",
         screenshots: asStringArray(row.screenshots),
+        featureGraphic: typeof row.featureGraphic === "string"
+          ? row.featureGraphic
+          : typeof row.feature_graphic === "string"
+            ? row.feature_graphic
+            : null,
       };
     }
 
@@ -521,7 +526,7 @@ export default function LumaDeveloperPortal() {
     setAppLicenseType(app.licenseType || ""); setAppIconUrl(app.iconUrl); setIconPreviewError(false); setAppVersion(app.version);
     setAppPlatforms(Array.from(new Set(app.platforms.map((item)=>item.platform))));
     setSeparatePlatformRepos(app.separatePlatformRepos);
-    setPlatformMetadata((current)=>{const next={...current};(["Android","Windows","Linux"] as AppPlatform[]).forEach(platform=>{const item=app.platforms.find(entry=>entry.platform===platform);if(item?.metadata)next[platform]={repoUrl:item.repoUrl||app.repoUrl||app.link||"",title:item.metadata.title||"",shortDescription:item.metadata.shortDescription||"",fullDescription:item.metadata.fullDescription||"",changelog:item.metadata.changelog||"",screenshotsText:(item.metadata.screenshots||[]).join("\\n")};else if(item?.repoUrl)next[platform]={...next[platform],repoUrl:item.repoUrl};});return next;});
+    setPlatformMetadata((current)=>{const next={...current};(["Android","Windows","Linux"] as AppPlatform[]).forEach(platform=>{const item=app.platforms.find(entry=>entry.platform===platform);if(item?.metadata)next[platform]={repoUrl:item.repoUrl||app.repoUrl||app.link||"",title:item.metadata.title||"",shortDescription:item.metadata.shortDescription||"",fullDescription:item.metadata.fullDescription||"",changelog:item.metadata.changelog||"",screenshotsText:(item.metadata.screenshots||[]).join("\\n"),featureGraphicUrl:item.metadata.featureGraphic||""};else if(item?.repoUrl)next[platform]={...next[platform],repoUrl:item.repoUrl};});return next;});
     setAndroidDownloadUrl(app.platforms.find((item)=>item.platform==="Android")?.downloadUrl||""); setWindowsDownloadUrl(app.platforms.find((item)=>item.platform==="Windows")?.downloadUrl||"");
     setLinuxDebUrl(app.platforms.find((item)=>item.packageType==="deb")?.downloadUrl||""); setLinuxRpmUrl(app.platforms.find((item)=>item.packageType==="rpm")?.downloadUrl||""); setAppPackageName(app.packageName); setAppVersionCode(app.versionCode);
     setWebsiteUrl(app.websiteUrl); setIssueTrackerUrl(app.issueTrackerUrl); setTranslationUrl(app.translationUrl);
@@ -604,6 +609,7 @@ export default function LumaDeveloperPortal() {
         fullDescription: closedFullDescription.trim(),
         changelog: closedChangelog.trim(),
         screenshots: closedScreenshots,
+        featureGraphic: null,
         locale: "en-US",
         branch: "manual",
       };
@@ -619,6 +625,7 @@ export default function LumaDeveloperPortal() {
           fullDescription: primary.fullDescription.trim(),
           changelog: primary.changelog.trim(),
           screenshots: primary.screenshotsText.split(/\\r?\\n/).map((value) => value.trim()).filter(Boolean),
+          featureGraphic: null,
           locale: "en-US",
           branch: "manual",
         };

@@ -5,8 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { UserResponse } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 
-const PRODUCTION_ORIGIN = "https://luma.free-time.me";
-
 function ProviderIcon({ provider }: { provider: "github" | "gitlab" }) {
   return (
     <img
@@ -23,10 +21,7 @@ function safeNext(value: string | null) {
 }
 
 function authOrigin() {
-  if (typeof window === "undefined") return PRODUCTION_ORIGIN;
-  return window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? window.location.origin
-    : PRODUCTION_ORIGIN;
+  return typeof window === "undefined" ? "" : window.location.origin;
 }
 
 function LoginContent() {

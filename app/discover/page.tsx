@@ -457,21 +457,14 @@ function DiscoverContent() {
               const name = app.name?.trim() || app.package_name || "Untitled app";
               const iconSrc = resolveAppIcon(app);
               const featureGraphic = featureGraphics[app.id] || null;
-              const metric = metrics[app.id];
-              const ageDays = app.created_at
-                ? Math.floor((Date.now() - new Date(app.created_at).getTime()) / 86400000)
-                : 9999;
-              const updateDays = app.updated_at
-                ? Math.floor((Date.now() - new Date(app.updated_at).getTime()) / 86400000)
-                : 9999;
 
               return (
                 <Link
                   key={app.id}
                   href={`/discover/${encodeURIComponent(app.package_name || app.id)}`}
-                  className="group ui-panel p-4 transition-colors hover:border-indigo-400/30 hover:bg-[#151f2b]"
+                  className="group block overflow-hidden rounded-2xl border border-white/10 bg-[#101722] transition duration-300 hover:border-indigo-400/30 hover:bg-[#131d29]"
                 >
-                  <div className="aspect-[1024/500] overflow-hidden rounded-2xl border border-slate-700 bg-slate-950">
+                  <div className="aspect-[1024/500] w-full overflow-hidden bg-slate-950">
                     {featureGraphic ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -480,53 +473,40 @@ function DiscoverContent() {
                         className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.01]"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-900 to-slate-950 text-sm font-semibold text-slate-500">
+                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-900 to-slate-950 text-sm font-medium text-slate-600">
                         No feature graphic
                       </div>
                     )}
                   </div>
 
-                  <div className="mt-4 flex items-start gap-4">
+                  <div className="flex items-center gap-4 p-4">
                     <div className="relative shrink-0">
                       <div
                         aria-hidden="true"
-                        className="absolute inset-1 rounded-2xl bg-indigo-500/30 blur-xl transition duration-300 group-hover:bg-indigo-400/40"
+                        className="absolute inset-1 rounded-2xl bg-indigo-500/25 blur-xl transition duration-300 group-hover:bg-indigo-400/35"
                       />
                       {iconSrc ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={iconSrc}
                           alt={`${name} icon`}
-                          className="relative h-14 w-14 rounded-2xl border border-indigo-300/20 bg-slate-950 object-cover shadow-[0_0_24px_rgba(99,102,241,0.20)]"
+                          className="relative h-16 w-16 rounded-2xl border border-indigo-300/20 bg-slate-950 object-cover shadow-[0_0_24px_rgba(99,102,241,0.18)]"
                         />
                       ) : (
-                        <div className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-indigo-300/20 bg-slate-950 text-sm font-bold text-indigo-200 shadow-[0_0_24px_rgba(99,102,241,0.20)]">
+                        <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-indigo-300/20 bg-slate-950 text-sm font-bold text-indigo-200 shadow-[0_0_24px_rgba(99,102,241,0.18)]">
                           {appInitials(name) || "A"}
                         </div>
                       )}
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <h3 className="truncate text-lg font-semibold text-white group-hover:text-indigo-200">{name}</h3>
-                      <p className="mt-1 truncate text-xs text-slate-500">{app.developer_name || app.package_name || "Unknown developer"}</p>
+                      <h3 className="truncate text-lg font-semibold text-white transition group-hover:text-indigo-200">
+                        {name}
+                      </h3>
+                      <p className="mt-1 truncate text-sm text-slate-400">
+                        {app.developer_name || app.package_name || "Unknown developer"}
+                      </p>
                     </div>
-                  </div>
-
-                  <p className="mt-4 line-clamp-3 min-h-15 text-sm leading-5 text-slate-400">
-                    {app.short_description || app.description || "No description available."}
-                  </p>
-
-                  <div className="mt-4 flex flex-wrap gap-2 text-xs">{ageDays<=14&&<span className="rounded-full bg-sky-500/10 px-2.5 py-1 text-sky-200">New</span>}{ageDays>14&&updateDays<=14&&<span className="rounded-full bg-violet-500/10 px-2.5 py-1 text-violet-200">Recently updated</span>}{(metric?.platforms||[]).map(item=><span key={item} className="rounded-full border border-slate-700 px-2.5 py-1 text-slate-300">{item}</span>)}</div>
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs"><span className="rounded-full border border-slate-700 bg-slate-950/40 px-2.5 py-1 text-slate-300">↓ {Number(metric?.total_downloads||0).toLocaleString()}</span>{Number(metric?.recent_downloads||0)>0&&<span className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-indigo-200">↗ {Number(metric.recent_downloads).toLocaleString()} / 30d</span>}</div>
-
-                  <div className="mt-5 flex flex-wrap gap-2 text-xs">
-                    {app.version && <span className="rounded-full border border-slate-700 px-2.5 py-1 text-slate-300">v{app.version}</span>}
-                    {app.license_type && <span className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-indigo-200">{app.license_type}</span>}
-                    <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-emerald-200">Open source</span>
-                  </div>
-
-                  <div className="mt-5 border-t border-slate-800 pt-4 text-right text-xs font-medium text-indigo-300 group-hover:text-indigo-200">
-                    View app details →
                   </div>
                 </Link>
               );

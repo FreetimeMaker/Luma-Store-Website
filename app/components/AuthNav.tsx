@@ -11,9 +11,24 @@ export default function AuthNav() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
   const profileMenuRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
+
+  function handleSearchSubmit() {
+    const trimmed = searchValue.trim();
+    if (!trimmed) {
+      setShowSearch(false);
+      return;
+    }
+
+    router.push(`/discover?search=${encodeURIComponent(trimmed)}`);
+    setShowSearch(false);
+    setSearchValue("");
+  }
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }: UserResponse) => {
@@ -33,13 +48,20 @@ export default function AuthNav() {
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
-      if (!profileMenuRef.current?.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (!profileMenuRef.current?.contains(target)) {
         setProfileMenuOpen(false);
+      }
+      if (showSearch && searchRef.current && !searchRef.current.contains(target)) {
+        setShowSearch(false);
       }
     }
 
     function handleEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") setProfileMenuOpen(false);
+      if (event.key === "Escape") {
+        setProfileMenuOpen(false);
+        setShowSearch(false);
+      }
     }
 
     document.addEventListener("mousedown", handlePointerDown);
@@ -49,7 +71,7 @@ export default function AuthNav() {
       document.removeEventListener("mousedown", handlePointerDown);
       document.removeEventListener("keydown", handleEscape);
     };
-  }, []);
+  }, [showSearch]);
 
   async function handleLogout() {
     setProfileMenuOpen(false);
@@ -73,33 +95,96 @@ export default function AuthNav() {
     .toUpperCase();
 
   return (
-    <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4">
+    <nav className="relative flex w-full items-start justify-between gap-4">
       <Link href="/" className="group flex min-w-0 items-center gap-3" aria-label="Luma Store home">
         <Image
-          src="/android-chrome-192x192.png"
+          src="/apple-touch-icon.png"
           alt="Luma Store"
-          width={36}
-          height={36}
+          width={40}
+          height={40}
           priority
-          className="h-9 w-9 shrink-0 rounded-lg object-cover ring-1 ring-white/10"
+          className="h-10 w-10 shrink-0 object-cover"
         />
         <div className="min-w-0">
-          <div className="truncate text-sm font-semibold tracking-tight text-white transition-colors group-hover:text-indigo-200 sm:text-base">Luma Store</div>
-          <div className="hidden text-[11px] text-slate-500 sm:block">Open-source app distribution</div>
+          <div className="truncate text-[22px] font-semibold tracking-tight text-white transition-colors group-hover:text-indigo-200" style={{ fontFamily: "'Google Sans', sans-serif" }}>Luma Store</div>
+          <div className="hidden text-[11px] text-slate-500 sm:block"></div>
         </div>
       </Link>
 
-      <div className="flex items-center gap-1.5">
-        <Link
-          href="/discover"
-          aria-label="Discover apps"
-          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/[0.04] hover:text-white"
+      <div className="ml-auto flex items-center gap-1.5">
+        {showSearch ? (
+          <div ref={searchRef} className="absolute left-1/2 top-1/2 flex w-[42rem] max-w-[70vw] -translate-x-1/2 -translate-y-1/2 items-center overflow-hidden rounded-md border border-white/10 bg-[#0f172a] shadow-lg shadow-black/20">
+            <Image
+              src="/search.png"
+              alt="Search"
+              width={16}
+              height={16}
+              className="ml-3 h-4 w-4 shrink-0 object-contain"
+            />
+            <input
+              type="text"
+              value={searchValue}
+              onChange={(event) => setSearchValue(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  handleSearchSubmit();
+                }
+              }}
+              onBlur={() => window.setTimeout(() => {
+                if (!searchRef.current?.contains(document.activeElement)) {
+                  setShowSearch(false);
+                  setSearchValue("");
+                }
+              }, 80)}
+              placeholder="Search apps"
+              aria-label="Search apps"
+              autoFocus
+              className="w-full border-0 bg-transparent px-3 py-3 text-base text-white placeholder:text-slate-500 focus:outline-none"
+              style={{ fontFamily: "'Google Sans', sans-serif" }}
+            />
+            <button
+              type="button"
+              aria-label="Close search"
+              onClick={() => {
+                setShowSearch(false);
+                setSearchValue("");
+              }}
+              className="mr-3 text-xl leading-none text-slate-400"
+            >
+              ×
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            aria-label="Discover apps"
+            onClick={() => setShowSearch(true)}
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/[0.04] hover:text-white"
+          >
+            <Image
+              src="/search.png"
+              alt="Search"
+              width={16}
+              height={16}
+              className="h-4 w-4 shrink-0 object-contain"
+            />
+          </button>
+        )}
+
+        <button
+          type="button"
+          aria-label="Help"
+          className="flex items-center gap-2 rounded-lg px-3.5 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/[0.04] hover:text-white"
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8">
-            <circle cx="11" cy="11" r="6.5" />
-            <path strokeLinecap="round" d="m16 16 4 4" />
-          </svg>
-        </Link>
+          <Image
+            src="/helpp.png"
+            alt="Help"
+            width={20}
+            height={20}
+            className="h-4.5 w-4.5 object-contain"
+          />
+        </button>
 
         {loading ? (
           <span className="inline text-sm text-slate-500">Checking login...</span>

@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { fetchFastlaneIconUrl } from "@/lib/luma/fastlane";
 
 type StoreApp = {
   id: string;
@@ -13,6 +15,7 @@ type StoreApp = {
   icon_url: string | null;
   version: string | null;
   package_name: string | null;
+  repo_url: string | null;
   license_type: string | null;
   subcategory: string | null;
   categories: string[];
@@ -46,8 +49,9 @@ function appInitials(name: string) {
 
 export default function DiscoverPage() {
   const supabase = useMemo(() => createClient(), []);
+  const searchParams = useSearchParams();
   const [apps, setApps] = useState<StoreApp[]>([]);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(searchParams.get("search") ?? "");
   const [license, setLicense] = useState("all");
   const [category, setCategory] = useState("all");
   const [developer, setDeveloper] = useState("all");
@@ -57,7 +61,15 @@ export default function DiscoverPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [recentApps, setRecentApps] = useState<RecentApp[]>([]);
+  const [fastlaneIconMap, setFastlaneIconMap] = useState<Record<string, string>>({});
   const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const query = searchParams.get("search") ?? "";
+    if (query) {
+      setSearch(query);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     try {
@@ -216,6 +228,37 @@ export default function DiscoverPage() {
     [apps],
   );
 
+  const hasActiveSearch = search.trim().length > 0;
+
+  const resolveAppIcon = (app: StoreApp) => app.icon_url || fastlaneIconMap[app.id] || null;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadFastlaneIcons() {
+      const missing = apps.filter((app) => !app.icon_url && app.repo_url);
+      if (!missing.length) {
+        if (!cancelled) setFastlaneIconMap({});
+        return;
+      }
+
+      const nextMap: Record<string, string> = {};
+      for (const app of missing) {
+        const iconUrl = await fetchFastlaneIconUrl(app.repo_url);
+        if (!cancelled && iconUrl) {
+          nextMap[app.id] = iconUrl;
+        }
+      }
+
+      if (!cancelled) setFastlaneIconMap(nextMap);
+    }
+
+    void loadFastlaneIcons();
+    return () => {
+      cancelled = true;
+    };
+  }, [apps]);
+
   const filteredApps = useMemo(() => {
     const query = search.trim().toLowerCase();
 
@@ -230,80 +273,125 @@ export default function DiscoverPage() {
       if (!matchesLicense || !matchesCategory || !matchesDeveloper || !matchesPlatform) return false;
       if (!query) return true;
 
-      return JSON.stringify(app).toLowerCase().includes(query);
+      const haystack = [
+        app.name || "",
+        app.package_name || "",
+        app.developer_name || "",
+        app.subcategory || "",
+        ...(Array.isArray(app.categories) ? app.categories : []),
+        app.short_description || "",
+        app.description || "",
+      ].join(" ").toLowerCase();
+
+      return haystack.includes(query);
     });
-    return result.sort((a, b) => {
-      const aMetric = metrics[a.id];
-      const bMetric = metrics[b.id];
 
-      if (sort === "trending") {
-        return (
-          Number(bMetric?.recent_downloads || 0)
-          - Number(aMetric?.recent_downloads || 0)
-          || Number(bMetric?.total_downloads || 0)
-          - Number(aMetric?.total_downloads || 0)
-        );
-      }
+    return result
+      .map((app) => {
+        if (!query) {
+          return { app, relevance: 0 };
+        }
 
-      if (sort === "downloads") {
-        return Number(bMetric?.total_downloads || 0)
-          - Number(aMetric?.total_downloads || 0);
-      }
+        const name = (app.name || "").toLowerCase();
+        const packageName = (app.package_name || "").toLowerCase();
+        const developerName = (app.developer_name || "").toLowerCase();
+        const categoryText = [app.subcategory || "", ...(Array.isArray(app.categories) ? app.categories : [])].join(" ").toLowerCase();
+        const description = [app.short_description || "", app.description || ""].join(" ").toLowerCase();
 
-      if (sort === "new") {
-        return new Date(b.created_at || 0).getTime()
-          - new Date(a.created_at || 0).getTime();
-      }
+        let relevance = 0;
 
-      if (sort === "updated") {
-        return new Date(b.updated_at || 0).getTime()
-          - new Date(a.updated_at || 0).getTime();
-      }
+        if (name === query || packageName === query) relevance += 100;
+        if (name.startsWith(query) || packageName.startsWith(query)) relevance += 60;
+        if (name.includes(query) || packageName.includes(query)) relevance += 35;
+        if (developerName.includes(query)) relevance += 20;
+        if (categoryText.includes(query)) relevance += 15;
+        if (description.includes(query)) relevance += 10;
 
-      return (a.name || "").localeCompare(b.name || "");
-    });
+        return { app, relevance };
+      })
+      .filter(({ relevance }) => query ? relevance > 0 : true)
+      .sort((a, b) => {
+        const relevanceDiff = b.relevance - a.relevance;
+        if (relevanceDiff !== 0) return relevanceDiff;
+
+        const aMetric = metrics[a.app.id];
+        const bMetric = metrics[b.app.id];
+
+        if (sort === "trending") {
+          return (
+            Number(bMetric?.recent_downloads || 0)
+            - Number(aMetric?.recent_downloads || 0)
+            || Number(bMetric?.total_downloads || 0)
+            - Number(aMetric?.total_downloads || 0)
+          );
+        }
+
+        if (sort === "downloads") {
+          return Number(bMetric?.total_downloads || 0)
+            - Number(aMetric?.total_downloads || 0);
+        }
+
+        if (sort === "new") {
+          return new Date(b.app.created_at || 0).getTime()
+            - new Date(a.app.created_at || 0).getTime();
+        }
+
+        if (sort === "updated") {
+          return new Date(b.app.updated_at || 0).getTime()
+            - new Date(a.app.updated_at || 0).getTime();
+        }
+
+        return (a.app.name || "").localeCompare(b.app.name || "");
+      })
+      .map(({ app }) => app);
   }, [apps, category, developer, license, search, platform, sort, metrics]);
 
   return (
     <div className="glass-page mx-auto max-w-6xl space-y-8 pb-20 pt-4 sm:pt-8">
-      <section className="ui-panel p-5 sm:p-7">
-        <div className="max-w-3xl">
-          <p className="ui-eyebrow">Catalog</p>
-          <h1 className="ui-title mt-2 text-3xl sm:text-4xl">Discover apps</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base">
-            Search published apps by platform, developer, category or license.
-          </p>
+      {!loading && !error && (
+        <div className="space-y-5">
+          {!hasActiveSearch && <Collection title="Trending now" apps={trending} />}
+          {!hasActiveSearch && <Collection title="New this week" apps={newThisWeek} />}
+          {!hasActiveSearch && <Collection title="Recently updated" apps={recentlyUpdated} />}
+
+          {!hasActiveSearch && recentApps.length > 0 && (
+            <section>
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-white">Recently viewed</h2>
+                <button
+                  type="button"
+                  onClick={() => {
+                    localStorage.removeItem("luma-recent-apps");
+                    setRecentApps([]);
+                  }}
+                  className="text-xs text-slate-500 hover:text-white"
+                >
+                  Clear
+                </button>
+              </div>
+
+              <div className="flex gap-3 overflow-x-auto pb-2">
+                {recentApps.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={`/discover/${encodeURIComponent(item.package_name || item.id)}`}
+                    className="glass-action flex min-w-48 items-center gap-3 p-3"
+                  >
+                    {item.icon_url ? (
+                      <img src={item.icon_url} alt="" className="h-10 w-10 rounded-xl object-cover" />
+                    ) : (
+                      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/10">
+                        {appInitials(item.name)}
+                      </span>
+                    )}
+                    <span className="truncate text-sm font-medium">{item.name}</span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
-
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search apps..."
-            aria-label="Search apps"
-            className="glass-input min-h-11 text-sm"
-          />
-          <select value={category} onChange={(event) => setCategory(event.target.value)} className="glass-input min-h-11 text-sm">
-            <option value="all">All categories</option>
-            {categories.map((item) => <option key={item} value={item}>{item}</option>)}
-          </select>
-
-          <select value={developer} onChange={(event) => setDeveloper(event.target.value)} className="glass-input min-h-11 text-sm">
-            <option value="all">All developers</option>
-            {developers.map((item) => <option key={item} value={item}>{item}</option>)}
-          </select>
-
-          <select value={license} onChange={(event) => setLicense(event.target.value)} className="glass-input min-h-11 text-sm">
-            <option value="all">All licenses</option>
-            {licenses.map((item) => <option key={item} value={item}>{item}</option>)}
-          </select>
-          <select value={platform} onChange={(e)=>setPlatform(e.target.value)} className="glass-input min-h-11 text-sm"><option value="all">All platforms</option>{platforms.map(item=><option key={item} value={item}>{item}</option>)}</select>
-          <select value={sort} onChange={(e)=>setSort(e.target.value)} className="glass-input min-h-11 text-sm"><option value="trending">Trending</option><option value="new">New releases</option><option value="updated">Recently updated</option><option value="downloads">Most downloaded</option><option value="name">Name</option></select>
-          {hasFilters && <button type="button" onClick={resetFilters} className="ui-button-secondary min-h-11 px-4 py-2.5 text-sm">Clear filters</button>}
-        </div>
-      </section>
-
-      {!loading&&!error&&<div className="space-y-5"><Collection title="Trending now" apps={trending}/><Collection title="New this week" apps={newThisWeek}/><Collection title="Recently updated" apps={recentlyUpdated}/>{recentApps.length>0&&<section><div className="mb-3 flex items-center justify-between"><h2 className="text-lg font-semibold text-white">Recently viewed</h2><button type="button" onClick={()=>{localStorage.removeItem("luma-recent-apps");setRecentApps([])}} className="text-xs text-slate-500 hover:text-white">Clear</button></div><div className="flex gap-3 overflow-x-auto pb-2">{recentApps.map(item=><Link key={item.id} href={`/discover/${encodeURIComponent(item.package_name||item.id)}`} className="glass-action flex min-w-48 items-center gap-3 p-3">{item.icon_url?<img src={item.icon_url} alt="" className="h-10 w-10 rounded-xl object-cover"/>:<span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/10">{appInitials(item.name)}</span>}<span className="truncate text-sm font-medium">{item.name}</span></Link>)}</div></section>}</div>}
+      )}
 
       {loading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -317,17 +405,26 @@ export default function DiscoverPage() {
         <div className="ui-empty sm:p-12"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-2xl">⌕</div><h2 className="mt-4 text-lg font-semibold text-white">No apps found</h2><p className="mt-2 text-sm text-slate-400">Try another search or clear the active filters.</p>{hasFilters&&<button type="button" onClick={resetFilters} className="ui-button-primary mt-5 px-4 py-2 text-sm">Clear filters</button>}</div>
       ) : (
         <section>
-          <div className="mb-4 flex items-end justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Catalog</p>
-              <h2 className="mt-1 text-2xl font-bold text-white">{sort==="trending"?"Trending":sort==="new"?"New releases":sort==="updated"?"Recently updated":sort==="downloads"?"Most downloaded":"All apps"}</h2>
+          {!hasActiveSearch && (
+            <div className="mb-4 flex items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Catalog</p>
+                <h2 className="mt-1 text-2xl font-bold text-white">{sort==="trending"?"Trending":sort==="new"?"New releases":sort==="updated"?"Recently updated":sort==="downloads"?"Most downloaded":"All apps"}</h2>
+              </div>
+              <span className="text-sm text-slate-500">{filteredApps.length} apps</span>
             </div>
-            <span className="text-sm text-slate-500">{filteredApps.length} apps</span>
-          </div>
+          )}
+
+          {hasActiveSearch && (
+            <div className="mb-4 flex justify-end">
+              <span className="text-sm text-slate-500">{filteredApps.length} apps</span>
+            </div>
+          )}
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredApps.map((app) => {
               const name = app.name?.trim() || app.package_name || "Untitled app";
+              const iconSrc = resolveAppIcon(app);
               const metric = metrics[app.id];
               const ageDays = app.created_at
                 ? Math.floor((Date.now() - new Date(app.created_at).getTime()) / 86400000)
@@ -340,12 +437,31 @@ export default function DiscoverPage() {
                 <Link
                   key={app.id}
                   href={`/discover/${encodeURIComponent(app.package_name || app.id)}`}
-                  className="group ui-panel p-5 transition-colors hover:border-indigo-400/30 hover:bg-[#151f2b]"
+                  className="group ui-panel p-4 transition-colors hover:border-indigo-400/30 hover:bg-[#151f2b]"
                 >
-                  <div className="flex items-start gap-4">
-                    {app.icon_url ? (
+                  <div className="overflow-hidden rounded-2xl border border-slate-700 bg-slate-950">
+                    {iconSrc ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={app.icon_url} alt={`${name} icon`} className="h-14 w-14 shrink-0 rounded-2xl border border-slate-700 bg-slate-950 object-cover" />
+                      <img
+                        src={iconSrc}
+                        alt={`${name} thumbnail`}
+                        className="block rounded-2xl object-cover"
+                        style={{ width: "350.33px", height: "197.06px" }}
+                      />
+                    ) : (
+                      <div
+                        className="flex items-center justify-center rounded-2xl text-sm font-bold text-indigo-200"
+                        style={{ width: "350.33px", height: "197.06px" }}
+                      >
+                        {appInitials(name) || "A"}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-4 flex items-start gap-4">
+                    {iconSrc ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={iconSrc} alt={`${name} icon`} className="h-14 w-14 shrink-0 rounded-2xl border border-slate-700 bg-slate-950 object-cover" />
                     ) : (
                       <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-slate-700 bg-slate-950 text-sm font-bold text-indigo-200">
                         {appInitials(name) || "A"}

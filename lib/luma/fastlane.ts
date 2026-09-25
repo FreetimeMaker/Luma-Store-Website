@@ -66,6 +66,45 @@ async function fetchPhoneScreenshots(owner: string, repo: string, branch: string
   }
 }
 
+export async function fetchFastlaneIconUrl(projectUrl: string | null | undefined): Promise<string | null> {
+  if (!projectUrl) return null;
+
+  try {
+    const { owner, repo, branches } = githubRepository(projectUrl);
+    const locales = ["en-US", "en-GB", "de-DE", "en", "de"];
+    const preferredNames = ["icon.png", "icon.webp", "icon.jpg", "icon.jpeg", "featureGraphic.png", "featureGraphic.jpg"];
+
+    for (const branch of branches) {
+      for (const locale of locales) {
+        const imagesPath = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/fastlane/metadata/android/${locale}/images?ref=${encodeURIComponent(branch)}`;
+        const response = await fetch(imagesPath, {
+          cache: "no-store",
+          headers: { Accept: "application/vnd.github+json" },
+        });
+
+        if (!response.ok) continue;
+
+        const payload = await response.json();
+        if (!Array.isArray(payload)) continue;
+
+        const match = payload.find((item) => {
+          if (!item || typeof item !== "object") return false;
+          const name = typeof item.name === "string" ? item.name.toLowerCase() : "";
+          return preferredNames.includes(name);
+        });
+
+        if (match && typeof match.download_url === "string" && match.download_url.length > 0) {
+          return match.download_url;
+        }
+      }
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
 export async function fetchFastlaneMetadata(projectUrl: string, versionCode: string): Promise<FastlaneMetadata> {
   const numericVersionCode = Number(versionCode);
   if (!Number.isInteger(numericVersionCode) || numericVersionCode <= 0) {

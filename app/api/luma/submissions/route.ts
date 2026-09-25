@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { inspectSourceZip } from "@/lib/luma/sourceArchive";
 
 type SubmissionStatus = "Draft" | "Pending" | "In Review" | "Changes Requested" | "Approved" | "Rejected" | "Archived";
 
@@ -66,13 +67,15 @@ export async function POST(request: Request) {
     submission.platform = platforms[0]?.platform ?? submission.platform ?? null;
     submission.download_url = platforms[0]?.downloadUrl ?? submission.download_url ?? null;
 
-    if (submission.closed_source === true || submission.license_type === "Proprietary") {
-      return NextResponse.json({ error: "Luma Store submissions must be open source." }, { status: 400 });
-    }
+    const closedSource = submission.closed_source === true || submission.license_type === "Proprietary";
+    submission.closed_source = closedSource;
+    submission.license_type = closedSource ? "Proprietary" : submission.license_type;
 
     if (isDraft) {
       const draftStep = Math.max(1, Math.min(3, Number(body.draftStep) || 1));
-      const safeDraft = { ...submission, name: typeof submission.name === "string" && submission.name.trim() ? submission.name : "Untitled draft", platform: typeof submission.platform === "string" && submission.platform.trim() ? submission.platform : null, link: typeof submission.link === "string" && submission.link.trim() ? submission.link.trim() : null, repo_url: typeof submission.repo_url === "string" && submission.repo_url.trim() ? submission.repo_url.trim() : null, source_code_url: typeof submission.source_code_url === "string" && submission.source_code_url.trim() ? submission.source_code_url.trim() : null, closed_source: false, status: "Draft", draft_step: draftStep, draft_updated_at: new Date().toISOString(), status_updated_at: new Date().toISOString() };
+      const draftArchivePath = typeof submission.source_archive_path === "string" ? submission.source_archive_path.trim() : "";
+      const validDraftArchivePath = draftArchivePath.startsWith(`developer-source/${authData.user.id}/`) && draftArchivePath.toLowerCase().endsWith(".zip");
+      const safeDraft = { ...submission, name: typeof submission.name === "string" && submission.name.trim() ? submission.name : "Untitled draft", platform: typeof submission.platform === "string" && submission.platform.trim() ? submission.platform : null, link: closedSource ? null : (typeof submission.link === "string" && submission.link.trim() ? submission.link.trim() : null), repo_url: closedSource ? null : (typeof submission.repo_url === "string" && submission.repo_url.trim() ? submission.repo_url.trim() : null), source_code_url: closedSource ? null : (typeof submission.source_code_url === "string" && submission.source_code_url.trim() ? submission.source_code_url.trim() : null), closed_source: closedSource, license_type: closedSource ? "Proprietary" : submission.license_type, source_archive_path: closedSource && validDraftArchivePath ? draftArchivePath : null, source_archive_name: closedSource && validDraftArchivePath && typeof submission.source_archive_name === "string" ? submission.source_archive_name.trim() : null, source_archive_size_bytes: closedSource && validDraftArchivePath ? Number(submission.source_archive_size_bytes || 0) || null : null, source_archive_verified: false, source_archive_review_status: closedSource && validDraftArchivePath ? "Pending" : "Not Required", status: "Draft", draft_step: draftStep, draft_updated_at: new Date().toISOString(), status_updated_at: new Date().toISOString() };
       const draftResult = body.editingId
         ? await supabase.from("luma_submissions").update(safeDraft).eq("id", body.editingId).eq("user_id", authData.user.id).eq("status", "Draft").select().single()
         : await supabase.from("luma_submissions").insert([{ ...safeDraft, user_id: authData.user.id, submitted_at: new Date().toISOString() }]).select().single();
@@ -80,75 +83,125 @@ export async function POST(request: Request) {
       return NextResponse.json({ submission: draftResult.data });
     }
 
-    if (!githubToken) return NextResponse.json({ error: "GitHub authentication is required." }, { status: 401 });
-    const separatePlatformRepos = submission.separate_platform_repos === true;
-    submission.separate_platform_repos = separatePlatformRepos;
-    if (separatePlatformRepos) {
-      const uniquePlatforms = [...new Set(platforms.map((item) => item.platform))];
-      for (const platform of uniquePlatforms) {
-        const entries = platforms.filter((item) => item.platform === platform);
-        const repoUrl = entries.find((item) => item.repoUrl)?.repoUrl;
-        const metadata = entries.find((item) => item.metadata)?.metadata as Record<string, unknown> | undefined;
-        if (!repoUrl) return NextResponse.json({ error: `${platform} requires its own repository URL when separate repositories are enabled.` }, { status: 400 });
-        try { parseGitHubRepository(repoUrl); } catch (error) { return NextResponse.json({ error: `${platform}: ${error instanceof Error ? error.message : "Invalid repository URL."}` }, { status: 400 }); }
-        const screenshots = Array.isArray(metadata?.screenshots) ? metadata.screenshots.filter((value) => typeof value === "string" && value.trim()) : [];
-        if (!metadata || !String(metadata.title??"").trim() || !String(metadata.shortDescription??"").trim() || !String(metadata.fullDescription??"").trim() || !String(metadata.changelog??"").trim() || screenshots.length === 0) {
-          return NextResponse.json({ error: `${platform} requires complete store metadata and at least one screenshot when separate repositories are enabled.` }, { status: 400 });
+    let safeSubmission: Record<string, unknown>;
+
+    if (closedSource) {
+      const sourceArchivePath = typeof submission.source_archive_path === "string" ? submission.source_archive_path.trim() : "";
+      const sourceArchiveName = typeof submission.source_archive_name === "string" ? submission.source_archive_name.trim() : "";
+      const expectedPrefix = `developer-source/${authData.user.id}/`;
+      if (!sourceArchivePath.startsWith(expectedPrefix) || !sourceArchivePath.toLowerCase().endsWith(".zip")) {
+        return NextResponse.json({ error: "Closed-source submissions require a private source-code ZIP upload." }, { status: 400 });
+      }
+
+      const { data: sourceBlob, error: sourceError } = await supabase.storage
+        .from("luma-source-archives")
+        .download(sourceArchivePath);
+      if (sourceError || !sourceBlob) {
+        return NextResponse.json({ error: "The private source ZIP could not be verified." }, { status: 400 });
+      }
+      if (sourceBlob.size <= 0 || sourceBlob.size > 100 * 1024 * 1024) {
+        return NextResponse.json({ error: "The private source ZIP must be no larger than 100 MB." }, { status: 400 });
+      }
+
+      try {
+        inspectSourceZip(new Uint8Array(await sourceBlob.arrayBuffer()));
+      } catch (error) {
+        return NextResponse.json({ error: error instanceof Error ? error.message : "The private source ZIP is invalid." }, { status: 400 });
+      }
+
+      safeSubmission = {
+        ...submission,
+        link: typeof submission.website_url === "string" && submission.website_url.trim() ? submission.website_url.trim() : null,
+        repo_url: null,
+        source_code_url: null,
+        separate_platform_repos: false,
+        closed_source: true,
+        license_type: "Proprietary",
+        source_archive_path: sourceArchivePath,
+        source_archive_name: sourceArchiveName || sourceArchivePath.split("/").pop() || "source.zip",
+        source_archive_size_bytes: sourceBlob.size,
+        source_archive_verified: true,
+        source_archive_review_status: "Pending",
+        source_archive_reviewed_at: null,
+        source_archive_review_summary: null,
+        status: "Pending",
+        status_updated_at: new Date().toISOString(),
+      };
+    } else {
+      if (!githubToken) return NextResponse.json({ error: "GitHub authentication is required for open-source submissions." }, { status: 401 });
+
+      const separatePlatformRepos = submission.separate_platform_repos === true;
+      submission.separate_platform_repos = separatePlatformRepos;
+      if (separatePlatformRepos) {
+        const uniquePlatforms = [...new Set(platforms.map((item) => item.platform))];
+        for (const platform of uniquePlatforms) {
+          const entries = platforms.filter((item) => item.platform === platform);
+          const repoUrl = entries.find((item) => item.repoUrl)?.repoUrl;
+          const metadata = entries.find((item) => item.metadata)?.metadata as Record<string, unknown> | undefined;
+          if (!repoUrl) return NextResponse.json({ error: `${platform} requires its own repository URL when separate repositories are enabled.` }, { status: 400 });
+          try { parseGitHubRepository(repoUrl); } catch (error) { return NextResponse.json({ error: `${platform}: ${error instanceof Error ? error.message : "Invalid repository URL."}` }, { status: 400 }); }
+          const screenshots = Array.isArray(metadata?.screenshots) ? metadata.screenshots.filter((value) => typeof value === "string" && value.trim()) : [];
+          if (!metadata || !String(metadata.title??"").trim() || !String(metadata.shortDescription??"").trim() || !String(metadata.fullDescription??"").trim() || !String(metadata.changelog??"").trim() || screenshots.length === 0) {
+            return NextResponse.json({ error: `${platform} requires complete store metadata and at least one screenshot when separate repositories are enabled.` }, { status: 400 });
+          }
         }
       }
-    }
-    const primaryRepoUrl = separatePlatformRepos ? platforms.find((item) => item.repoUrl)?.repoUrl : String(submission.repo_url ?? submission.link ?? "");
-    const { owner, repo } = parseGitHubRepository(primaryRepoUrl);
-    const [githubUser, githubRepo] = await Promise.all([
-      githubJson("/user", githubToken),
-      githubJson(`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`, githubToken),
-    ]) as [Record<string, unknown>, Record<string, unknown>];
 
-    if (githubRepo.private === true) {
-      return NextResponse.json({ error: "The submitted repository must be public." }, { status: 400 });
-    }
+      const primaryRepoUrl = separatePlatformRepos ? platforms.find((item) => item.repoUrl)?.repoUrl : String(submission.repo_url ?? submission.link ?? "");
+      const { owner, repo } = parseGitHubRepository(primaryRepoUrl);
+      const [githubUser, githubRepo] = await Promise.all([
+        githubJson("/user", githubToken),
+        githubJson(`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`, githubToken),
+      ]) as [Record<string, unknown>, Record<string, unknown>];
 
-    const login = typeof githubUser.login === "string" ? githubUser.login : "";
-    const repoOwner = githubRepo.owner && typeof githubRepo.owner === "object" && "login" in githubRepo.owner
-      ? String((githubRepo.owner as { login?: unknown }).login ?? "")
-      : "";
-    const permissions = githubRepo.permissions && typeof githubRepo.permissions === "object"
-      ? githubRepo.permissions as Record<string, unknown>
-      : {};
-    const ownsRepository = login.length > 0 && repoOwner.toLowerCase() === login.toLowerCase();
-    const canWrite = permissions.push === true || permissions.maintain === true || permissions.admin === true;
+      if (githubRepo.private === true) return NextResponse.json({ error: "The submitted repository must be public." }, { status: 400 });
 
-    if (!ownsRepository && !canWrite) {
-      return NextResponse.json({ error: "Your GitHub account must own this repository or have write access to it." }, { status: 403 });
-    }
+      const login = typeof githubUser.login === "string" ? githubUser.login : "";
+      const repoOwner = githubRepo.owner && typeof githubRepo.owner === "object" && "login" in githubRepo.owner
+        ? String((githubRepo.owner as { login?: unknown }).login ?? "")
+        : "";
+      const permissions = githubRepo.permissions && typeof githubRepo.permissions === "object"
+        ? githubRepo.permissions as Record<string, unknown>
+        : {};
+      const ownsRepository = login.length > 0 && repoOwner.toLowerCase() === login.toLowerCase();
+      const canWrite = permissions.push === true || permissions.maintain === true || permissions.admin === true;
+      if (!ownsRepository && !canWrite) return NextResponse.json({ error: "Your GitHub account must own this repository or have write access to it." }, { status: 403 });
 
-    if (separatePlatformRepos) {
-      const checked = new Set<string>([`https://github.com/${owner}/${repo}`.toLowerCase()]);
-      for (const item of platforms) {
-        if (!item.repoUrl) continue;
-        const parsed = parseGitHubRepository(item.repoUrl);
-        const canonical = `https://github.com/${parsed.owner}/${parsed.repo}`;
-        if (checked.has(canonical.toLowerCase())) continue;
-        const platformRepo = await githubJson(`/repos/${encodeURIComponent(parsed.owner)}/${encodeURIComponent(parsed.repo)}`, githubToken) as Record<string, unknown>;
-        if (platformRepo.private === true) return NextResponse.json({ error: `${item.platform} repository must be public.` }, { status: 400 });
-        const platformOwner = platformRepo.owner && typeof platformRepo.owner === "object" && "login" in platformRepo.owner ? String((platformRepo.owner as { login?: unknown }).login ?? "") : "";
-        const platformPermissions = platformRepo.permissions && typeof platformRepo.permissions === "object" ? platformRepo.permissions as Record<string, unknown> : {};
-        const platformOwned = login.length > 0 && platformOwner.toLowerCase() === login.toLowerCase();
-        const platformWritable = platformPermissions.push === true || platformPermissions.maintain === true || platformPermissions.admin === true;
-        if (!platformOwned && !platformWritable) return NextResponse.json({ error: `Your GitHub account must own or have write access to the ${item.platform} repository.` }, { status: 403 });
-        checked.add(canonical.toLowerCase());
+      if (separatePlatformRepos) {
+        const checked = new Set<string>([`https://github.com/${owner}/${repo}`.toLowerCase()]);
+        for (const item of platforms) {
+          if (!item.repoUrl) continue;
+          const parsed = parseGitHubRepository(item.repoUrl);
+          const canonical = `https://github.com/${parsed.owner}/${parsed.repo}`;
+          if (checked.has(canonical.toLowerCase())) continue;
+          const platformRepo = await githubJson(`/repos/${encodeURIComponent(parsed.owner)}/${encodeURIComponent(parsed.repo)}`, githubToken) as Record<string, unknown>;
+          if (platformRepo.private === true) return NextResponse.json({ error: `${item.platform} repository must be public.` }, { status: 400 });
+          const platformOwner = platformRepo.owner && typeof platformRepo.owner === "object" && "login" in platformRepo.owner ? String((platformRepo.owner as { login?: unknown }).login ?? "") : "";
+          const platformPermissions = platformRepo.permissions && typeof platformRepo.permissions === "object" ? platformRepo.permissions as Record<string, unknown> : {};
+          const platformOwned = login.length > 0 && platformOwner.toLowerCase() === login.toLowerCase();
+          const platformWritable = platformPermissions.push === true || platformPermissions.maintain === true || platformPermissions.admin === true;
+          if (!platformOwned && !platformWritable) return NextResponse.json({ error: `Your GitHub account must own or have write access to the ${item.platform} repository.` }, { status: 403 });
+          checked.add(canonical.toLowerCase());
+        }
       }
-    }
 
-    const safeSubmission = {
-      ...submission,
-      link: `https://github.com/${owner}/${repo}`,
-      repo_url: `https://github.com/${owner}/${repo}`,
-      source_code_url: `https://github.com/${owner}/${repo}`,
-      closed_source: false,
-      status: "Pending",
-      status_updated_at: new Date().toISOString(),
-    };
+      safeSubmission = {
+        ...submission,
+        link: `https://github.com/${owner}/${repo}`,
+        repo_url: `https://github.com/${owner}/${repo}`,
+        source_code_url: `https://github.com/${owner}/${repo}`,
+        closed_source: false,
+        source_archive_path: null,
+        source_archive_name: null,
+        source_archive_size_bytes: null,
+        source_archive_verified: false,
+        source_archive_review_status: "Not Required",
+        source_archive_reviewed_at: null,
+        source_archive_review_summary: null,
+        status: "Pending",
+        status_updated_at: new Date().toISOString(),
+      };
+    }
 
     let result;
     if (body.editingId && body.editingStatus) {

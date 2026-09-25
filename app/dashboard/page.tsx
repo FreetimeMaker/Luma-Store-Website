@@ -689,6 +689,7 @@ export default function LumaDeveloperPortal() {
         fullDescription: firstManualMetadata.fullDescription.trim(),
         changelog: firstManualMetadata.changelog.trim(),
         screenshots: firstManualMetadata.screenshotsText.split(/\\r?\\n/).map((value) => value.trim()).filter(Boolean),
+        featureGraphic: null,
         locale: "en-US",
         branch: "manual",
       } : manualLocalizedMetadata[0] ? {
@@ -697,6 +698,7 @@ export default function LumaDeveloperPortal() {
         fullDescription: manualLocalizedMetadata[0].fullDescription,
         changelog: manualLocalizedMetadata[0].changelog,
         screenshots: manualLocalizedMetadata[0].screenshots,
+        featureGraphic: null,
         locale: "en-US",
         branch: "manual",
       } : null;

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -89,7 +89,6 @@ function DiscoverContent() {
   const [recentApps, setRecentApps] = useState<RecentApp[]>([]);
   const [fastlaneIconMap, setFastlaneIconMap] = useState<Record<string, string>>({});
   const [featureGraphics, setFeatureGraphics] = useState<Record<string, string>>({});
-  const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const query = searchParams.get("search") ?? "";
@@ -104,23 +103,6 @@ function DiscoverContent() {
     } catch {
       setRecentApps([]);
     }
-
-    function handleShortcut(event: KeyboardEvent) {
-      const target = event.target as HTMLElement | null;
-      if (target?.matches("input, textarea, select, [contenteditable=true]")) return;
-
-      const shouldFocusSearch =
-        event.key === "/"
-        || ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k");
-
-      if (shouldFocusSearch) {
-        event.preventDefault();
-        searchRef.current?.focus();
-      }
-    }
-
-    window.addEventListener("keydown", handleShortcut);
-    return () => window.removeEventListener("keydown", handleShortcut);
   }, []);
 
   useEffect(() => {
@@ -455,26 +437,6 @@ function DiscoverContent() {
           ))}
         </div>
 
-        <div className="flex items-center rounded-full border border-white/10 bg-[#101722] px-4">
-          <span aria-hidden="true" className="mr-3 text-slate-500">⌕</span>
-          <input
-            ref={searchRef}
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search apps"
-            className="min-w-0 flex-1 bg-transparent py-3.5 text-sm text-white outline-none placeholder:text-slate-500"
-          />
-          {search && (
-            <button
-              type="button"
-              onClick={() => setSearch("")}
-              className="ml-3 text-xs font-semibold text-indigo-300 hover:text-indigo-200"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-
         <div className="flex gap-2 overflow-x-auto pb-1">
           <label className="store-filter min-w-52 shrink-0">
             <span>Category</span>
@@ -586,6 +548,7 @@ function DiscoverContent() {
                   rating={ratings[app.id]}
                   rank={sort === "downloads" ? index + 1 : undefined}
                   downloads={Number(metrics[app.id]?.total_downloads || 0)}
+                  showThumbnail={false}
                 />
               ))}
             </div>
@@ -643,6 +606,7 @@ function PlayStoreCard({
   rating,
   rank,
   downloads,
+  showThumbnail = true,
 }: {
   app: StoreApp;
   iconSrc: string | null;
@@ -650,6 +614,7 @@ function PlayStoreCard({
   rating?: RatingSummary;
   rank?: number;
   downloads?: number;
+  showThumbnail?: boolean;
 }) {
   const name = app.name || app.package_name || "Untitled app";
 
@@ -658,31 +623,45 @@ function PlayStoreCard({
       href={`/${encodeURIComponent(app.package_name || app.id)}`}
       className="group block min-w-0"
     >
-      <div className="aspect-[1024/500] overflow-hidden rounded-xl bg-[#101722] shadow-[0_1px_2px_rgba(0,0,0,0.22)]">
-        {featureGraphic ? (
-          <img
-            src={featureGraphic}
-            alt={`${name} feature graphic`}
-            className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.012]"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#101722] to-[#0d131d] text-sm font-medium text-slate-600">
-            No feature graphic
-          </div>
-        )}
-      </div>
+      {showThumbnail && (
+        <div className="aspect-[1024/500] overflow-hidden rounded-xl bg-[#101722] shadow-[0_1px_2px_rgba(0,0,0,0.22)]">
+          {featureGraphic ? (
+            <img
+              src={featureGraphic}
+              alt={`${name} feature graphic`}
+              className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.012]"
+            />
+          ) : iconSrc ? (
+            <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-gradient-to-br from-[#131d29] to-[#0d131d]">
+              <div
+                aria-hidden="true"
+                className="absolute h-40 w-40 rounded-[2.5rem] bg-indigo-500/20 blur-3xl"
+              />
+              <img
+                src={iconSrc}
+                alt={`${name} icon`}
+                className="relative h-28 w-28 rounded-[1.75rem] object-cover shadow-[0_16px_45px_rgba(0,0,0,0.35)] sm:h-32 sm:w-32"
+              />
+            </div>
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#131d29] to-[#0d131d] text-5xl font-semibold text-indigo-200">
+              {appInitials(name)}
+            </div>
+          )}
+        </div>
+      )}
 
-      <div className="mt-3 flex items-center gap-3 px-0.5 pb-1">
+      <div className={`${showThumbnail ? "mt-3 px-0.5 pb-1" : "rounded-2xl px-3 py-3 transition group-hover:bg-white/[0.035]"} flex items-center gap-3`}>
         <div className="relative shrink-0">
           <div aria-hidden="true" className="absolute inset-1 rounded-2xl bg-indigo-500/20 blur-lg" />
           {iconSrc ? (
             <img
               src={iconSrc}
               alt={`${name} icon`}
-              className="relative h-14 w-14 rounded-xl object-cover shadow-[0_4px_14px_rgba(0,0,0,0.22)]"
+              className={`relative ${showThumbnail ? "h-14 w-14" : "h-16 w-16"} rounded-xl object-cover shadow-[0_4px_14px_rgba(0,0,0,0.22)]`}
             />
           ) : (
-            <div className="relative flex h-14 w-14 items-center justify-center rounded-xl bg-[#101722] font-semibold text-indigo-200">
+            <div className={`relative flex ${showThumbnail ? "h-14 w-14" : "h-16 w-16"} items-center justify-center rounded-xl bg-[#101722] font-semibold text-indigo-200`}>
               {appInitials(name)}
             </div>
           )}

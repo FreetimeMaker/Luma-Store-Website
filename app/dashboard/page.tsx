@@ -32,11 +32,6 @@ type AppSubmission = {
   category: string;
   categories: string[];
   licenseType: string;
-  closedSource: boolean;
-  sourceArchivePath: string;
-  sourceArchiveName: string;
-  sourceArchiveSizeBytes: number | null;
-  sourceArchiveReviewStatus: string;
   iconUrl: string;
   version: string;
   platform: string;
@@ -75,10 +70,6 @@ type LumaSubmissionRow = {
   categories: unknown;
   license_type: string | null;
   closed_source: boolean | null;
-  source_archive_path: string | null;
-  source_archive_name: string | null;
-  source_archive_size_bytes: number | string | null;
-  source_archive_review_status: string | null;
   icon_url: string | null;
   version: string | null;
   platform: string | null;
@@ -236,11 +227,6 @@ function rowToApp(item: LumaSubmissionRow): AppSubmission {
     category: item.category,
     categories: asStringArray(item.categories).length ? asStringArray(item.categories) : [item.category],
     licenseType: item.license_type || "",
-    closedSource: item.closed_source === true,
-    sourceArchivePath: item.source_archive_path || "",
-    sourceArchiveName: item.source_archive_name || "",
-    sourceArchiveSizeBytes: item.source_archive_size_bytes == null ? null : Number(item.source_archive_size_bytes),
-    sourceArchiveReviewStatus: item.source_archive_review_status || (item.closed_source ? "Pending" : "Not Required"),
     iconUrl: item.icon_url || "",
     version: item.version || "",
     platform: item.platform || "",
@@ -343,7 +329,6 @@ export default function LumaDeveloperPortal() {
   const [appLink, setAppLink] = useState("");
   const [appCategories, setAppCategories] = useState<string[]>([]);
   const [appLicenseType, setAppLicenseType] = useState("");
-  const [closedSource, setClosedSource] = useState(false);
   const [appIconUrl, setAppIconUrl] = useState("");
   const [iconPreviewError, setIconPreviewError] = useState(false);
   const [appVersion, setAppVersion] = useState("");
@@ -395,23 +380,16 @@ export default function LumaDeveloperPortal() {
   const [artifactInputMode, setArtifactInputMode] = useState<ArtifactInputMode>("link");
   const [uploadingArtifact, setUploadingArtifact] = useState<string | null>(null);
   const [artifactUploadError, setArtifactUploadError] = useState<string | null>(null);
-  const [sourceArchivePath, setSourceArchivePath] = useState("");
-  const [sourceArchiveName, setSourceArchiveName] = useState("");
-  const [sourceArchiveSizeBytes, setSourceArchiveSizeBytes] = useState<number | null>(null);
-  const [sourceArchiveVerified, setSourceArchiveVerified] = useState(false);
-  const [sourceArchiveInspection, setSourceArchiveInspection] = useState<{ entries: number; sourceFiles: number } | null>(null);
-  const [sourceArchiveUploading, setSourceArchiveUploading] = useState(false);
-  const [sourceArchiveError, setSourceArchiveError] = useState<string | null>(null);
   const formTopRef = React.useRef<HTMLFormElement>(null);
 
   const isAndroid = appPlatforms.includes("Android");
   const isWindows = appPlatforms.includes("Windows");
   const isLinux = appPlatforms.includes("Linux");
-  const manualStoreMetadata = closedSource || isWindows || isLinux;
+  const manualStoreMetadata = isWindows || isLinux;
   const platformDetails = (platform: AppPlatform, androidOverride: FastlaneMetadata | null = fastlaneMetadata) => {
     const item = platformMetadata[platform];
-    const repoPart = separatePlatformRepos && !closedSource ? { repoUrl: item.repoUrl.trim() } : {};
-    if (platform === "Android" && !closedSource) {
+    const repoPart = separatePlatformRepos ? { repoUrl: item.repoUrl.trim() } : {};
+    if (platform === "Android") {
       if (!androidOverride) return repoPart;
       return {
         ...repoPart,
@@ -425,7 +403,7 @@ export default function LumaDeveloperPortal() {
         },
       };
     }
-    const manual = separatePlatformRepos && !closedSource ? item : {
+    const manual = separatePlatformRepos ? item : {
       ...item,
       title: closedTitle,
       shortDescription: closedShortDescription,
@@ -495,54 +473,6 @@ export default function LumaDeveloperPortal() {
     }
   };
 
-  const uploadSourceArchive = async (file: File) => {
-    setSourceArchiveUploading(true);
-    setSourceArchiveError(null);
-    setSourceArchiveVerified(false);
-    setSourceArchiveInspection(null);
-    try {
-      if (!file.name.toLowerCase().endsWith(".zip")) throw new Error("Select a .zip source archive.");
-      if (file.size <= 0 || file.size > 100 * 1024 * 1024) throw new Error("Source ZIP must be no larger than 100 MB.");
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) throw new Error("Your login session expired. Please sign in again.");
-
-      const prepare = await fetch("/api/luma/source-upload-url", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ fileName: file.name, size: file.size }),
-      });
-      const prepared = await prepare.json() as { path?: string; token?: string; error?: string };
-      if (!prepare.ok || !prepared.path || !prepared.token) throw new Error(prepared.error || "Could not prepare source upload.");
-
-      const { error: uploadError } = await supabase.storage
-        .from("luma-source-archives")
-        .uploadToSignedUrl(prepared.path, prepared.token, file, { contentType: file.type || "application/zip" });
-      if (uploadError) throw uploadError;
-
-      const verify = await fetch("/api/luma/source-verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ path: prepared.path }),
-      });
-      const verified = await verify.json() as { verified?: boolean; size?: number; inspection?: { entries: number; sourceFiles: number }; error?: string };
-      if (!verify.ok || !verified.verified) throw new Error(verified.error || "Source ZIP verification failed.");
-
-      setSourceArchivePath(prepared.path);
-      setSourceArchiveName(file.name);
-      setSourceArchiveSizeBytes(verified.size ?? file.size);
-      setSourceArchiveInspection(verified.inspection ?? null);
-      setSourceArchiveVerified(true);
-    } catch (error) {
-      setSourceArchivePath("");
-      setSourceArchiveName("");
-      setSourceArchiveSizeBytes(null);
-      setSourceArchiveError(error instanceof Error ? error.message : "Source ZIP upload failed.");
-    } finally {
-      setSourceArchiveUploading(false);
-    }
-  };
-
   const buildPlatformArtifacts = (androidOverride: FastlaneMetadata | null = fastlaneMetadata): PlatformArtifact[] => [
     ...(isAndroid && androidDownloadUrl.trim() ? [{ platform: "Android" as const, packageType: "apk" as const, downloadUrl: androidDownloadUrl.trim(), ...platformDetails("Android", androidOverride) }] : []),
     ...(isWindows && windowsDownloadUrl.trim() ? [{ platform: "Windows" as const, packageType: "exe" as const, downloadUrl: windowsDownloadUrl.trim(), ...platformDetails("Windows", androidOverride) }] : []),
@@ -560,9 +490,8 @@ export default function LumaDeveloperPortal() {
       if (!session?.access_token) throw new Error("Your login session expired. Please sign in again.");
       const submission = {
         name: appName.trim() || closedTitle.trim() || "Untitled draft", short_description: closedShortDescription.trim() || null, description: closedFullDescription.trim() || null,
-        link: closedSource ? (websiteUrl.trim() || null) : (appLink.trim() || null), repo_url: closedSource ? null : (appLink.trim() || null), source_code_url: closedSource ? null : (appLink.trim() || null),
-        categories: appCategories, category: appCategories[0] || null, subcategory: null, license_type: closedSource ? "Proprietary" : (appLicenseType || null), closed_source: closedSource,
-        source_archive_path: closedSource ? sourceArchivePath || null : null, source_archive_name: closedSource ? sourceArchiveName || null : null, source_archive_size_bytes: closedSource ? sourceArchiveSizeBytes : null,
+        link: appLink.trim() || null, repo_url: appLink.trim() || null, source_code_url: appLink.trim() || null,
+        categories: appCategories, category: appCategories[0] || null, subcategory: null, license_type: appLicenseType || null, closed_source: false,
         icon_url: appIconUrl.trim() || null, version: appVersion.trim() || null, platform: appPlatforms[0] || null, platforms: platformArtifacts, separate_platform_repos: separatePlatformRepos, linux_package_base: null,
         download_url: platformArtifacts[0]?.downloadUrl || null, package_name: isAndroid ? appPackageName.trim() || null : null,
         version_code: isAndroid && /^\d+$/.test(appVersionCode.trim()) ? Number(appVersionCode) : null,
@@ -614,7 +543,7 @@ export default function LumaDeveloperPortal() {
             .filter((id: string | null): id is string => typeof id === "string" && id.length > 0)
         );
 
-        const rows = data as LumaSubmissionRow[];
+        const rows = (data as LumaSubmissionRow[]).filter((item) => item.closed_source !== true);
         const canonicalRows = !storeAppsError
           ? rows.filter((item) => item.status !== "Approved" || canonicalSubmissionIds.has(item.id))
           : rows;
@@ -639,26 +568,25 @@ export default function LumaDeveloperPortal() {
   }, [supabase]);
 
   const resetForm = () => {
-    setStep(1); setAppName(""); setAppLink(""); setAppCategories([]); setAppLicenseType(""); setClosedSource(false); setAppIconUrl(""); setIconPreviewError(false);
+    setStep(1); setAppName(""); setAppLink(""); setAppCategories([]); setAppLicenseType(""); setAppIconUrl(""); setIconPreviewError(false);
     setAppVersion(""); setAppPlatforms([]); setSeparatePlatformRepos(false); setPlatformMetadata({Android:emptyPlatformMetadata(),Windows:emptyPlatformMetadata(),Linux:emptyPlatformMetadata()}); setAndroidDownloadUrl(""); setWindowsDownloadUrl(""); setLinuxDebUrl(""); setLinuxRpmUrl(""); setLinuxAppImageUrl(""); setAppPackageName(""); setAppVersionCode("");
     setWebsiteUrl(""); setIssueTrackerUrl(""); setTranslationUrl(""); setAuthorName(""); setAuthorEmail(""); setAuthorWebsite("");
     setDonateUrl(""); setLiberapay(""); setOpencollective(""); setBitcoin(""); setLitecoin("");
     setClosedTitle(""); setClosedShortDescription(""); setClosedFullDescription(""); setClosedChangelog(""); setClosedScreenshotsText(""); setAdditionalClosedMetadata([]);
     setFastlaneMetadata(null); setFastlaneError(null); setEditingId(null); setEditingStatus(null); setDraftId(null); setDraftSavedAt(null);
     setArtifactInputMode("link"); setUploadingArtifact(null); setArtifactUploadError(null);
-    setSourceArchivePath(""); setSourceArchiveName(""); setSourceArchiveSizeBytes(null); setSourceArchiveVerified(false); setSourceArchiveInspection(null); setSourceArchiveUploading(false); setSourceArchiveError(null);
   };
 
   const beginEdit = (app: AppSubmission) => {
     if (!(["Rejected", "Approved", "Changes Requested"] as SubmissionStatus[]).includes(app.status)) return;
     setEditingId(app.id); setEditingStatus(app.status); setAppName(app.name); setAppLink(app.repoUrl || app.link);
     setAppCategories((app.categories?.length ? app.categories : [app.category]).filter((category) => FDROID_CATEGORIES.includes(category as typeof FDROID_CATEGORIES[number])));
-    setAppLicenseType(app.closedSource ? "Proprietary" : (app.licenseType || "")); setClosedSource(app.closedSource); setAppIconUrl(app.iconUrl); setIconPreviewError(false); setAppVersion(app.version);
+    setAppLicenseType(app.licenseType || ""); setAppIconUrl(app.iconUrl); setIconPreviewError(false); setAppVersion(app.version);
     setAppPlatforms(Array.from(new Set(app.platforms.map((item)=>item.platform))));
-    setSeparatePlatformRepos(app.closedSource ? false : app.separatePlatformRepos);
+    setSeparatePlatformRepos(app.separatePlatformRepos);
     setPlatformMetadata((current)=>{const next={...current};(["Android","Windows","Linux"] as AppPlatform[]).forEach(platform=>{const item=app.platforms.find(entry=>entry.platform===platform);if(item?.metadata)next[platform]={repoUrl:item.repoUrl||app.repoUrl||app.link||"",title:item.metadata.title||"",shortDescription:item.metadata.shortDescription||"",fullDescription:item.metadata.fullDescription||"",changelog:item.metadata.changelog||"",screenshotsText:(item.metadata.screenshots||[]).join("\\n"),featureGraphicUrl:item.metadata.featureGraphic||""};else if(item?.repoUrl)next[platform]={...next[platform],repoUrl:item.repoUrl};});return next;});
     setAndroidDownloadUrl(app.platforms.find((item)=>item.platform==="Android")?.downloadUrl||""); setWindowsDownloadUrl(app.platforms.find((item)=>item.platform==="Windows")?.downloadUrl||"");
-    setLinuxDebUrl(app.platforms.find((item)=>item.packageType==="deb")?.downloadUrl||""); setLinuxRpmUrl(app.platforms.find((item)=>item.packageType==="rpm")?.downloadUrl||""); setLinuxAppImageUrl(app.platforms.find((item)=>item.packageType==="appimage")?.downloadUrl||""); setAppPackageName(app.packageName); setAppVersionCode(app.versionCode);
+    setLinuxDebUrl(app.platforms.find((item)=>item.packageType==="deb")?.downloadUrl||""); setLinuxRpmUrl(app.platforms.find((item)=>item.packageType==="rpm")?.downloadUrl||""); setAppPackageName(app.packageName); setAppVersionCode(app.versionCode);
     setWebsiteUrl(app.websiteUrl); setIssueTrackerUrl(app.issueTrackerUrl); setTranslationUrl(app.translationUrl);
     setAuthorName(app.authorName); setAuthorEmail(app.authorEmail); setAuthorWebsite(app.authorWebsite);
     setDonateUrl(app.donateUrl); setLiberapay(app.liberapay); setOpencollective(app.opencollective); setBitcoin(app.bitcoin); setLitecoin(app.litecoin);
@@ -672,8 +600,6 @@ export default function LumaDeveloperPortal() {
     setAdditionalClosedMetadata(app.localizedMetadata.filter((item) => item !== english).map((item) => ({ ...item, screenshotsText: item.screenshots.join("\\n") })));
     setFastlaneMetadata(null); setFastlaneError(null); setStep(1); setSubmitted(false);
     setArtifactInputMode("link"); setUploadingArtifact(null); setArtifactUploadError(null);
-    const requireFreshSourceArchive = app.closedSource && app.status === "Approved";
-    setSourceArchivePath(requireFreshSourceArchive ? "" : app.sourceArchivePath); setSourceArchiveName(requireFreshSourceArchive ? "" : app.sourceArchiveName); setSourceArchiveSizeBytes(requireFreshSourceArchive ? null : app.sourceArchiveSizeBytes); setSourceArchiveVerified(!requireFreshSourceArchive && app.closedSource && Boolean(app.sourceArchivePath)); setSourceArchiveInspection(null); setSourceArchiveError(requireFreshSourceArchive ? "Upload the source ZIP for the new release before submitting this update." : null);
     requestAnimationFrame(() => formTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   };
 
@@ -726,8 +652,7 @@ export default function LumaDeveloperPortal() {
   });
 
   const continueDisabled = Boolean(
-    (isAndroid && !closedSource && !fastlaneMetadata)
-    || (closedSource && !sourceArchiveVerified)
+    (isAndroid && !fastlaneMetadata)
     || (manualStoreMetadata && (
       separatePlatformRepos
         ? !separatePlatformMetadataValid
@@ -736,7 +661,7 @@ export default function LumaDeveloperPortal() {
   );
 
   const continueToReview = () => {
-    if (manualStoreMetadata && !separatePlatformRepos && manualMetadataValid && (closedSource || !isAndroid)) {
+    if (!isAndroid && manualStoreMetadata && !separatePlatformRepos && manualMetadataValid) {
       const metadata: FastlaneMetadata = {
         title: closedTitle.trim(),
         shortDescription: closedShortDescription.trim(),
@@ -781,8 +706,7 @@ export default function LumaDeveloperPortal() {
       if (isLinux && !linuxDebUrl.trim() && !linuxRpmUrl.trim() && !linuxAppImageUrl.trim()) throw new Error("Linux requires an uploaded .deb/.rpm/AppImage file or a download URL.");
       if (!validAndroidMetadata) throw new Error("Android apps require a valid package name and positive versionCode.");
       if (!appCategories.length || appCategories.some((category) => !FDROID_CATEGORIES.includes(category as typeof FDROID_CATEGORIES[number]))) throw new Error("Please select at least one valid F-Droid category.");
-      if (!closedSource && !appLicenseType) throw new Error("Please select an open-source license.");
-      if (closedSource && (!sourceArchivePath || !sourceArchiveVerified)) throw new Error("Closed-source apps require a verified private source-code ZIP.");
+      if (!appLicenseType) throw new Error("Please select an open-source license.");
       if (manualStoreMetadata && !separatePlatformRepos && !manualMetadataValid) throw new Error("Linux and Windows require complete manual store metadata.");
       if (separatePlatformRepos) {
         for (const platform of appPlatforms) {
@@ -798,16 +722,14 @@ export default function LumaDeveloperPortal() {
       }
 
       const androidRepo = separatePlatformRepos ? platformMetadata.Android.repoUrl.trim() : appLink.trim();
-      const primaryRepo = closedSource
-        ? ""
-        : isAndroid
-          ? androidRepo
-          : separatePlatformRepos
-            ? platformMetadata[appPlatforms[0]].repoUrl.trim()
-            : appLink.trim();
-      if (!closedSource) githubRepository(primaryRepo);
+      const primaryRepo = isAndroid
+        ? androidRepo
+        : separatePlatformRepos
+          ? platformMetadata[appPlatforms[0]].repoUrl.trim()
+          : appLink.trim();
+      githubRepository(primaryRepo);
 
-      const androidStoreMetadata = isAndroid && !closedSource ? await fetchFastlaneMetadata(androidRepo, appVersionCode) : null;
+      const androidStoreMetadata = isAndroid ? await fetchFastlaneMetadata(androidRepo, appVersionCode) : null;
       if (androidStoreMetadata) {
         setFastlaneMetadata(androidStoreMetadata);
         setAppName(androidStoreMetadata.title);
@@ -859,17 +781,14 @@ export default function LumaDeveloperPortal() {
         name: currentStoreMetadata.title,
         short_description: currentStoreMetadata.shortDescription,
         description: currentStoreMetadata.fullDescription,
-        link: closedSource ? (websiteUrl.trim() || null) : primaryRepo,
-        repo_url: closedSource ? null : primaryRepo,
-        source_code_url: closedSource ? null : primaryRepo,
+        link: primaryRepo,
+        repo_url: primaryRepo,
+        source_code_url: primaryRepo,
         category: appCategories[0],
         categories: appCategories,
         subcategory: null,
-        license_type: closedSource ? "Proprietary" : appLicenseType,
-        closed_source: closedSource,
-        source_archive_path: closedSource ? sourceArchivePath : null,
-        source_archive_name: closedSource ? sourceArchiveName : null,
-        source_archive_size_bytes: closedSource ? sourceArchiveSizeBytes : null,
+        license_type: appLicenseType,
+        closed_source: false,
         localized_metadata: localizedMetadata,
         icon_url: appIconUrl.trim(),
         version: appVersion.trim(),
@@ -892,14 +811,14 @@ export default function LumaDeveloperPortal() {
 
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("Your login session expired. Please sign in again.");
-      if (!closedSource && !session.provider_token) throw new Error("GitHub authorization is required. Please sign out and sign in with GitHub again.");
+      if (!session.provider_token) throw new Error("GitHub authorization is required. Please sign out and sign in with GitHub again.");
 
       const response = await fetch("/api/luma/submissions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
-          ...(session.provider_token ? { "X-GitHub-Token": session.provider_token } : {}),
+          "X-GitHub-Token": session.provider_token,
         },
         body: JSON.stringify({ submission: appMetadata, editingId: draftId || editingId, editingStatus: draftId ? "Draft" : editingStatus }),
       });
@@ -962,56 +881,9 @@ export default function LumaDeveloperPortal() {
                 <div className="grid gap-5 md:grid-cols-2">
                   <div><label className="mb-2 block text-sm font-medium text-slate-300">Platforms</label><div className="overflow-hidden rounded-xl border border-slate-700 bg-slate-950/70">{(["Android","Windows","Linux"] as AppPlatform[]).map((platform)=><label key={platform} className="flex cursor-pointer items-center gap-3 border-b border-slate-800 px-4 py-3 text-sm text-slate-200 last:border-b-0 hover:bg-slate-900/80"><input type="checkbox" checked={appPlatforms.includes(platform)} onChange={(e)=>{setAppPlatforms((current)=>e.target.checked ? [...new Set([...current,platform])] : current.filter((item)=>item!==platform));invalidateFastlane();}} className="h-4 w-4 accent-indigo-500"/><span>{platform}</span></label>)}</div><p className="mt-2 text-xs text-slate-500">{appPlatforms.length ? `${appPlatforms.length} selected · ${appPlatforms.join(" · ")}` : "No platform selected"} · Select one or more platforms.</p></div>
                 </div>
-
-                <div className="ui-panel-muted p-4 sm:p-5">
-                  <h3 className="font-semibold text-white">Source model</h3>
-                  <p className="mt-1 text-sm text-slate-400">
-                    Choose whether the published source is public or privately provided to Luma Store for review.
-                  </p>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setClosedSource(false);
-                        if (appLicenseType === "Proprietary") setAppLicenseType("");
-                        setSourceArchivePath("");
-                        setSourceArchiveName("");
-                        setSourceArchiveSizeBytes(null);
-                        setSourceArchiveVerified(false);
-                        setSourceArchiveInspection(null);
-                        setSourceArchiveError(null);
-                        invalidateFastlane();
-                      }}
-                      className={`rounded-xl border px-4 py-3 text-left transition ${!closedSource ? "border-indigo-400/40 bg-indigo-500/10 text-white" : "border-slate-700 bg-slate-950/40 text-slate-400 hover:text-white"}`}
-                    >
-                      <span className="block text-sm font-semibold">Open source</span>
-                      <span className="mt-1 block text-xs leading-5 text-slate-500">
-                        Public GitHub source repository. Android listing metadata comes from Fastlane.
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setClosedSource(true);
-                        setAppLicenseType("Proprietary");
-                        setSeparatePlatformRepos(false);
-                        setAppLink("");
-                        setFastlaneMetadata(null);
-                        setFastlaneError(null);
-                      }}
-                      className={`rounded-xl border px-4 py-3 text-left transition ${closedSource ? "border-fuchsia-400/40 bg-fuchsia-500/10 text-white" : "border-slate-700 bg-slate-950/40 text-slate-400 hover:text-white"}`}
-                    >
-                      <span className="block text-sm font-semibold">Proprietary / closed source</span>
-                      <span className="mt-1 block text-xs leading-5 text-slate-500">
-                        Source code stays private, but a ZIP archive is required for Luma Store review before publishing.
-                      </span>
-                    </button>
-                  </div>
-                </div>
-
                 <div className="grid gap-5 md:grid-cols-2">
                   <div><label className="mb-2 block text-sm font-medium text-slate-300">F-Droid Categories</label><div className="max-h-64 overflow-y-auto rounded-xl border border-slate-700 bg-slate-950/70">{FDROID_CATEGORIES.map((category)=><label key={category} className="flex cursor-pointer items-center gap-3 border-b border-slate-800 px-4 py-3 text-sm text-slate-200 last:border-b-0 hover:bg-slate-900/80"><input type="checkbox" checked={appCategories.includes(category)} onChange={(e)=>setAppCategories((current)=>e.target.checked ? [...new Set([...current, category])] : current.filter((item)=>item!==category))} className="h-4 w-4 accent-indigo-500"/><span>{category}</span></label>)}</div><p className="mt-2 text-xs text-slate-500">{appCategories.length ? `${appCategories.length} selected` : "No category selected"} · Select all categories that apply.</p></div>
-                  {!closedSource ? <div><label className="mb-2 block text-sm font-medium text-slate-300">Open-Source License</label><div className="max-h-64 overflow-y-auto rounded-xl border border-slate-700 bg-slate-950/70">{LICENSE_OPTIONS.map(([value,label])=><label key={value} className="flex cursor-pointer items-center gap-3 border-b border-slate-800 px-4 py-3 text-sm text-slate-200 last:border-b-0 hover:bg-slate-900/80"><input type="radio" name="app-license" value={value} checked={appLicenseType===value} onChange={()=>setAppLicenseType(value)} className="h-4 w-4 accent-indigo-500"/><span>{label} <span className="text-slate-500">({value})</span></span></label>)}</div><p className="mt-2 text-xs text-slate-500">{appLicenseType ? `Selected: ${LICENSE_OPTIONS.find(([value])=>value===appLicenseType)?.[1] || appLicenseType}` : "No license selected"} · Select one license.</p></div> : <div><label className="mb-2 block text-sm font-medium text-slate-300">License</label><div className="rounded-xl border border-fuchsia-500/25 bg-fuchsia-950/15 p-4"><p className="text-sm font-semibold text-fuchsia-200">Proprietary</p><p className="mt-2 text-xs leading-5 text-slate-400">The source archive is used only for private review and is not published or shown as a source-code download.</p></div></div>}
+                  <div><label className="mb-2 block text-sm font-medium text-slate-300">Open-Source License</label><div className="max-h-64 overflow-y-auto rounded-xl border border-slate-700 bg-slate-950/70">{LICENSE_OPTIONS.map(([value,label])=><label key={value} className="flex cursor-pointer items-center gap-3 border-b border-slate-800 px-4 py-3 text-sm text-slate-200 last:border-b-0 hover:bg-slate-900/80"><input type="radio" name="app-license" value={value} checked={appLicenseType===value} onChange={()=>setAppLicenseType(value)} className="h-4 w-4 accent-indigo-500"/><span>{label} <span className="text-slate-500">({value})</span></span></label>)}</div><p className="mt-2 text-xs text-slate-500">{appLicenseType ? `Selected: ${LICENSE_OPTIONS.find(([value])=>value===appLicenseType)?.[1] || appLicenseType}` : "No license selected"} · Select one license.</p></div>
                 </div>
                 <div><label className="mb-2 block text-sm font-medium text-slate-300">App Icon URL</label><div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_180px]"><input type="url" required value={appIconUrl} onChange={(e)=>{setAppIconUrl(e.target.value);setIconPreviewError(false);}} className={fieldClass}/><div className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4 text-center"><div className="mx-auto flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-slate-700 bg-slate-900">{appIconUrl.trim()&&!iconPreviewError?<img src={appIconUrl.trim()} alt="App icon preview" className="h-full w-full object-cover" onError={()=>setIconPreviewError(true)}/>:<span className="text-xs text-slate-500">No icon</span>}</div></div></div></div>
                 <div className="ui-panel-muted p-4 sm:p-5"><h3 className="font-semibold text-white">Author</h3><div className="mt-4 grid gap-4 md:grid-cols-2"><div><label className="mb-2 block text-sm text-slate-300">Author name</label><input value={authorName} onChange={(e)=>setAuthorName(e.target.value)} className={fieldClass}/></div><div><label className="mb-2 block text-sm text-slate-300">Author email</label><input type="email" value={authorEmail} onChange={(e)=>setAuthorEmail(e.target.value)} className={fieldClass}/></div><div className="md:col-span-2"><label className="mb-2 block text-sm text-slate-300">Author website</label><input type="url" value={authorWebsite} onChange={(e)=>setAuthorWebsite(e.target.value)} className={fieldClass}/></div></div></div>
@@ -1019,44 +891,12 @@ export default function LumaDeveloperPortal() {
               </div>}
 
               {step === 2 && <div className="space-y-6">
-                {!closedSource && <>
-                  <div><label className="flex items-center gap-3 text-sm font-medium text-slate-300"><input type="checkbox" checked={separatePlatformRepos} onChange={(e)=>{setSeparatePlatformRepos(e.target.checked);invalidateFastlane();}} className="h-4 w-4 accent-indigo-500"/>Different repository per platform</label><p className="mt-2 text-xs text-slate-500">Listings stay separate regardless of this setting. Android always loads its listing from Fastlane; Linux and Windows use manual listing fields. This option only controls whether the source repositories differ.</p></div>
-                  {!separatePlatformRepos&&<div><label className="mb-2 block text-sm font-medium text-slate-300">GitHub Project / Source URL</label><input type="url" value={appLink} onChange={(e)=>{setAppLink(e.target.value);invalidateFastlane();}} className={fieldClass}/><p className="mt-2 text-xs text-slate-500">The repository must be public. Your GitHub account must own it or have write access.</p></div>}
-                  {separatePlatformRepos&&<div className="space-y-5">{appPlatforms.map(platform=>{const item=platformMetadata[platform];const update=(field:keyof PlatformMetadataInput,value:string)=>setPlatformMetadata(current=>({...current,[platform]:{...current[platform],[field]:value}}));return <div key={platform} className="ui-panel-muted p-4 sm:p-5"><h3 className="font-semibold text-white">{platform} repository & listing</h3><p className="mt-1 text-xs text-slate-500">{platform==="Android"?"Android listing data comes from Fastlane. Only the repository is entered here.":"This platform uses manual listing metadata."}</p><div className="mt-4 grid gap-4"><input type="url" required value={item.repoUrl} onChange={e=>{update("repoUrl",e.target.value);if(platform==="Android")invalidateFastlane();}} className={fieldClass} placeholder="https://github.com/owner/repository"/>{platform==="Android"?<><button type="button" onClick={verifyFastlane} disabled={!item.repoUrl.trim()||!validAndroidMetadata||fastlaneLoading} className="rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-medium text-white disabled:opacity-40">{fastlaneLoading?"Checking Fastlane…":"Load Android Fastlane listing"}</button>{fastlaneError&&<p className="text-sm text-red-400">{fastlaneError}</p>}{fastlaneMetadata&&<div className="rounded-xl border border-emerald-500/20 bg-emerald-950/20 p-4"><p className="text-sm font-semibold text-emerald-300">{fastlaneMetadata.title}</p><p className="mt-1 text-xs text-slate-500">{fastlaneMetadata.locale} · {fastlaneMetadata.screenshots.length} screenshots</p></div>}</>:<><input required value={item.title} onChange={e=>update("title",e.target.value)} className={fieldClass} placeholder="Title"/><textarea required value={item.shortDescription} onChange={e=>update("shortDescription",e.target.value)} className={fieldClass} placeholder="Short description"/><textarea required rows={6} value={item.fullDescription} onChange={e=>update("fullDescription",e.target.value)} className={fieldClass} placeholder="Full description"/><textarea required rows={4} value={item.changelog} onChange={e=>update("changelog",e.target.value)} className={fieldClass} placeholder="Changelog"/><textarea required rows={4} value={item.screenshotsText} onChange={e=>update("screenshotsText",e.target.value)} className={fieldClass} placeholder="Screenshot URLs, one per line"/></>}</div></div>})}</div>}
-                </>}
-
-                {closedSource && <div className="rounded-2xl border border-fuchsia-500/25 bg-fuchsia-950/10 p-4 sm:p-5">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <h3 className="font-semibold text-white">Private source-code archive</h3>
-                      <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-400">
-                        Upload the complete source for this release as a ZIP. It is stored in a private bucket, inspected for a valid source archive and then held for Luma Store source review. It is never published as a download.
-                      </p>
-                    </div>
-                    <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${sourceArchiveVerified ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-300"}`}>
-                      {sourceArchiveVerified ? "ZIP verified" : "Required"}
-                    </span>
-                  </div>
-                  <div className="mt-4">
-                    <input
-                      type="file"
-                      accept=".zip,application/zip,application/x-zip-compressed"
-                      disabled={sourceArchiveUploading}
-                      onChange={(event)=>{const file=event.target.files?.[0];if(file)void uploadSourceArchive(file);}}
-                      className={fieldClass}
-                    />
-                  </div>
-                  {sourceArchiveUploading && <p className="mt-3 text-sm text-indigo-300">Uploading and verifying source ZIP…</p>}
-                  {sourceArchiveError && <p className="mt-3 text-sm text-rose-300">{sourceArchiveError}</p>}
-                  {sourceArchiveVerified && <div className="mt-3 rounded-xl border border-emerald-500/20 bg-emerald-950/15 p-3 text-xs text-slate-300">
-                    <p><span className="font-semibold text-emerald-300">{sourceArchiveName}</span>{sourceArchiveSizeBytes !== null ? ` · ${(sourceArchiveSizeBytes / 1024 / 1024).toFixed(2)} MB` : ""}</p>
-                    {sourceArchiveInspection && <p className="mt-1 text-slate-500">{sourceArchiveInspection.entries} files · {sourceArchiveInspection.sourceFiles} source files detected</p>}
-                    <p className="mt-1 text-slate-500">After submission the archive review status starts as Pending.</p>
-                  </div>}
-                </div>}
+                <div><label className="flex items-center gap-3 text-sm font-medium text-slate-300"><input type="checkbox" checked={separatePlatformRepos} onChange={(e)=>{setSeparatePlatformRepos(e.target.checked);invalidateFastlane();}} className="h-4 w-4 accent-indigo-500"/>Different repository per platform</label><p className="mt-2 text-xs text-slate-500">Listings stay separate regardless of this setting. Android always loads its listing from Fastlane; Linux and Windows use manual listing fields. This option only controls whether the source repositories differ.</p></div>
+                {!separatePlatformRepos&&<div><label className="mb-2 block text-sm font-medium text-slate-300">GitHub Project / Source URL</label><input type="url" value={appLink} onChange={(e)=>{setAppLink(e.target.value);invalidateFastlane();}} className={fieldClass}/><p className="mt-2 text-xs text-slate-500">The repository must be public. Your GitHub account must own it or have write access.</p></div>}
+                {separatePlatformRepos&&<div className="space-y-5">{appPlatforms.map(platform=>{const item=platformMetadata[platform];const update=(field:keyof PlatformMetadataInput,value:string)=>setPlatformMetadata(current=>({...current,[platform]:{...current[platform],[field]:value}}));return <div key={platform} className="ui-panel-muted p-4 sm:p-5"><h3 className="font-semibold text-white">{platform} repository & listing</h3><p className="mt-1 text-xs text-slate-500">{platform==="Android"?"Android listing data comes from Fastlane. Only the repository is entered here.":"This platform uses manual listing metadata."}</p><div className="mt-4 grid gap-4"><input type="url" required value={item.repoUrl} onChange={e=>{update("repoUrl",e.target.value);if(platform==="Android")invalidateFastlane();}} className={fieldClass} placeholder="https://github.com/owner/repository"/>{platform==="Android"?<><button type="button" onClick={verifyFastlane} disabled={!item.repoUrl.trim()||!validAndroidMetadata||fastlaneLoading} className="rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-medium text-white disabled:opacity-40">{fastlaneLoading?"Checking Fastlane…":"Load Android Fastlane listing"}</button>{fastlaneError&&<p className="text-sm text-red-400">{fastlaneError}</p>}{fastlaneMetadata&&<div className="rounded-xl border border-emerald-500/20 bg-emerald-950/20 p-4"><p className="text-sm font-semibold text-emerald-300">{fastlaneMetadata.title}</p><p className="mt-1 text-xs text-slate-500">{fastlaneMetadata.locale} · {fastlaneMetadata.screenshots.length} screenshots</p></div>}</>:<><input required value={item.title} onChange={e=>update("title",e.target.value)} className={fieldClass} placeholder="Title"/><textarea required value={item.shortDescription} onChange={e=>update("shortDescription",e.target.value)} className={fieldClass} placeholder="Short description"/><textarea required rows={6} value={item.fullDescription} onChange={e=>update("fullDescription",e.target.value)} className={fieldClass} placeholder="Full description"/><textarea required rows={4} value={item.changelog} onChange={e=>update("changelog",e.target.value)} className={fieldClass} placeholder="Changelog"/><textarea required rows={4} value={item.screenshotsText} onChange={e=>update("screenshotsText",e.target.value)} className={fieldClass} placeholder="Screenshot URLs, one per line"/></>}</div></div>})}</div>}
 
                 {manualStoreMetadata && !separatePlatformRepos && <div className="space-y-5">
-                  <div className="rounded-2xl border border-fuchsia-700/30 bg-fuchsia-950/10 p-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-semibold text-white">{closedSource ? "Store listing metadata" : "Linux / Windows manual listing"}</h3><p className="mt-1 text-xs text-slate-500">{closedSource ? "Proprietary apps use manual store metadata on every platform. This metadata is public; the uploaded source ZIP remains private." : "Uses the same fields as Android, but these values are entered manually · locale en-US."}</p></div><span className="rounded-full border border-fuchsia-700/50 px-2.5 py-1 text-xs text-fuchsia-300">Required</span></div><div className="mt-4 grid gap-4"><div><label className="mb-2 block text-sm text-slate-300">Title</label><input required value={closedTitle} onChange={(e)=>setClosedTitle(e.target.value)} className={fieldClass}/></div><div><label className="mb-2 block text-sm text-slate-300">Short description</label><textarea required value={closedShortDescription} onChange={(e)=>setClosedShortDescription(e.target.value)} className={fieldClass}/></div><div><label className="mb-2 block text-sm text-slate-300">Full description</label><textarea required rows={8} value={closedFullDescription} onChange={(e)=>setClosedFullDescription(e.target.value)} className={fieldClass}/></div><div><label className="mb-2 block text-sm text-slate-300">Changelog</label><textarea required rows={5} value={closedChangelog} onChange={(e)=>setClosedChangelog(e.target.value)} className={fieldClass}/></div><div><label className="mb-2 block text-sm text-slate-300">Screenshot URLs</label><textarea required rows={5} value={closedScreenshotsText} onChange={(e)=>setClosedScreenshotsText(e.target.value)} className={fieldClass} placeholder="https://.../screenshot1.png
+                  <div className="rounded-2xl border border-fuchsia-700/30 bg-fuchsia-950/10 p-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-semibold text-white">Linux / Windows manual listing</h3><p className="mt-1 text-xs text-slate-500">Uses the same fields as Android, but these values are entered manually · locale en-US.</p></div><span className="rounded-full border border-fuchsia-700/50 px-2.5 py-1 text-xs text-fuchsia-300">Required</span></div><div className="mt-4 grid gap-4"><div><label className="mb-2 block text-sm text-slate-300">Title</label><input required value={closedTitle} onChange={(e)=>setClosedTitle(e.target.value)} className={fieldClass}/></div><div><label className="mb-2 block text-sm text-slate-300">Short description</label><textarea required value={closedShortDescription} onChange={(e)=>setClosedShortDescription(e.target.value)} className={fieldClass}/></div><div><label className="mb-2 block text-sm text-slate-300">Full description</label><textarea required rows={8} value={closedFullDescription} onChange={(e)=>setClosedFullDescription(e.target.value)} className={fieldClass}/></div><div><label className="mb-2 block text-sm text-slate-300">Changelog</label><textarea required rows={5} value={closedChangelog} onChange={(e)=>setClosedChangelog(e.target.value)} className={fieldClass}/></div><div><label className="mb-2 block text-sm text-slate-300">Screenshot URLs</label><textarea required rows={5} value={closedScreenshotsText} onChange={(e)=>setClosedScreenshotsText(e.target.value)} className={fieldClass} placeholder="https://.../screenshot1.png
 https://.../screenshot2.png"/></div></div></div>
                   {additionalClosedMetadata.map((metadata,index)=><div key={index} className="rounded-2xl border border-slate-700 bg-slate-950/30 p-5"><div className="flex items-center justify-between"><h3 className="font-semibold text-white">Additional language</h3><button type="button" onClick={()=>removeClosedLanguage(index)} className="text-xs text-red-300">Remove</button></div><div className="mt-4 grid gap-4"><input required value={metadata.locale} onChange={(e)=>updateClosedLanguage(index,"locale",e.target.value)} className={fieldClass} placeholder="de-DE"/><input required value={metadata.title} onChange={(e)=>updateClosedLanguage(index,"title",e.target.value)} className={fieldClass} placeholder="Title"/><textarea required value={metadata.shortDescription} onChange={(e)=>updateClosedLanguage(index,"shortDescription",e.target.value)} className={fieldClass} placeholder="Short description"/><textarea required rows={6} value={metadata.fullDescription} onChange={(e)=>updateClosedLanguage(index,"fullDescription",e.target.value)} className={fieldClass} placeholder="Full description"/><textarea required rows={4} value={metadata.changelog} onChange={(e)=>updateClosedLanguage(index,"changelog",e.target.value)} className={fieldClass} placeholder="Changelog"/><textarea required rows={4} value={metadata.screenshotsText} onChange={(e)=>updateClosedLanguage(index,"screenshotsText",e.target.value)} className={fieldClass} placeholder="Screenshot URLs, one per line"/></div></div>)}
                   <button type="button" onClick={addClosedLanguage} className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm text-slate-200">+ Add language</button>
@@ -1177,14 +1017,14 @@ https://.../screenshot2.png"/></div></div></div>
                 </div>
               </div>}
 
-              {step === 3 && <div className="space-y-6"><div className="ui-panel-muted p-4 sm:p-5"><dl className="grid gap-4 text-sm md:grid-cols-2"><div><dt className="text-slate-500">Title</dt><dd className="text-white">{fastlaneMetadata?.title}</dd></div><div><dt className="text-slate-500">Platform</dt><dd className="text-white">{appPlatforms.join(" · ")}</dd></div><div><dt className="text-slate-500">Categories</dt><dd className="text-white">{appCategories.join(", ")}</dd></div><div><dt className="text-slate-500">Source model</dt><dd className="text-white">{closedSource ? "Proprietary · private source review" : "Open source"}</dd></div><div><dt className="text-slate-500">License</dt><dd className="text-white">{closedSource ? "Proprietary" : appLicenseType}</dd></div><div><dt className="text-slate-500">Version</dt><dd className="text-white">{appVersion}</dd></div>{isAndroid&&<div><dt className="text-slate-500">Package</dt><dd className="break-all text-white">{appPackageName}</dd></div>}<div><dt className="text-slate-500">Author</dt><dd className="text-white">{authorName||"—"}</dd></div><div><dt className="text-slate-500">Website</dt><dd className="break-all text-white">{websiteUrl||"—"}</dd></div></dl></div><div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between"><button type="button" onClick={()=>goToStep(2)} className="ui-button-secondary w-full px-5 py-2.5 sm:w-auto text-white">Back</button><button type="submit" disabled={isSubmitting||!fastlaneMetadata} className="rounded-xl bg-emerald-600 px-5 py-2.5 font-medium text-white disabled:opacity-40">{isSubmitting?"Saving…":isApprovedUpdate?"Submit Update":isRequestedChange?"Resubmit Changes":"Submit App"}</button></div></div>}
+              {step === 3 && <div className="space-y-6"><div className="ui-panel-muted p-4 sm:p-5"><dl className="grid gap-4 text-sm md:grid-cols-2"><div><dt className="text-slate-500">Title</dt><dd className="text-white">{fastlaneMetadata?.title}</dd></div><div><dt className="text-slate-500">Platform</dt><dd className="text-white">{appPlatforms.join(" · ")}</dd></div><div><dt className="text-slate-500">Categories</dt><dd className="text-white">{appCategories.join(", ")}</dd></div><div><dt className="text-slate-500">Source model</dt><dd className="text-white">Open source</dd></div><div><dt className="text-slate-500">License</dt><dd className="text-white">{appLicenseType}</dd></div><div><dt className="text-slate-500">Version</dt><dd className="text-white">{appVersion}</dd></div>{isAndroid&&<div><dt className="text-slate-500">Package</dt><dd className="break-all text-white">{appPackageName}</dd></div>}<div><dt className="text-slate-500">Author</dt><dd className="text-white">{authorName||"—"}</dd></div><div><dt className="text-slate-500">Website</dt><dd className="break-all text-white">{websiteUrl||"—"}</dd></div></dl></div><div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between"><button type="button" onClick={()=>goToStep(2)} className="ui-button-secondary w-full px-5 py-2.5 sm:w-auto text-white">Back</button><button type="submit" disabled={isSubmitting||!fastlaneMetadata} className="rounded-xl bg-emerald-600 px-5 py-2.5 font-medium text-white disabled:opacity-40">{isSubmitting?"Saving…":isApprovedUpdate?"Submit Update":isRequestedChange?"Resubmit Changes":"Submit App"}</button></div></div>}
             </form>
           </section>
 
-          <section className={cardClass}><div className="border-b border-slate-800 px-6 py-5"><h2 className="font-semibold text-white">My submissions</h2></div><div className="divide-y divide-slate-800">{loadingApps?<div className="p-6 text-slate-400">Loading…</div>:myApps.length===0?<div className="p-6 text-slate-400">No submissions yet.</div>:myApps.map((app)=><div key={app.id} className="grid gap-4 p-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center"><div><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold text-white">{app.name}</h3><span className={`rounded-full border px-2 py-0.5 text-xs ${getStatusColor(app.status)}`}>{app.status}</span><span className={`rounded-full border px-2 py-0.5 text-xs ${app.closedSource ? "border-fuchsia-500/30 bg-fuchsia-500/10 text-fuchsia-300" : "border-emerald-500/25 bg-emerald-500/10 text-emerald-300"}`}>{app.closedSource ? "Proprietary" : "Open source"}</span>{app.closedSource&&<span className="rounded-full border border-slate-700 bg-slate-900 px-2 py-0.5 text-xs text-slate-400">Source review: {app.sourceArchiveReviewStatus}</span>}</div><p className="mt-1 line-clamp-2 text-sm text-slate-400">{app.shortDescription||app.description}</p><p className="mt-2 text-xs text-slate-500">{app.category} · {app.platform}{app.platform==="Linux"&&app.linuxPackageBase?` (${app.linuxPackageBase})`:""} · {app.version||"No version"}</p>{submissionStoreIds[app.id]&&downloadStats[submissionStoreIds[app.id]]&&<><div className="mt-3 text-xs text-slate-300"><span>All-time downloads: {downloadStats[submissionStoreIds[app.id]].total}</span></div><div className="mt-3 flex flex-wrap items-center gap-2"><img src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-badge?${app.packageName?`package_name=${encodeURIComponent(app.packageName)}`:`app_id=${encodeURIComponent(submissionStoreIds[app.id])}`}`} alt={`${app.name} Luma Store downloads`} className="h-5 w-auto"/><button type="button" onClick={()=>{const badgeKey=app.packageName?`package_name=${encodeURIComponent(app.packageName)}`:`app_id=${encodeURIComponent(submissionStoreIds[app.id])}`;const discoverKey=app.packageName||submissionStoreIds[app.id];navigator.clipboard.writeText(`[![Luma Store downloads](${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-badge?${badgeKey})](${window.location.origin}/discover/${discoverKey})`)}} className="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs text-slate-300 hover:text-white">Copy badge Markdown</button></div></>}</div><div className="flex flex-wrap gap-2"><Link href={`/dashboard/apps/${app.id}`} className="ui-button-primary px-4 py-2 text-sm text-white">Details</Link>{(["Rejected","Approved","Changes Requested"] as SubmissionStatus[]).includes(app.status)&&<button type="button" onClick={()=>beginEdit(app)} className="ui-button-secondary px-4 py-2 text-sm text-white">{app.status==="Approved"?"Submit update":app.status==="Changes Requested"?"Fix changes":"Edit & resubmit"}</button>}{app.status!=="Archived"&&<button type="button" onClick={()=>void removeSubmission(app)} className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-sm text-rose-200 hover:bg-rose-500/20">{app.status==="Approved"?"Archive app":"Delete"}</button>}</div></div>)}</div></section>
+          <section className={cardClass}><div className="border-b border-slate-800 px-6 py-5"><h2 className="font-semibold text-white">My submissions</h2></div><div className="divide-y divide-slate-800">{loadingApps?<div className="p-6 text-slate-400">Loading…</div>:myApps.length===0?<div className="p-6 text-slate-400">No submissions yet.</div>:myApps.map((app)=><div key={app.id} className="grid gap-4 p-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center"><div><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold text-white">{app.name}</h3><span className={`rounded-full border px-2 py-0.5 text-xs ${getStatusColor(app.status)}`}>{app.status}</span></div><p className="mt-1 line-clamp-2 text-sm text-slate-400">{app.shortDescription||app.description}</p><p className="mt-2 text-xs text-slate-500">{app.category} · {app.platform}{app.platform==="Linux"&&app.linuxPackageBase?` (${app.linuxPackageBase})`:""} · {app.version||"No version"}</p>{submissionStoreIds[app.id]&&downloadStats[submissionStoreIds[app.id]]&&<><div className="mt-3 text-xs text-slate-300"><span>All-time downloads: {downloadStats[submissionStoreIds[app.id]].total}</span></div><div className="mt-3 flex flex-wrap items-center gap-2"><img src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-badge?${app.packageName?`package_name=${encodeURIComponent(app.packageName)}`:`app_id=${encodeURIComponent(submissionStoreIds[app.id])}`}`} alt={`${app.name} Luma Store downloads`} className="h-5 w-auto"/><button type="button" onClick={()=>{const badgeKey=app.packageName?`package_name=${encodeURIComponent(app.packageName)}`:`app_id=${encodeURIComponent(submissionStoreIds[app.id])}`;const discoverKey=app.packageName||submissionStoreIds[app.id];navigator.clipboard.writeText(`[![Luma Store downloads](${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-badge?${badgeKey})](${window.location.origin}/discover/${discoverKey})`)}} className="rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs text-slate-300 hover:text-white">Copy badge Markdown</button></div></>}</div><div className="flex flex-wrap gap-2"><Link href={`/dashboard/apps/${app.id}`} className="ui-button-primary px-4 py-2 text-sm text-white">Details</Link>{(["Rejected","Approved","Changes Requested"] as SubmissionStatus[]).includes(app.status)&&<button type="button" onClick={()=>beginEdit(app)} className="ui-button-secondary px-4 py-2 text-sm text-white">{app.status==="Approved"?"Submit update":app.status==="Changes Requested"?"Fix changes":"Edit & resubmit"}</button>}{app.status!=="Archived"&&<button type="button" onClick={()=>void removeSubmission(app)} className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-sm text-rose-200 hover:bg-rose-500/20">{app.status==="Approved"?"Archive app":"Delete"}</button>}</div></div>)}</div></section>
         </main>
 
-        <aside className="space-y-4"><div className={`${cardClass} p-5`}><h3 className="font-semibold text-white">Platform rules</h3><p className="mt-2 text-sm leading-6 text-slate-400">Every submission needs at least one platform. Android, Windows and Linux can be selected together. Add the matching download artifact for every selected platform; Linux supports .deb, .rpm and AppImage packages.</p></div><div className={`${cardClass} p-5`}><h3 className="font-semibold text-white">Source rules</h3><p className="mt-2 text-sm leading-6 text-slate-400">Open-source apps use a public GitHub repository. Proprietary apps must upload a complete private source ZIP for review. The source archive is not published.</p></div><div className={`${cardClass} p-5`}><h3 className="font-semibold text-white">Android Fastlane requirements</h3><p className="mt-2 text-xs text-slate-500">For open-source Android apps.</p><ul className="mt-4 space-y-2 text-sm text-slate-400"><li>• title.txt</li><li>• short_description.txt</li><li>• full_description.txt</li><li>• changelogs/&lt;versionCode&gt;.txt or default.txt</li><li>• images/phoneScreenshots/*</li></ul></div></aside>
+        <aside className="space-y-4"><div className={`${cardClass} p-5`}><h3 className="font-semibold text-white">Platform rules</h3><p className="mt-2 text-sm leading-6 text-slate-400">Every submission needs at least one platform. Android, Windows and Linux can be selected together. Add the matching download artifact for every selected platform; Linux supports .deb and .rpm packages.</p></div><div className={`${cardClass} p-5`}><h3 className="font-semibold text-white">Android Fastlane requirements</h3><ul className="mt-4 space-y-2 text-sm text-slate-400"><li>• title.txt</li><li>• short_description.txt</li><li>• full_description.txt</li><li>• changelogs/&lt;versionCode&gt;.txt or default.txt</li><li>• images/phoneScreenshots/*</li></ul></div></aside>
       </div>
     </div>
   );

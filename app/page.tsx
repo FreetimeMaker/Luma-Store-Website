@@ -396,7 +396,7 @@ function DiscoverContent() {
   const featuredApps = filteredApps.slice(0, 3);
 
   return (
-    <div className="store-page mx-auto max-w-[1440px] space-y-10 pb-20 pt-1">
+    <div className="store-page mx-auto max-w-[1440px] space-y-8 pb-14 pt-1 sm:space-y-10 sm:pb-20">
       <section className="sticky top-[68px] z-20 -mx-4 border-b border-white/10 bg-[#090d14]/95 px-4 backdrop-blur-xl sm:-mx-6 sm:px-6">
         <div className="flex gap-7 overflow-x-auto">
           {[
@@ -496,12 +496,12 @@ function DiscoverContent() {
           {!hasActiveSearch && featuredApps.length > 0 && (
             <section>
               <div className="mb-4">
-                <h1 className="text-2xl font-semibold text-white">Featured apps</h1>
+                <h1 className="text-xl font-semibold text-white sm:text-2xl">Featured apps</h1>
               </div>
 
               <div className="flex snap-x gap-5 overflow-x-auto pb-3">
                 {featuredApps.map((app) => (
-                  <div key={app.id} className="min-w-[88vw] snap-start sm:min-w-[34rem] lg:min-w-[38rem]">
+                  <div key={app.id} className="min-w-[84vw] snap-start sm:min-w-[34rem] lg:min-w-[38rem]">
                     <PlayStoreCard
                       app={app}
                       iconSrc={resolveAppIcon(app)}
@@ -524,7 +524,7 @@ function DiscoverContent() {
           <section>
             <div className="mb-5 flex items-end justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-semibold text-white">
+                <h2 className="text-xl font-semibold text-white sm:text-2xl">
                   {hasActiveSearch
                     ? `Search results for “${search.trim()}”`
                     : sort === "downloads"
@@ -558,7 +558,7 @@ function DiscoverContent() {
           {!hasActiveSearch && recentApps.length > 0 && (
             <section>
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-2xl font-semibold text-white">Recently viewed</h2>
+                <h2 className="text-xl font-semibold text-white sm:text-2xl">Recently viewed</h2>
                 <button
                   type="button"
                   onClick={() => {
@@ -708,7 +708,7 @@ function Collection({
   return (
     <section>
       <div className="mb-4 flex items-center justify-between gap-4">
-        <h2 className="text-2xl font-semibold text-white">{title}</h2>
+        <h2 className="text-xl font-semibold text-white sm:text-2xl">{title}</h2>
         <span className="text-sm font-medium text-indigo-300">More</span>
       </div>
 
@@ -722,7 +722,7 @@ function Collection({
             <Link
               key={app.id}
               href={`/${encodeURIComponent(app.package_name || app.id)}`}
-              className="group flex min-w-[78vw] snap-start items-center gap-4 rounded-2xl px-3 py-3 transition hover:bg-white/[0.035] sm:min-w-[21rem] lg:min-w-[23rem]"
+              className="group flex min-w-[82vw] snap-start items-center gap-3 rounded-2xl px-2.5 py-3 transition hover:bg-white/[0.035] sm:min-w-[21rem] sm:gap-4 sm:px-3 lg:min-w-[23rem]"
             >
               <div className="relative shrink-0">
                 <div aria-hidden="true" className="absolute inset-2 rounded-2xl bg-indigo-500/15 blur-xl" />

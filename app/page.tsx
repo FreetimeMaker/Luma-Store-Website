@@ -462,15 +462,15 @@ function DiscoverContent() {
   return (
     <div className="store-page mx-auto max-w-[1440px] space-y-8 pb-14 pt-1 sm:space-y-10 sm:pb-20">
       <section className="space-y-3">
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        <div className="grid grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-white/[0.025] p-1 sm:flex sm:w-fit sm:items-center sm:gap-2 sm:border-0 sm:bg-transparent sm:p-0">
           <button
             type="button"
             onClick={() => setPlatform("Linux")}
             aria-pressed={platform === "Linux"}
-            className={`store-chip shrink-0 ${platform === "Linux" ? "active store-chip-active" : ""}`}
+            className={`store-chip min-h-11 w-full rounded-xl px-3 text-center sm:w-auto sm:rounded-none ${platform === "Linux" ? "active store-chip-active bg-indigo-500/10 sm:bg-transparent" : ""}`}
           >
-            <span className="flex items-center gap-2">
-              <img src="/desktop.png" alt="Linux-PC" className="h-4 w-4 object-contain" />
+            <span className="flex items-center justify-center gap-2">
+              <img src="/desktop.png" alt="" className="h-4 w-4 object-contain" />
               <span>Linux-PC</span>
             </span>
           </button>
@@ -478,10 +478,10 @@ function DiscoverContent() {
             type="button"
             onClick={() => setPlatform("Android")}
             aria-pressed={platform === "Android"}
-            className={`store-chip shrink-0 ${platform === "Android" ? "active store-chip-active" : ""}`}
+            className={`store-chip min-h-11 w-full rounded-xl px-3 text-center sm:w-auto sm:rounded-none ${platform === "Android" ? "active store-chip-active bg-indigo-500/10 sm:bg-transparent" : ""}`}
           >
-            <span className="flex items-center gap-2">
-              <img src="/android.png" alt="Android" className="h-4 w-4 object-contain" />
+            <span className="flex items-center justify-center gap-2">
+              <img src="/android.png" alt="" className="h-4 w-4 object-contain" />
               <span>Android</span>
             </span>
           </button>
@@ -529,7 +529,7 @@ function DiscoverContent() {
       ) : (
         <>
           {showFeaturedSection && featuredApps.length > 0 && (
-            <div className="grid gap-5 pb-3 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 pb-3 sm:gap-5 md:grid-cols-2 xl:grid-cols-3">
               {featuredApps.map((app) => (
                 <div key={app.id} className="w-full">
                   <PlayStoreCard
@@ -641,7 +641,7 @@ function PlayStoreCard({
       className="group block min-w-0"
     >
       {showThumbnail ? (
-        <div className="mx-auto overflow-hidden rounded-xl bg-[#101722] shadow-[0_1px_2px_rgba(0,0,0,0.22)]" style={{ width: "100%", maxWidth: "457.91px", height: "330.56px", margin: "-8px" }}>
+        <div className="mx-auto aspect-[16/9] w-full max-w-[458px] overflow-hidden rounded-2xl bg-[#101722] shadow-[0_1px_2px_rgba(0,0,0,0.22)] sm:aspect-[457.91/330.56]">
           {featureGraphic ? (
             <img
               src={featureGraphic}
@@ -667,7 +667,7 @@ function PlayStoreCard({
           )}
         </div>
       ) : (
-        <div className="flex min-w-0 items-center gap-3 rounded-xl px-2 py-2.5 transition group-hover:bg-white/[0.035]">
+        <div className="flex min-w-0 items-center gap-3 rounded-xl px-1 py-2.5 transition group-hover:bg-white/[0.035] sm:px-2">
           {rank !== undefined && (
             <span className="w-6 shrink-0 text-right text-sm font-semibold text-slate-500">{rank}</span>
           )}
@@ -676,17 +676,17 @@ function PlayStoreCard({
               <img
                 src={iconSrc}
                 alt={`${name} icon`}
-                className="h-14 w-14 rounded-[0.9rem] object-cover shadow-[0_4px_14px_rgba(0,0,0,0.18)]"
+                className="h-12 w-12 rounded-[0.8rem] object-cover shadow-[0_4px_14px_rgba(0,0,0,0.18)] sm:h-14 sm:w-14 sm:rounded-[0.9rem]"
               />
             ) : (
-              <span className="flex h-14 w-14 items-center justify-center rounded-[0.9rem] bg-[#101722] text-sm font-bold text-indigo-200">
+              <span className="flex h-12 w-12 items-center justify-center rounded-[0.8rem] bg-[#101722] text-sm font-bold text-indigo-200 sm:h-14 sm:w-14 sm:rounded-[0.9rem]">
                 {appInitials(name)}
               </span>
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <h3 className="truncate text-sm font-semibold text-white group-hover:text-indigo-200">{name}</h3>
-            <p className="mt-0.5 truncate text-xs text-slate-400">
+            <h3 className="truncate text-[13px] font-semibold text-white group-hover:text-indigo-200 sm:text-sm">{name}</h3>
+            <p className="mt-0.5 truncate text-[11px] text-slate-400 sm:text-xs">
               {listing?.shortDescription || app.short_description || app.developer_name || app.package_name || "No description"}
             </p>
             <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
@@ -737,7 +737,39 @@ function Collection({
         <span className="text-sm font-medium text-indigo-300">More</span>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="space-y-2 md:hidden">
+        {apps.slice(0, 9).map((app, index) => {
+          const listing = resolveListing(app);
+          const name = listing?.title || app.name || app.package_name || "Untitled app";
+          const rating = ratings[app.id];
+          const iconSrc = resolveIcon(app);
+          return (
+            <Link
+              key={app.id}
+              href={`/${encodeURIComponent(app.package_name || app.id)}`}
+              className="group flex min-w-0 items-center gap-3 rounded-xl px-1 py-2.5 transition hover:bg-white/[0.035]"
+            >
+              <div className="w-6 shrink-0 text-right text-sm font-bold text-slate-400">{index + 1}</div>
+              {iconSrc ? (
+                <img src={iconSrc} alt="" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
+              ) : (
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#101722] text-sm font-bold text-indigo-200">
+                  {appInitials(name)}
+                </span>
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-medium text-white">{name}</div>
+                <div className="mt-0.5 truncate text-xs text-slate-400">
+                  {listing?.shortDescription || app.subcategory || app.developer_name || "View app"}
+                </div>
+                <div className="mt-1 text-[11px] text-slate-500">{rating ? rating.average.toFixed(1) : "—"} ★</div>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className="hidden gap-4 md:grid md:grid-cols-3">
         {paddedColumns.map(({ columnIndex, items }) => (
           <div key={columnIndex} className="space-y-2">
             {items.map((app, itemIndex) => {

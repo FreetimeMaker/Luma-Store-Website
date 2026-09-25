@@ -529,56 +529,227 @@ export default function DiscoverAppPage() {
 
       <section className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="min-w-0 space-y-8">
+          {screenshots.length > 0 && (
+            <section>
+              <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3">
+                {screenshots.map((url, index) => (
+                  <button
+                    type="button"
+                    key={`${url}-${index}`}
+                    onClick={() => setScreenshotIndex(index)}
+                    className="shrink-0 snap-center overflow-hidden rounded-2xl border border-white/10 bg-slate-950 focus:outline-none focus:ring-2 focus:ring-indigo-300/60"
+                  >
+                    <img
+                      src={url}
+                      alt={`${name} screenshot ${index + 1}`}
+                      className="h-72 w-auto max-w-[80vw] object-contain sm:h-96"
+                    />
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {description && (
+            <section>
+              <h2 className="text-2xl font-semibold text-white">About this app</h2>
+              <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-slate-300 sm:text-base">
+                {description}
+              </p>
+            </section>
+          )}
+
           <section className="glass-panel p-5 sm:p-6">
-        <h2 className="text-xl font-semibold text-white">App details</h2>
-        <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <Field label="Package name" value={app.package_name} mono />
-          <Field label="Version" value={app.version} />
-          <Field label="Version code" value={app.version_code} />
-          <Field label="License" value={app.license_type} />
-          <Field label="Developer" value={app.developer_name} />
-          <Field label="Author" value={app.author_name} />
-          <Field label="Author email" value={app.author_email} />
-          <Field label="Created" value={formatDate(app.created_at)} />
-          <Field label="Updated" value={formatDate(app.updated_at)} />
-        </dl>
+            <h2 className="text-xl font-semibold text-white">App details</h2>
+            <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <Field label="Package name" value={app.package_name} mono />
+              <Field label="Version" value={app.version} />
+              <Field label="Version code" value={app.version_code} />
+              <Field label="License" value={app.license_type} />
+              <Field label="Developer" value={app.developer_name} />
+              <Field label="Author" value={app.author_name} />
+              <Field label="Author email" value={app.author_email} />
+              <Field label="Created" value={formatDate(app.created_at)} />
+              <Field label="Updated" value={formatDate(app.updated_at)} />
+            </dl>
+          </section>
+
+          <section className="glass-panel p-5 sm:p-6">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[.16em] text-indigo-300">Trust & transparency</p>
+                <h2 className="mt-1 text-xl font-semibold text-white">Integrity & privacy</h2>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+                  Information published by Luma Store for this release.
+                </p>
+              </div>
+              <span className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-200">
+                {app.source_code_url || app.repo_url ? "Source available" : "Source not provided"}
+              </span>
+            </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <TrustItem label="Source code" value={app.source_code_url || app.repo_url ? "Repository linked" : "Not provided"} tone={app.source_code_url || app.repo_url ? "good" : "neutral"} />
+              <TrustItem label="License" value={app.license_type || "Not provided"} tone={app.license_type ? "good" : "neutral"} />
+              <TrustItem label="Anti-features" value={hasJsonValue(app.ant_features) ? stringArray(app.ant_features).join(", ") || "Declared" : "None declared"} tone={hasJsonValue(app.ant_features) ? "warn" : "good"} />
+              <TrustItem label="SHA-256" value={platforms.some((p) => p.sha256) ? platforms.filter((p) => p.sha256).map((p) => artifactLabel(p) + ": " + p.sha256).join(" · ") : "Not provided yet"} tone={platforms.some((p) => p.sha256) ? "good" : "neutral"} />
+              <TrustItem label="Android permissions" value={(() => { const android = platforms.find((p) => p.platform.toLowerCase() === "android"); return android ? (hasJsonValue(android.permissions) ? stringArray(android.permissions).join(", ") || "Metadata available" : "Not provided yet") : "Not applicable"; })()} tone="neutral" />
+              <TrustItem label="Artifact verification" value={platforms.some((p) => p.artifact_verified_at) ? "SHA-256 calculated by Luma Store" : "Not verified yet"} tone={platforms.some((p) => p.artifact_verified_at) ? "good" : "neutral"} />
+            </div>
+          </section>
+
+          {versionHistory.length > 0 && (
+            <section className="glass-panel p-5 sm:p-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Releases</p>
+              <h2 className="mt-1 text-xl font-semibold text-white">Version history</h2>
+              <div className="mt-4 space-y-3">
+                {versionHistory.map((item, index) => (
+                  <details key={String(item.version) + "-" + String(item.version_code) + "-" + index} open={index === 0} className="group ui-panel-muted p-4">
+                    <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2">
+                      <span className="font-semibold text-white">
+                        {item.version ? "v" + item.version : "Version"}
+                        {index === 0 && <span className="ml-2 rounded-full bg-indigo-500/10 px-2 py-0.5 text-[11px] text-indigo-200">Latest</span>}
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        {formatDate(item.published_at)} · #{item.version_code ?? "—"}
+                      </span>
+                    </summary>
+                    <p className="mt-3 whitespace-pre-wrap border-t border-white/10 pt-3 text-sm leading-6 text-slate-400">
+                      {item.changelog || "No changelog provided."}
+                    </p>
+                  </details>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {changelog && (
+            <section className="glass-panel p-5 sm:p-6">
+              <h2 className="text-xl font-semibold text-white">Changelog</h2>
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-300">{changelog}</p>
+            </section>
+          )}
+
+          <section className="glass-panel p-5 sm:p-6">
+            <h2 className="text-xl font-semibold text-white">Anti-features</h2>
+            {antiFeatures.length > 0 ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {antiFeatures.map((item) => (
+                  <span key={item} className="rounded-full bg-amber-500/10 px-3 py-1 text-xs text-amber-200">{item}</span>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-slate-500">No anti-features listed.</p>
+            )}
+          </section>
+
+          {pageUrl && platforms.some((p) => p.platform.toLowerCase() === "android") && (
+            <section className="rounded-3xl border border-indigo-400/15 bg-indigo-500/5 p-5 sm:p-6">
+              <div className="grid gap-6 sm:grid-cols-[1fr_auto] sm:items-center">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-300">Continue on Android</p>
+                  <h2 className="mt-1 text-xl font-semibold text-white">Open this app on your phone</h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+                    Scan the QR code to open this Luma Store app page on Android.
+                  </p>
+                </div>
+                <div className="mx-auto rounded-3xl bg-white p-3 sm:mx-0">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(pageUrl)}`}
+                    alt={`QR code for ${name}`}
+                    width={180}
+                    height={180}
+                    className="h-40 w-40 sm:h-44 sm:w-44"
+                  />
+                </div>
+              </div>
+            </section>
+          )}
+        </div>
+
+        <aside className="space-y-6">
+          <section className="border-t border-white/10 pt-5 lg:border-t-0 lg:pt-0">
+            <h2 className="text-lg font-semibold text-white">App support</h2>
+            <div className="mt-4 space-y-3 text-sm text-slate-400">
+              <div className="flex items-center justify-between gap-3">
+                <span>License</span>
+                <span className="text-slate-200">{app.license_type || "Not provided"}</span>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span>Platforms</span>
+                <span className="text-slate-200">{platforms.length}</span>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span>Downloads</span>
+                <span className="text-slate-200">{downloadCount.toLocaleString()}</span>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <LinkChip href={app.website_url} label="Website" />
+              <LinkChip href={app.issue_tracker_url} label="Support" />
+              <LinkChip href={activePlatformRow?.repo_url || app.source_code_url} label="Source" />
+            </div>
+          </section>
+
+          {relatedDeveloperApps.length > 0 && (
+            <section className="border-t border-white/10 pt-5">
+              <h2 className="text-lg font-semibold text-white">More from {app.developer_name || "this developer"}</h2>
+              <div className="mt-4 space-y-4">
+                {relatedDeveloperApps.slice(0, 3).map((item) => {
+                  const itemName = item.name || item.package_name || "Untitled app";
+                  return (
+                    <Link key={item.id} href={`/discover/${encodeURIComponent(item.package_name || item.id)}`} className="flex items-center gap-3 rounded-xl p-1 transition hover:bg-white/[0.03]">
+                      {item.icon_url ? (
+                        <img src={item.icon_url} alt="" className="h-12 w-12 rounded-xl border border-white/10 object-cover" />
+                      ) : (
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-slate-900 font-semibold text-indigo-200">{itemName[0]}</div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-white">{itemName}</p>
+                        <p className="mt-0.5 truncate text-xs text-slate-500">{item.version ? `Version ${item.version}` : "View app"}</p>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          {similarApps.length > 0 && (
+            <section className="border-t border-white/10 pt-5">
+              <h2 className="text-lg font-semibold text-white">Similar apps</h2>
+              <div className="mt-4 space-y-4">
+                {similarApps.slice(0, 3).map((item) => {
+                  const itemName = item.name || item.package_name || "Untitled app";
+                  return (
+                    <Link key={item.id} href={`/discover/${encodeURIComponent(item.package_name || item.id)}`} className="flex items-center gap-3 rounded-xl p-1 transition hover:bg-white/[0.03]">
+                      {item.icon_url ? (
+                        <img src={item.icon_url} alt="" className="h-12 w-12 rounded-xl border border-white/10 object-cover" />
+                      ) : (
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-slate-900 font-semibold text-indigo-200">{itemName[0]}</div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-white">{itemName}</p>
+                        <p className="mt-0.5 truncate text-xs text-slate-500">{item.version ? `Version ${item.version}` : "View app"}</p>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          {funding && (funding.donate_url || funding.liberapay || funding.opencollective) && (
+            <section className="border-t border-white/10 pt-5">
+              <h2 className="text-lg font-semibold text-white">Support the developer</h2>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <LinkChip href={funding.donate_url ? fundingRedirect(app.id, "donate") : null} label="Donate" />
+                <LinkChip href={funding.liberapay ? fundingRedirect(app.id, "liberapay") : null} label="Liberapay" />
+                <LinkChip href={funding.opencollective ? fundingRedirect(app.id, "opencollective") : null} label="OpenCollective" />
+              </div>
+            </section>
+          )}
+        </aside>
       </section>
-
-      {(app.website_url || app.source_code_url || app.issue_tracker_url || app.translation_url || app.changelog_url || app.author_website || app.license_type) && (
-        <section className="rounded-3xl border border-emerald-400/15 bg-emerald-500/5 p-5 sm:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-300">Open source</p><h2 className="mt-1 text-xl font-semibold text-white">Project & repository</h2></div>{app.license_type&&<span className="rounded-full bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-200">{app.license_type}</span>}</div>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <LinkChip href={app.website_url} label="Website" />
-            <LinkChip href={app.author_website} label="Author website" />
-            <LinkChip href={activePlatformRow?.repo_url || app.source_code_url} label={selectedListingPlatform&&activePlatformRow?.repo_url?`${selectedListingPlatform} source code`:"Source code"} />
-            <LinkChip href={app.issue_tracker_url} label="Issue tracker" />
-            <LinkChip href={app.translation_url} label="Translations" />
-            <LinkChip href={app.changelog_url} label="Changelog" />
-          </div>
-        </section>
-      )}
-
-      {versionHistory.length>0&&<section className="glass-panel p-5 sm:p-6"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Releases</p><h2 className="mt-1 text-xl font-semibold text-white">Version history</h2><div className="mt-4 space-y-3">{versionHistory.map((item,index)=><details key={String(item.version)+"-"+String(item.version_code)+"-"+index} open={index===0} className="group ui-panel-muted p-4"><summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2"><span className="font-semibold text-white">{item.version?"v"+item.version:"Version"} {index===0&&<span className="ml-2 rounded-full bg-indigo-500/10 px-2 py-0.5 text-[11px] text-indigo-200">Latest</span>}</span><span className="text-xs text-slate-500">{formatDate(item.published_at)} · #{item.version_code??"—"} <span className="ml-1 inline-block transition group-open:rotate-180">⌄</span></span></summary><p className="mt-3 whitespace-pre-wrap border-t border-white/10 pt-3 text-sm leading-6 text-slate-400">{item.changelog||"No changelog provided."}</p></details>)}</div></section>}
-
-      {changelog && (
-        <section className="glass-panel p-5 sm:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-xl font-semibold text-white">Changelog</h2>{selectedListingPlatform&&activeListing&&<span className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-xs text-indigo-200">{selectedListingPlatform}</span>}</div>
-          <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-300">{changelog}</p>
-        </section>
-      )}
-
-      <section className="glass-panel p-5 sm:p-6">
-        <h2 className="text-xl font-semibold text-white">Anti-features</h2>
-        {antiFeatures.length > 0 ? (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {antiFeatures.map((item) => <span key={item} className="rounded-full bg-amber-500/10 px-3 py-1 text-xs text-amber-200">{item}</span>)}
-          </div>
-        ) : (
-          <p className="mt-3 text-sm text-slate-500">No anti-features listed.</p>
-        )}
-      </section>
-
-      {pageUrl&&platforms.some(p=>p.platform.toLowerCase()==="android")&&<section className="rounded-3xl border border-indigo-400/15 bg-indigo-500/5 p-5 sm:p-6"><div className="grid gap-6 sm:grid-cols-[1fr_auto] sm:items-center"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-300">Continue on Android</p><h2 className="mt-1 text-xl font-semibold text-white">Open this app on your phone</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">Scan the QR code to open this Luma Store app page on Android. Downloads still go through Luma Store, so the download counter stays accurate.</p></div><div className="mx-auto rounded-3xl bg-white p-3 sm:mx-0"><img src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(pageUrl)}`} alt={`QR code for ${name}`} width={180} height={180} className="h-40 w-40 sm:h-44 sm:w-44"/></div></div></section>}
 
       {androidQrUrl && <div onMouseDown={(e)=>{if(e.target===e.currentTarget)setAndroidQrUrl(null)}} className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-md"><div role="dialog" aria-modal="true" aria-label="Install on Android" className="glass-panel relative w-full max-w-md p-6 text-center"><button type="button" onClick={()=>setAndroidQrUrl(null)} className="absolute right-3 top-3 h-9 w-9 rounded-full border border-white/10 bg-white/5 text-white" aria-label="Close">×</button>{app.icon_url&&<img src={app.icon_url} alt="" className="mx-auto h-16 w-16 rounded-2xl object-cover"/>}<h2 className="mt-4 text-2xl font-bold text-white">Install {name} on Android</h2><p className="mt-2 text-sm text-slate-400">Version {app.version||"latest"} · Scan this code with your Android device.</p><div className="mt-4 rounded-2xl border border-amber-400/15 bg-amber-500/5 p-4 text-left"><p className="text-sm font-semibold text-amber-100">Installing outside your current app store</p><ol className="mt-2 space-y-1.5 text-xs leading-5 text-slate-400"><li><strong className="text-slate-300">1.</strong> Download the APK on your Android device.</li><li><strong className="text-slate-300">2.</strong> Android may ask you to allow installs from the browser or file manager you used.</li><li><strong className="text-slate-300">3.</strong> Enable that permission only for the app you trust, install the APK, then you can disable it again.</li></ol><p className="mt-2 text-[11px] leading-4 text-slate-500">The exact Settings name varies by Android version and manufacturer. Luma Store does not ask you to disable Play Protect or other device security.</p></div><div className="mx-auto mt-5 w-fit rounded-3xl bg-white p-3"><img src={"https://api.qrserver.com/v1/create-qr-code/?size=240x240&data="+encodeURIComponent(androidQrUrl)} alt={"QR code to download "+name} width={240} height={240}/></div><div className="mt-5 flex flex-col gap-2 sm:flex-row"><button type="button" onClick={()=>void navigator.clipboard.writeText(androidQrUrl)} className="glass-action flex-1 px-4 py-2.5 text-sm">Copy link</button><button type="button" onClick={()=>window.location.assign(androidQrUrl)} className="rounded-xl bg-indigo-500 px-4 py-2.5 text-sm font-semibold text-white">Download here instead</button></div></div></div>}
       {screenshotIndex!==null && screenshots[screenshotIndex] && <div onMouseDown={(e)=>{if(e.target===e.currentTarget)setScreenshotIndex(null)}} className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/90 p-3 backdrop-blur-md"><div role="dialog" aria-modal="true" aria-label="Screenshot preview" className="relative flex h-full w-full max-w-6xl items-center justify-center"><button type="button" onClick={()=>setScreenshotIndex(null)} className="absolute right-2 top-2 z-10 h-10 w-10 rounded-full bg-slate-950/80 text-xl text-white" aria-label="Close">×</button>{screenshots.length>1&&<button type="button" onClick={()=>setScreenshotIndex((screenshotIndex-1+screenshots.length)%screenshots.length)} className="absolute left-2 z-10 h-11 w-11 rounded-full bg-slate-950/80 text-2xl text-white" aria-label="Previous">‹</button>}<img src={screenshots[screenshotIndex]} alt={name+" screenshot "+(screenshotIndex+1)} className="max-h-[90vh] max-w-full rounded-2xl object-contain"/>{screenshots.length>1&&<button type="button" onClick={()=>setScreenshotIndex((screenshotIndex+1)%screenshots.length)} className="absolute right-2 z-10 h-11 w-11 rounded-full bg-slate-950/80 text-2xl text-white" aria-label="Next">›</button>}<span className="absolute bottom-2 rounded-full bg-slate-950/80 px-3 py-1 text-xs text-slate-300">{screenshotIndex+1} / {screenshots.length}</span></div></div>}

@@ -528,7 +528,6 @@ export default function AppMetadataPage() {
 
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) throw new Error("Your login session expired.");
-      if (!session.provider_token) throw new Error("GitHub authorization is required. Please sign out and sign in with GitHub again.");
 
       const submission = {
         name: primaryListing.title.trim(),
@@ -569,7 +568,7 @@ export default function AppMetadataPage() {
         headers: {
           "Content-Type": "application/json",
           Authorization: "Bearer " + session.access_token,
-          "X-GitHub-Token": session.provider_token,
+          ...(session.provider_token ? { "X-GitHub-Token": session.provider_token } : {}),
         },
         body: JSON.stringify({ submission, editingId: id, editingStatus: app.status }),
       });

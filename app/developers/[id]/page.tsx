@@ -67,7 +67,7 @@ export default function DiscoverDeveloperPage() {
   const memberSince=profile?.created_at?new Intl.DateTimeFormat("en",{year:"numeric",month:"long"}).format(new Date(profile.created_at)):null;
   const latestUpdate=apps.map(app=>app.updated_at).filter((value):value is string=>Boolean(value)).sort().at(-1)||null;
   return (
-    <div className="store-page mx-auto max-w-7xl space-y-10 px-3 pb-20 sm:px-4">
+    <div className="store-page mx-auto max-w-7xl space-y-7 pb-14 sm:space-y-10 sm:px-4 sm:pb-20">
       <Link
         href="/"
         className="inline-flex text-sm font-medium text-indigo-300 transition hover:text-indigo-200"
@@ -75,17 +75,17 @@ export default function DiscoverDeveloperPage() {
         ← Back to apps
       </Link>
 
-      <section className="border-b border-white/10 pb-8">
+      <section className="border-b border-white/10 pb-6 sm:pb-8">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
           <div className="shrink-0">
             {profile?.avatar_url ? (
               <img
                 src={profile.avatar_url}
                 alt={developerName}
-                className="h-28 w-28 rounded-[2rem] object-cover shadow-[0_12px_36px_rgba(0,0,0,0.28)]"
+                className="h-24 w-24 rounded-[1.5rem] object-cover sm:h-28 sm:w-28 sm:rounded-[2rem] shadow-[0_12px_36px_rgba(0,0,0,0.28)]"
               />
             ) : (
-              <div className="flex h-28 w-28 items-center justify-center rounded-[2rem] bg-[#101722] text-3xl font-semibold text-indigo-200 shadow-[0_12px_36px_rgba(0,0,0,0.28)]">
+              <div className="flex h-24 w-24 items-center justify-center rounded-[1.5rem] sm:h-28 sm:w-28 sm:rounded-[2rem] bg-[#101722] text-3xl font-semibold text-indigo-200 shadow-[0_12px_36px_rgba(0,0,0,0.28)]">
                 {developerName.slice(0, 1).toUpperCase()}
               </div>
             )}
@@ -93,7 +93,7 @@ export default function DiscoverDeveloperPage() {
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+              <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-4xl">
                 {developerName}
               </h1>
               {profile?.verified && (
@@ -205,7 +205,7 @@ export default function DiscoverDeveloperPage() {
               <Link
                 key={app.id}
                 href={`/${encodeURIComponent(app.package_name || app.id)}`}
-                className="group flex items-center gap-4 rounded-2xl px-2 py-3 transition hover:bg-white/[0.035]"
+                className="group flex items-center gap-3 rounded-2xl px-1 py-3 transition sm:gap-4 sm:px-2 hover:bg-white/[0.035]"
               >
                 {app.icon_url ? (
                   <div className="relative shrink-0">
@@ -216,11 +216,11 @@ export default function DiscoverDeveloperPage() {
                     <img
                       src={app.icon_url}
                       alt={`${name} icon`}
-                      className="relative h-20 w-20 rounded-2xl object-cover shadow-[0_8px_28px_rgba(0,0,0,0.24)]"
+                      className="relative h-16 w-16 rounded-2xl object-cover sm:h-20 sm:w-20 shadow-[0_8px_28px_rgba(0,0,0,0.24)]"
                     />
                   </div>
                 ) : (
-                  <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-[#101722] text-xl font-semibold text-indigo-200">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl sm:h-20 sm:w-20 bg-[#101722] text-xl font-semibold text-indigo-200">
                     {name.slice(0, 1).toUpperCase()}
                   </div>
                 )}

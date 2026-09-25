@@ -138,6 +138,12 @@ function DiscoverContent() {
   }, []);
 
   useEffect(() => {
+    if (platform === "Android" || platform === "Linux") {
+      localStorage.setItem("luma-selected-platform", platform);
+    }
+  }, [platform]);
+
+  useEffect(() => {
     try {
       setRecentApps(JSON.parse(localStorage.getItem("luma-recent-apps") || "[]"));
     } catch {

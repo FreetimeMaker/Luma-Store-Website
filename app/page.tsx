@@ -387,25 +387,23 @@ function DiscoverContent() {
       .map(({ app }) => app);
   }, [apps, category, developer, license, search, platform, sort, metrics]);
 
-  const featuredApps = filteredApps
-    .filter((app) => Boolean(featureGraphics[app.id]))
-    .slice(0, 3);
+  const featuredApps = filteredApps.slice(0, 3);
 
   return (
     <div className="store-page mx-auto max-w-7xl space-y-10 pb-20 pt-1">
-      <section className="border-b border-white/10">
+      <section className="sticky top-[68px] z-20 -mx-4 border-b border-white/10 bg-[#090d14]/95 px-4 backdrop-blur-xl sm:-mx-6 sm:px-6">
         <div className="flex gap-7 overflow-x-auto">
           {[
             ["trending", "For you"],
             ["downloads", "Top charts"],
-            ["new", "New releases"],
-            ["updated", "Recently updated"],
+            ["new", "New"],
+            ["updated", "Updated"],
           ].map(([value, label]) => (
             <button
               key={value}
               type="button"
               onClick={() => setSort(value)}
-              className={`relative shrink-0 pb-4 text-sm font-semibold transition ${sort === value ? "text-indigo-300" : "text-slate-400 hover:text-white"}`}
+              className={`relative shrink-0 py-4 text-sm font-semibold transition ${sort === value ? "text-indigo-300" : "text-slate-400 hover:text-white"}`}
             >
               {label}
               {sort === value && (
@@ -416,7 +414,7 @@ function DiscoverContent() {
         </div>
       </section>
 
-      <section className="space-y-4">
+      <section className="space-y-3">
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
           <button
             type="button"
@@ -435,31 +433,27 @@ function DiscoverContent() {
               {item}
             </button>
           ))}
+
+          {categories.slice(0, 8).map((item) => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => setCategory(category === item ? "all" : item)}
+              className={`store-chip shrink-0 ${category === item ? "store-chip-active" : ""}`}
+            >
+              {item}
+            </button>
+          ))}
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          <label className="store-filter min-w-52 shrink-0">
-            <span>Category</span>
-            <select value={category} onChange={(event) => setCategory(event.target.value)}>
-              <option value="all">All</option>
-              {categories.map((item) => <option key={item} value={item}>{item}</option>)}
-            </select>
-          </label>
-          <label className="store-filter min-w-52 shrink-0">
-            <span>Developer</span>
-            <select value={developer} onChange={(event) => setDeveloper(event.target.value)}>
-              <option value="all">All</option>
-              {developers.map((item) => <option key={item} value={item}>{item}</option>)}
-            </select>
-          </label>
-          <label className="store-filter min-w-52 shrink-0">
-            <span>License</span>
-            <select value={license} onChange={(event) => setLicense(event.target.value)}>
-              <option value="all">All</option>
-              {licenses.map((item) => <option key={item} value={item}>{item}</option>)}
-            </select>
-          </label>
-        </div>
+        {(developer !== "all" || license !== "all" || category !== "all") && (
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+            <span>Active filters:</span>
+            {category !== "all" && <button type="button" onClick={() => setCategory("all")} className="store-chip">{category} ×</button>}
+            {developer !== "all" && <button type="button" onClick={() => setDeveloper("all")} className="store-chip">{developer} ×</button>}
+            {license !== "all" && <button type="button" onClick={() => setLicense("all")} className="store-chip">{license} ×</button>}
+          </div>
+        )}
       </section>
 
       {loading ? (
@@ -499,15 +493,16 @@ function DiscoverContent() {
                 <h1 className="text-2xl font-semibold text-white">Featured apps</h1>
               </div>
 
-              <div className="grid gap-x-6 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="flex snap-x gap-5 overflow-x-auto pb-3">
                 {featuredApps.map((app) => (
-                  <PlayStoreCard
-                    key={app.id}
-                    app={app}
-                    iconSrc={resolveAppIcon(app)}
-                    featureGraphic={featureGraphics[app.id] || null}
-                    rating={ratings[app.id]}
-                  />
+                  <div key={app.id} className="min-w-[88vw] snap-start sm:min-w-[34rem] lg:min-w-[38rem]">
+                    <PlayStoreCard
+                      app={app}
+                      iconSrc={resolveAppIcon(app)}
+                      featureGraphic={featureGraphics[app.id] || null}
+                      rating={ratings[app.id]}
+                    />
+                  </div>
                 ))}
               </div>
             </section>
@@ -515,8 +510,8 @@ function DiscoverContent() {
 
           {!hasActiveSearch && (
             <div className="space-y-10">
-              <Collection title="Recommended for you" apps={trending} ratings={ratings} resolveIcon={resolveAppIcon} featureGraphics={featureGraphics} />
-              <Collection title="New & updated" apps={recentlyUpdated} ratings={ratings} resolveIcon={resolveAppIcon} featureGraphics={featureGraphics} />
+              <Collection title="Recommended for you" apps={trending} ratings={ratings} resolveIcon={resolveAppIcon} />
+              <Collection title="New & updated" apps={recentlyUpdated} ratings={ratings} resolveIcon={resolveAppIcon} />
             </div>
           )}
 
@@ -538,7 +533,7 @@ function DiscoverContent() {
               </div>
             </div>
 
-            <div className="grid gap-x-6 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-x-10 gap-y-2 md:grid-cols-2">
               {filteredApps.map((app, index) => (
                 <PlayStoreCard
                   key={app.id}
@@ -700,7 +695,6 @@ function Collection({
   apps,
   ratings,
   resolveIcon,
-  featureGraphics,
 }: {
   title: string;
   apps: StoreApp[];
@@ -712,22 +706,54 @@ function Collection({
 
   return (
     <section>
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between gap-4">
         <h2 className="text-2xl font-semibold text-white">{title}</h2>
         <span className="text-sm font-medium text-indigo-300">More</span>
       </div>
 
-      <div className="flex snap-x gap-5 overflow-x-auto pb-3">
-        {apps.map((app) => (
-          <div key={app.id} className="min-w-[82vw] snap-start sm:min-w-[24rem] lg:min-w-[26rem]">
-            <PlayStoreCard
-              app={app}
-              iconSrc={resolveIcon(app)}
-              featureGraphic={featureGraphics[app.id] || null}
-              rating={ratings[app.id]}
-            />
-          </div>
-        ))}
+      <div className="grid gap-x-10 gap-y-2 md:grid-cols-2 lg:grid-cols-3">
+        {apps.map((app) => {
+          const name = app.name || app.package_name || "Untitled app";
+          const rating = ratings[app.id];
+          const iconSrc = resolveIcon(app);
+
+          return (
+            <Link
+              key={app.id}
+              href={`/${encodeURIComponent(app.package_name || app.id)}`}
+              className="group flex items-center gap-4 rounded-2xl px-2 py-3 transition hover:bg-white/[0.035]"
+            >
+              <div className="relative shrink-0">
+                <div aria-hidden="true" className="absolute inset-2 rounded-2xl bg-indigo-500/15 blur-xl" />
+                {iconSrc ? (
+                  <img
+                    src={iconSrc}
+                    alt=""
+                    className="relative h-16 w-16 rounded-2xl object-cover shadow-[0_6px_22px_rgba(0,0,0,0.22)]"
+                  />
+                ) : (
+                  <span className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[#101722] text-sm font-bold text-indigo-200">
+                    {appInitials(name)}
+                  </span>
+                )}
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <strong className="block truncate text-sm font-semibold text-white group-hover:text-indigo-200">
+                  {name}
+                </strong>
+                <span className="mt-1 block truncate text-xs text-slate-500">
+                  {app.developer_name || app.package_name || "Unknown developer"}
+                </span>
+                <span className="mt-1.5 block text-xs text-slate-500">
+                  <span className="text-amber-300">★</span>{" "}
+                  {rating ? rating.average.toFixed(1) : "—"}
+                  {app.subcategory ? ` · ${app.subcategory}` : ""}
+                </span>
+              </div>
+            </Link>
+          );
+        })}
       </div>
     </section>
   );

@@ -4,6 +4,7 @@ export type FastlaneMetadata = {
   fullDescription: string;
   changelog: string;
   screenshots: string[];
+  featureGraphic: string | null;
   locale: string;
   branch: string;
 };
@@ -42,6 +43,15 @@ async function fetchText(url: string): Promise<string | null> {
   }
 }
 
+async function fetchFeatureGraphic(owner: string, repo: string, branch: string, locale: string): Promise<string | null> {
+  const base = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/fastlane/metadata/android/${locale}/images`;
+  for (const name of ["featureGraphic.png", "featureGraphic.webp", "featureGraphic.jpg", "featureGraphic.jpeg"]) {
+    const response = await fetch(`${base}/${name}`, { cache: "no-store" });
+    if (response.ok) return `${base}/${name}`;
+  }
+  return null;
+}
+
 async function fetchPhoneScreenshots(owner: string, repo: string, branch: string, locale: string): Promise<string[]> {
   const path = `fastlane/metadata/android/${locale}/images/phoneScreenshots`;
   const apiUrl = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${path}?ref=${encodeURIComponent(branch)}`;
@@ -72,7 +82,7 @@ export async function fetchFastlaneIconUrl(projectUrl: string | null | undefined
   try {
     const { owner, repo, branches } = githubRepository(projectUrl);
     const locales = ["en-US", "en-GB", "de-DE", "en", "de"];
-    const preferredNames = ["icon.png", "icon.webp", "icon.jpg", "icon.jpeg", "featureGraphic.png", "featureGraphic.jpg"];
+    const preferredNames = ["icon.png", "icon.webp", "icon.jpg", "icon.jpeg"];
 
     for (const branch of branches) {
       for (const locale of locales) {
@@ -130,7 +140,8 @@ export async function fetchFastlaneMetadata(projectUrl: string, versionCode: str
 
       const screenshots = await fetchPhoneScreenshots(owner, repo, branch, locale);
       if (screenshots.length > 0) {
-        return { title, shortDescription, fullDescription, changelog, screenshots, locale, branch };
+        const featureGraphic = await fetchFeatureGraphic(owner, repo, branch, locale);
+        return { title, shortDescription, fullDescription, changelog, screenshots, featureGraphic, locale, branch };
       }
     }
   }

@@ -17,6 +17,7 @@ type ListingForm = {
   fullDescription: string;
   changelog: string;
   screenshotsText: string;
+  featureGraphicUrl: string;
 };
 
 type PlatformArtifact = {
@@ -30,6 +31,7 @@ type PlatformArtifact = {
     fullDescription: string;
     changelog: string;
     screenshots: string[];
+    featureGraphic: string | null;
   };
 };
 
@@ -82,7 +84,7 @@ function stringArray(value: unknown): string[] {
 }
 
 function emptyListing(): ListingForm {
-  return { repoUrl: "", title: "", shortDescription: "", fullDescription: "", changelog: "", screenshotsText: "" };
+  return { repoUrl: "", title: "", shortDescription: "", fullDescription: "", changelog: "", screenshotsText: "", featureGraphicUrl: "" };
 }
 
 function listingFromFastlane(metadata: FastlaneMetadata, repoUrl: string): ListingForm {
@@ -93,6 +95,7 @@ function listingFromFastlane(metadata: FastlaneMetadata, repoUrl: string): Listi
     fullDescription: metadata.fullDescription,
     changelog: metadata.changelog,
     screenshotsText: metadata.screenshots.join("\n"),
+    featureGraphicUrl: metadata.featureGraphic || "",
   };
 }
 
@@ -128,11 +131,16 @@ function parsePlatformArtifacts(value: unknown, legacyPlatform: string | null, l
           fullDescription: String(meta.fullDescription ?? meta.full_description ?? ""),
           changelog: String(meta.changelog ?? ""),
           screenshots: stringArray(meta.screenshots),
+          featureGraphic: typeof meta.featureGraphic === "string"
+            ? meta.featureGraphic
+            : typeof meta.feature_graphic === "string"
+              ? meta.feature_graphic
+              : null,
         };
       }
 
       if (!metadata) {
-        metadata = { title: "", shortDescription: "", fullDescription: "", changelog: "", screenshots: [] };
+        metadata = { title: "", shortDescription: "", fullDescription: "", changelog: "", screenshots: [], featureGraphic: null };
       }
 
       return [{ platform, packageType, downloadUrl, ...(repoUrl ? { repoUrl } : {}), metadata }];
@@ -146,7 +154,7 @@ function parsePlatformArtifacts(value: unknown, legacyPlatform: string | null, l
     platform,
     packageType,
     downloadUrl: legacyUrl,
-    metadata: { title: "", shortDescription: "", fullDescription: "", changelog: "", screenshots: [] },
+    metadata: { title: "", shortDescription: "", fullDescription: "", changelog: "", screenshots: [], featureGraphic: null },
   }];
 }
 
@@ -168,6 +176,7 @@ function updateEnglishMetadata(value: unknown, listing: ListingForm) {
       fullDescription: listing.fullDescription.trim(),
       changelog: listing.changelog.trim(),
       screenshots: listing.screenshotsText.split(/\r?\n/).map((value) => value.trim()).filter(Boolean),
+      featureGraphic: clean(listing.featureGraphicUrl),
     },
     ...otherLocales,
   ];
@@ -197,6 +206,11 @@ function ListingFields({
       <div><label className="mb-2 block text-sm text-slate-300">Short description</label><textarea readOnly={readOnly} rows={2} value={listing.shortDescription} onChange={(e) => onChange("shortDescription", e.target.value)} className={fieldClass} /></div>
       <div><label className="mb-2 block text-sm text-slate-300">Full description</label><textarea readOnly={readOnly} rows={7} value={listing.fullDescription} onChange={(e) => onChange("fullDescription", e.target.value)} className={fieldClass} /></div>
       <div><label className="mb-2 block text-sm text-slate-300">Changelog</label><textarea readOnly={readOnly} rows={4} value={listing.changelog} onChange={(e) => onChange("changelog", e.target.value)} className={fieldClass} /></div>
+      <div>
+        <label className="mb-2 block text-sm text-slate-300">Feature graphic URL</label>
+        <input readOnly={readOnly} value={listing.featureGraphicUrl} onChange={(e) => onChange("featureGraphicUrl", e.target.value)} className={fieldClass} placeholder="https://.../featureGraphic.png" />
+        <p className="mt-2 text-xs text-slate-500">{readOnly ? "Android feature graphic is loaded from Fastlane." : "Optional feature graphic URL."}</p>
+      </div>
       <div>
         <label className="mb-2 block text-sm text-slate-300">Screenshot URLs</label>
         <textarea readOnly={readOnly} rows={5} value={listing.screenshotsText} onChange={(e) => onChange("screenshotsText", e.target.value)} className={fieldClass} placeholder={"https://.../1.png\nhttps://.../2.png"} />
@@ -340,6 +354,7 @@ export default function AppMetadataPage() {
           fullDescription: artifact?.metadata.fullDescription || row.description || "",
           changelog: artifact?.metadata.changelog || row.changelog || "",
           screenshotsText: (artifact?.metadata.screenshots.length ? artifact.metadata.screenshots : fallbackScreenshots).join("\n"),
+          featureGraphicUrl: artifact?.metadata.featureGraphic || "",
         };
       });
 
@@ -493,6 +508,7 @@ export default function AppMetadataPage() {
             fullDescription: listing.fullDescription.trim(),
             changelog: listing.changelog.trim(),
             screenshots: listing.screenshotsText.split(/\r?\n/).map((value) => value.trim()).filter(Boolean),
+            featureGraphic: clean(listing.featureGraphicUrl),
           },
         };
       };

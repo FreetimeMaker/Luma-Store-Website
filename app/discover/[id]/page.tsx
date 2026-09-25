@@ -73,6 +73,7 @@ type PlatformListing = {
   fullDescription: string;
   changelog: string;
   screenshots: string[];
+  featureGraphic: string | null;
 };
 
 function formatDate(value: string | null) {
@@ -113,8 +114,13 @@ function platformListing(value: JsonValue): PlatformListing | null {
     fullDescription: typeof row.fullDescription === "string" ? row.fullDescription : typeof row.full_description === "string" ? row.full_description : "",
     changelog: typeof row.changelog === "string" ? row.changelog : "",
     screenshots,
+    featureGraphic: typeof row.featureGraphic === "string"
+      ? row.featureGraphic
+      : typeof row.feature_graphic === "string"
+        ? row.feature_graphic
+        : null,
   };
-  return listing.title || listing.shortDescription || listing.fullDescription || listing.changelog || listing.screenshots.length ? listing : null;
+  return listing.title || listing.shortDescription || listing.fullDescription || listing.changelog || listing.screenshots.length || listing.featureGraphic ? listing : null;
 }
 
 function Field({ label, value, mono = false }: { label: string; value: string | number | null | undefined; mono?: boolean }) {
@@ -387,6 +393,16 @@ export default function DiscoverAppPage() {
   return (
     <div className="glass-page mx-auto max-w-6xl space-y-5 px-3 pb-20 sm:space-y-6 sm:px-4">
       <Link href="/discover" className="inline-flex text-sm font-medium text-indigo-300 transition hover:text-indigo-200">← Back to Discover</Link>
+
+      {activeListing?.featureGraphic && (
+        <section className="overflow-hidden border border-white/10 bg-slate-950">
+          <img
+            src={activeListing.featureGraphic}
+            alt={`${name} feature graphic`}
+            className="aspect-[1024/500] w-full object-cover"
+          />
+        </section>
+      )}
 
       <section className="glass-panel p-5 sm:p-8">
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">

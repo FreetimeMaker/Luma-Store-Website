@@ -6,8 +6,8 @@ import { createClient } from "@/lib/supabase/client";
 
 type SubmissionStatus = "Draft" | "Pending" | "In Review" | "Changes Requested" | "Approved" | "Rejected" | "Archived";
 type AppPlatform = "Android" | "Windows" | "Linux";
-type PlatformMetadataInput = { repoUrl: string; title: string; shortDescription: string; fullDescription: string; changelog: string; screenshotsText: string };
-type PlatformArtifact = { platform: AppPlatform; packageType: "apk" | "exe" | "deb" | "rpm"; downloadUrl: string; repoUrl?: string; metadata?: Omit<PlatformMetadataInput,"repoUrl"|"screenshotsText"> & { screenshots: string[] } };
+type PlatformMetadataInput = { repoUrl: string; title: string; shortDescription: string; fullDescription: string; changelog: string; screenshotsText: string; featureGraphicUrl: string };
+type PlatformArtifact = { platform: AppPlatform; packageType: "apk" | "exe" | "deb" | "rpm"; downloadUrl: string; repoUrl?: string; metadata?: Omit<PlatformMetadataInput,"repoUrl"|"screenshotsText"|"featureGraphicUrl"> & { screenshots: string[]; featureGraphic: string | null } };
 
 type LocalizedMetadata = {
   locale: string;
@@ -103,6 +103,7 @@ type FastlaneMetadata = {
   fullDescription: string;
   changelog: string;
   screenshots: string[];
+  featureGraphic: string | null;
   locale: string;
   branch: string;
 };
@@ -266,6 +267,15 @@ async function fetchText(url: string): Promise<string | null> {
   } catch { return null; }
 }
 
+async function fetchFeatureGraphic(owner: string, repo: string, branch: string, locale: string): Promise<string | null> {
+  const base = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/fastlane/metadata/android/${locale}/images`;
+  for (const name of ["featureGraphic.png", "featureGraphic.webp", "featureGraphic.jpg", "featureGraphic.jpeg"]) {
+    const response = await fetch(`${base}/${name}`, { cache: "no-store" });
+    if (response.ok) return `${base}/${name}`;
+  }
+  return null;
+}
+
 async function fetchPhoneScreenshots(owner: string, repo: string, branch: string, locale: string): Promise<string[]> {
   const path = `fastlane/metadata/android/${locale}/images/phoneScreenshots`;
   const apiUrl = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${path}?ref=${encodeURIComponent(branch)}`;
@@ -297,7 +307,10 @@ async function fetchFastlaneMetadata(projectUrl: string, versionCode: string): P
       const changelog = (await fetchText(`${base}/changelogs/${numericVersionCode}.txt`)) ?? (await fetchText(`${base}/changelogs/default.txt`));
       if (!changelog) continue;
       const screenshots = await fetchPhoneScreenshots(owner, repo, branch, locale);
-      if (screenshots.length > 0) return { title, shortDescription, fullDescription, changelog, screenshots, locale, branch };
+      if (screenshots.length > 0) {
+        const featureGraphic = await fetchFeatureGraphic(owner, repo, branch, locale);
+        return { title, shortDescription, fullDescription, changelog, screenshots, featureGraphic, locale, branch };
+      }
     }
   }
   throw new Error("Fastlane metadata is incomplete. Luma Store requires title.txt, short_description.txt, full_description.txt, a changelog for the versionCode (or default.txt), and at least one phone screenshot.");
@@ -315,7 +328,7 @@ export default function LumaDeveloperPortal() {
   const [appVersion, setAppVersion] = useState("");
   const [appPlatforms, setAppPlatforms] = useState<AppPlatform[]>([]);
   const [separatePlatformRepos,setSeparatePlatformRepos]=useState(false);
-  const emptyPlatformMetadata=():PlatformMetadataInput=>({repoUrl:"",title:"",shortDescription:"",fullDescription:"",changelog:"",screenshotsText:""});
+  const emptyPlatformMetadata=():PlatformMetadataInput=>({repoUrl:"",title:"",shortDescription:"",fullDescription:"",changelog:"",screenshotsText:"",featureGraphicUrl:""});
   const [platformMetadata,setPlatformMetadata]=useState<Record<AppPlatform,PlatformMetadataInput>>({Android:emptyPlatformMetadata(),Windows:emptyPlatformMetadata(),Linux:emptyPlatformMetadata()});
   const [androidDownloadUrl,setAndroidDownloadUrl]=useState("");
   const [windowsDownloadUrl,setWindowsDownloadUrl]=useState("");
@@ -375,6 +388,7 @@ export default function LumaDeveloperPortal() {
           fullDescription: androidOverride.fullDescription.trim(),
           changelog: androidOverride.changelog.trim(),
           screenshots: androidOverride.screenshots,
+          featureGraphic: androidOverride.featureGraphic,
         },
       };
     }
@@ -394,6 +408,7 @@ export default function LumaDeveloperPortal() {
         fullDescription: manual.fullDescription.trim(),
         changelog: manual.changelog.trim(),
         screenshots: manual.screenshotsText.split(/\\r?\\n/).map(value => value.trim()).filter(Boolean),
+        featureGraphic: null,
       },
     };
   };

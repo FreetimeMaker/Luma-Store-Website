@@ -276,6 +276,11 @@ function DiscoverContent() {
   );
 
   const hasActiveSearch = search.trim().length > 0;
+  const showFeaturedSection = !hasActiveSearch
+    && platform === "all"
+    && license === "all"
+    && category === "all"
+    && developer === "all";
 
   const resolveAppIcon = (app: StoreApp) => app.icon_url || fastlaneIconMap[app.id] || null;
 
@@ -397,59 +402,30 @@ function DiscoverContent() {
 
   return (
     <div className="store-page mx-auto max-w-[1440px] space-y-8 pb-14 pt-1 sm:space-y-10 sm:pb-20">
-      <section className="sticky top-[68px] z-20 -mx-4 border-b border-white/10 bg-[#090d14]/95 px-4 backdrop-blur-xl sm:-mx-6 sm:px-6">
-        <div className="flex gap-7 overflow-x-auto">
-          {[
-            ["trending", "For you"],
-            ["downloads", "Top charts"],
-            ["new", "New"],
-            ["updated", "Updated"],
-          ].map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setSort(value)}
-              className={`relative shrink-0 py-4 text-sm font-semibold transition ${sort === value ? "text-indigo-300" : "text-slate-400 hover:text-white"}`}
-            >
-              {label}
-              {sort === value && (
-                <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-indigo-400" />
-              )}
-            </button>
-          ))}
-        </div>
-      </section>
-
       <section className="space-y-3">
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
           <button
             type="button"
-            onClick={() => setPlatform("all")}
-            className={`store-chip shrink-0 ${platform === "all" ? "store-chip-active" : ""}`}
+            onClick={() => setPlatform("Linux")}
+            aria-pressed={platform === "Linux"}
+            className={`store-chip shrink-0 ${platform === "Linux" ? "active store-chip-active" : ""}`}
           >
-            All devices
+            <span className="flex items-center gap-2">
+              <img src="/desktop.png" alt="Linux-PC" className="h-4 w-4 object-contain" />
+              <span>Linux-PC</span>
+            </span>
           </button>
-          {platforms.map((item) => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => setPlatform(item)}
-              className={`store-chip shrink-0 ${platform === item ? "store-chip-active" : ""}`}
-            >
-              {item}
-            </button>
-          ))}
-
-          {categories.slice(0, 8).map((item) => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => setCategory(category === item ? "all" : item)}
-              className={`store-chip shrink-0 ${category === item ? "store-chip-active" : ""}`}
-            >
-              {item}
-            </button>
-          ))}
+          <button
+            type="button"
+            onClick={() => setPlatform("Android")}
+            aria-pressed={platform === "Android"}
+            className={`store-chip shrink-0 ${platform === "Android" ? "active store-chip-active" : ""}`}
+          >
+            <span className="flex items-center gap-2">
+              <img src="/android.png" alt="Android" className="h-4 w-4 object-contain" />
+              <span>Android</span>
+            </span>
+          </button>
         </div>
 
         {(developer !== "all" || license !== "all" || category !== "all") && (
@@ -493,25 +469,19 @@ function DiscoverContent() {
         </div>
       ) : (
         <>
-          {!hasActiveSearch && featuredApps.length > 0 && (
-            <section>
-              <div className="mb-4">
-                <h1 className="text-xl font-semibold text-white sm:text-2xl">Featured apps</h1>
-              </div>
-
-              <div className="flex snap-x gap-5 overflow-x-auto pb-3">
-                {featuredApps.map((app) => (
-                  <div key={app.id} className="min-w-[84vw] snap-start sm:min-w-[34rem] lg:min-w-[38rem]">
-                    <PlayStoreCard
-                      app={app}
-                      iconSrc={resolveAppIcon(app)}
-                      featureGraphic={featureGraphics[app.id] || null}
-                      rating={ratings[app.id]}
-                    />
-                  </div>
-                ))}
-              </div>
-            </section>
+          {showFeaturedSection && featuredApps.length > 0 && (
+            <div className="grid gap-5 pb-3 md:grid-cols-2 xl:grid-cols-3">
+              {featuredApps.map((app) => (
+                <div key={app.id} className="w-full">
+                  <PlayStoreCard
+                    app={app}
+                    iconSrc={resolveAppIcon(app)}
+                    featureGraphic={featureGraphics[app.id] || null}
+                    rating={ratings[app.id]}
+                  />
+                </div>
+              ))}
+            </div>
           )}
 
           {!hasActiveSearch && (
@@ -522,23 +492,6 @@ function DiscoverContent() {
           )}
 
           <section>
-            <div className="mb-5 flex items-end justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-semibold text-white sm:text-2xl">
-                  {hasActiveSearch
-                    ? `Search results for “${search.trim()}”`
-                    : sort === "downloads"
-                      ? "Top charts"
-                      : sort === "new"
-                        ? "New releases"
-                        : sort === "updated"
-                          ? "Recently updated"
-                          : "All apps"}
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">{filteredApps.length} apps</p>
-              </div>
-            </div>
-
             <div className="grid gap-x-10 gap-y-2 md:grid-cols-2">
               {filteredApps.map((app, index) => (
                 <PlayStoreCard
@@ -625,7 +578,7 @@ function PlayStoreCard({
       className="group block min-w-0"
     >
       {showThumbnail && (
-        <div className="mx-auto aspect-[16/7] w-[92%] overflow-hidden rounded-xl bg-[#101722] shadow-[0_1px_2px_rgba(0,0,0,0.22)] sm:w-[90%]">
+        <div className="mx-auto overflow-hidden rounded-xl bg-[#101722] shadow-[0_1px_2px_rgba(0,0,0,0.22)]" style={{ width: "100%", maxWidth: "457.91px", height: "330.56px", margin: "-8px", }}>
           {featureGraphic ? (
             <img
               src={featureGraphic}
@@ -652,42 +605,6 @@ function PlayStoreCard({
         </div>
       )}
 
-      <div className={`${showThumbnail ? "mt-3 px-0.5 pb-1" : "rounded-2xl px-2 py-2.5 transition group-hover:bg-white/[0.035]"} flex items-center gap-3`}>
-        <div className="relative shrink-0">
-          <div aria-hidden="true" className="absolute inset-1 rounded-2xl bg-indigo-500/20 blur-lg" />
-          {iconSrc ? (
-            <img
-              src={iconSrc}
-              alt={`${name} icon`}
-              className={`relative ${showThumbnail ? "h-14 w-14" : "h-14 w-14"} rounded-xl object-cover shadow-[0_4px_14px_rgba(0,0,0,0.22)]`}
-            />
-          ) : (
-            <div className={`relative flex h-14 w-14 items-center justify-center rounded-xl bg-[#101722] font-semibold text-indigo-200`}>
-              {appInitials(name)}
-            </div>
-          )}
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 items-center gap-2">
-            {rank !== undefined && (
-              <span className="shrink-0 text-sm font-medium text-slate-500">{rank}</span>
-            )}
-            <h3 className="truncate text-[15px] font-medium text-white group-hover:text-indigo-200">
-              {name}
-            </h3>
-          </div>
-          <p className="mt-0.5 truncate text-[13px] text-slate-400">
-            {app.developer_name || app.package_name || "Unknown developer"}
-          </p>
-          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
-            <span>{rating ? `${rating.average.toFixed(1)} ★` : "— ★"}</span>
-            {downloads !== undefined && downloads > 0 && (
-              <span>· {compactDownloads(downloads)} downloads</span>
-            )}
-          </div>
-        </div>
-      </div>
     </Link>
   );
 }
@@ -705,6 +622,21 @@ function Collection({
 }) {
   if (!apps.length) return null;
 
+  const columnSize = 3;
+  const columns = [
+    apps.slice(0, columnSize),
+    apps.slice(columnSize, columnSize * 2),
+    apps.slice(columnSize * 2, columnSize * 3),
+  ];
+
+  const paddedColumns = columns.map((columnApps, columnIndex) => {
+    const items = [...columnApps];
+    while (items.length < columnSize) {
+      items.push(null as never);
+    }
+    return { columnIndex, items };
+  });
+
   return (
     <section>
       <div className="mb-4 flex items-center justify-between gap-4">
@@ -712,48 +644,58 @@ function Collection({
         <span className="text-sm font-medium text-indigo-300">More</span>
       </div>
 
-      <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3">
-        {apps.map((app) => {
-          const name = app.name || app.package_name || "Untitled app";
-          const rating = ratings[app.id];
-          const iconSrc = resolveIcon(app);
+      <div className="grid gap-4 md:grid-cols-3">
+        {paddedColumns.map(({ columnIndex, items }) => (
+          <div key={columnIndex} className="space-y-2">
+            {items.map((app, itemIndex) => {
+              if (!app) {
+                return <div key={`empty-${columnIndex}-${itemIndex}`} className="h-[78px]" />;
+              }
 
-          return (
-            <Link
-              key={app.id}
-              href={`/${encodeURIComponent(app.package_name || app.id)}`}
-              className="group flex min-w-[82vw] snap-start items-center gap-3 rounded-2xl px-2.5 py-3 transition hover:bg-white/[0.035] sm:min-w-[21rem] sm:gap-4 sm:px-3 lg:min-w-[23rem]"
-            >
-              <div className="relative shrink-0">
-                <div aria-hidden="true" className="absolute inset-2 rounded-2xl bg-indigo-500/15 blur-xl" />
-                {iconSrc ? (
-                  <img
-                    src={iconSrc}
-                    alt=""
-                    className="relative h-16 w-16 rounded-2xl object-cover shadow-[0_6px_22px_rgba(0,0,0,0.22)]"
-                  />
-                ) : (
-                  <span className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[#101722] text-sm font-bold text-indigo-200">
-                    {appInitials(name)}
-                  </span>
-                )}
-              </div>
+              const name = app.name || app.package_name || "Untitled app";
+              const rating = ratings[app.id];
+              const iconSrc = resolveIcon(app);
+              const rank = columnIndex * columnSize + itemIndex + 1;
 
-              <div className="min-w-0 flex-1">
-                <strong className="block truncate text-sm font-semibold text-white group-hover:text-indigo-200">
-                  {name}
-                </strong>
-                <span className="mt-1 block truncate text-xs text-slate-500">
-                  {app.developer_name || app.package_name || "Unknown developer"}
-                </span>
-                <span className="mt-1.5 block text-xs text-slate-500">
-                  {rating ? `${rating.average.toFixed(1)} ★` : "— ★"}
-                  {app.subcategory ? ` · ${app.subcategory}` : ""}
-                </span>
-              </div>
-            </Link>
-          );
-        })}
+              return (
+                <Link
+                  key={app.id}
+                  href={`/${encodeURIComponent(app.package_name || app.id)}`}
+                  className="group flex items-center gap-3 rounded-xl px-2 py-2 transition hover:bg-white/[0.035]"
+                >
+                  <div className="w-6 shrink-0 text-right text-base font-bold text-slate-300">
+                    {rank}
+                  </div>
+
+                  <div className="relative shrink-0">
+                    {iconSrc ? (
+                      <img
+                        src={iconSrc}
+                        alt=""
+                        className="relative h-14 w-14 rounded-[0.9rem] object-cover shadow-[0_4px_14px_rgba(0,0,0,0.18)]"
+                      />
+                    ) : (
+                      <span className="relative flex h-14 w-14 items-center justify-center rounded-[0.9rem] bg-[#101722] text-sm font-bold text-indigo-200">
+                        {appInitials(name)}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium text-white">{name}</div>
+                    <div className="mt-0.5 truncate text-xs text-slate-400">
+                      {app.subcategory || app.developer_name || "Unknown developer"}
+                    </div>
+                    <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-300">
+                      <span>{rating ? rating.average.toFixed(1) : "—"}</span>
+                      <span aria-hidden="true">★</span>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </div>
     </section>
   );

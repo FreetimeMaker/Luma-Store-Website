@@ -230,69 +230,113 @@ export default function AuthNav() {
                 </button>
               </div>
 
-              <div className="mt-4 space-y-2">
-                <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
-                  <summary className="cursor-pointer list-none text-sm font-medium text-white">
-                    How do I install an app?
-                  </summary>
-                  <p className="mt-2 text-xs leading-5 text-slate-400">
-                    Open an app page and use the download button for your platform. On Android, download the APK and install it after allowing installs from your browser or file manager if Android asks.
-                  </p>
-                </details>
+              <div className="mt-4 space-y-5">
+                <section>
+                  <div className="mb-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-300">
+                      For users
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Installing, finding and using apps.
+                    </p>
+                  </div>
 
-                <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
-                  <summary className="cursor-pointer list-none text-sm font-medium text-white">
-                    How do I search for an app?
-                  </summary>
-                  <p className="mt-2 text-xs leading-5 text-slate-400">
-                    Use the search icon in the top bar. You can search by app name, package name, developer, category, or description.
-                  </p>
-                </details>
+                  <div className="space-y-2">
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
+                      <summary className="cursor-pointer list-none text-sm font-medium text-white">
+                        How do I install an app?
+                      </summary>
+                      <p className="mt-2 text-xs leading-5 text-slate-400">
+                        Open an app page and use the download button for your platform. On Android, download the APK and install it after allowing installs from your browser or file manager if Android asks.
+                      </p>
+                    </details>
 
-                <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
-                  <summary className="cursor-pointer list-none text-sm font-medium text-white">
-                    How do I submit my app?
-                  </summary>
-                  <p className="mt-2 text-xs leading-5 text-slate-400">
-                    Sign in with GitHub or GitLab, open the Developer Dashboard, and complete the submission form. Android metadata is read from Fastlane, while Windows and Linux metadata can be entered manually.
-                  </p>
-                </details>
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
+                      <summary className="cursor-pointer list-none text-sm font-medium text-white">
+                        How do I search for an app?
+                      </summary>
+                      <p className="mt-2 text-xs leading-5 text-slate-400">
+                        Use the search icon in the top bar. You can search by app name, package name, developer, category, or description.
+                      </p>
+                    </details>
 
-                <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
-                  <summary className="cursor-pointer list-none text-sm font-medium text-white">
-                    Can I upload release files instead of using links?
-                  </summary>
-                  <p className="mt-2 text-xs leading-5 text-slate-400">
-                    Yes. In the submission form, choose between using download links or uploading release files directly. APK, EXE, DEB, RPM, and AppImage files are supported.
-                  </p>
-                </details>
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
+                      <summary className="cursor-pointer list-none text-sm font-medium text-white">
+                        Is Luma Store only for Android?
+                      </summary>
+                      <p className="mt-2 text-xs leading-5 text-slate-400">
+                        No. Luma Store supports Android, Windows, and Linux releases, and the app detail page shows the download that matches your operating system when available.
+                      </p>
+                    </details>
 
-                <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
-                  <summary className="cursor-pointer list-none text-sm font-medium text-white">
-                    How do app updates work?
-                  </summary>
-                  <p className="mt-2 text-xs leading-5 text-slate-400">
-                    Open your existing app in the Developer Dashboard and submit an update. The update goes through the normal review flow before replacing the published version.
-                  </p>
-                </details>
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
+                      <summary className="cursor-pointer list-none text-sm font-medium text-white">
+                        What do the download and rating values mean?
+                      </summary>
+                      <p className="mt-2 text-xs leading-5 text-slate-400">
+                        Ratings summarize user feedback for an app. Download values show how often releases have been downloaded through Luma Store and may be shortened to values such as 1K+ or 1M+.
+                      </p>
+                    </details>
+                  </div>
+                </section>
 
-                <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
-                  <summary className="cursor-pointer list-none text-sm font-medium text-white">
-                    How do donations work?
-                  </summary>
-                  <p className="mt-2 text-xs leading-5 text-slate-400">
-                    Developers can configure donation links and crypto wallet addresses once in Developer Funding. These support options are then shown on their published apps.
-                  </p>
-                </details>
+                <section className="border-t border-white/10 pt-4">
+                  <div className="mb-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-300">
+                      For developers
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Submissions, updates and developer settings.
+                    </p>
+                  </div>
 
-                <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
-                  <summary className="cursor-pointer list-none text-sm font-medium text-white">
-                    Is Luma Store only for Android?
-                  </summary>
-                  <p className="mt-2 text-xs leading-5 text-slate-400">
-                    No. Luma Store supports Android, Windows, and Linux releases, and the app detail page shows the download that matches your operating system when available.
-                  </p>
-                </details>
+                  <div className="space-y-2">
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
+                      <summary className="cursor-pointer list-none text-sm font-medium text-white">
+                        How do I submit my app?
+                      </summary>
+                      <p className="mt-2 text-xs leading-5 text-slate-400">
+                        Sign in with GitHub or GitLab, open the Developer Dashboard, and complete the submission form. Android metadata is read from Fastlane, while Windows and Linux metadata can be entered manually.
+                      </p>
+                    </details>
+
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
+                      <summary className="cursor-pointer list-none text-sm font-medium text-white">
+                        Can I upload release files instead of using links?
+                      </summary>
+                      <p className="mt-2 text-xs leading-5 text-slate-400">
+                        Yes. In the submission form, choose between using download links or uploading release files directly. APK, EXE, DEB, RPM, and AppImage files are supported.
+                      </p>
+                    </details>
+
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
+                      <summary className="cursor-pointer list-none text-sm font-medium text-white">
+                        How do app updates work?
+                      </summary>
+                      <p className="mt-2 text-xs leading-5 text-slate-400">
+                        Open your existing app in the Developer Dashboard and submit an update. The update goes through the normal review flow before replacing the published version.
+                      </p>
+                    </details>
+
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
+                      <summary className="cursor-pointer list-none text-sm font-medium text-white">
+                        How do donations work?
+                      </summary>
+                      <p className="mt-2 text-xs leading-5 text-slate-400">
+                        Developers can configure donation links and crypto wallet addresses once in Developer Funding. These support options are then shown on their published apps.
+                      </p>
+                    </details>
+
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
+                      <summary className="cursor-pointer list-none text-sm font-medium text-white">
+                        What metadata is required?
+                      </summary>
+                      <p className="mt-2 text-xs leading-5 text-slate-400">
+                        Android submissions use Fastlane metadata, including title, descriptions, changelog and screenshots. Windows and Linux submissions use manual store metadata when Fastlane is not available.
+                      </p>
+                    </details>
+                  </div>
+                </section>
               </div>
             </section>
           )}

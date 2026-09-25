@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import AuthNav from "./AuthNav";
 
 export default function ScrollHeader() {
-  const [showHeader, setShowHeader] = useState(false);
+  const [showHeaderLine, setShowHeaderLine] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      setShowHeader(window.scrollY > 24);
+      setShowHeaderLine(window.scrollY > 24);
     };
 
     handleScroll();
@@ -19,8 +19,8 @@ export default function ScrollHeader() {
   return (
     <header
       className={[
-        "sticky top-0 z-50 w-full border-b border-white/10 bg-[#090d14]/95 px-4 py-3 backdrop-blur-xl transition-all duration-200 sm:px-6",
-        showHeader ? "shadow-sm shadow-black/20" : "",
+        "sticky top-0 z-50 w-full bg-[#090d14]/95 px-4 py-3 backdrop-blur-xl sm:px-6",
+        showHeaderLine ? "border-b border-white/10 shadow-sm shadow-black/20" : "border-b border-transparent",
       ].join(" ")}
     >
       <AuthNav />

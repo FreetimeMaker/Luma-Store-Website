@@ -16,10 +16,10 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
     let mounted = true;
 
     async function checkSession() {
-      const { data, error } = await supabase.auth.getUser();
+      const { data: sessionData } = await supabase.auth.getSession();
       if (!mounted) return;
 
-      if (error || !data.user) {
+      if (!sessionData.session?.user) {
         const next = pathname || "/dashboard";
         router.replace(`/login?next=${encodeURIComponent(next)}`);
         setUser(null);
@@ -27,8 +27,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         return;
       }
 
-
-      setUser(data.user);
+      setUser(sessionData.session.user);
       setLoading(false);
     }
 

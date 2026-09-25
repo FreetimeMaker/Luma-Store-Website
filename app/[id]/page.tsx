@@ -476,6 +476,21 @@ export default function DiscoverAppPage() {
     };
   }, [params.id, supabase]);
 
+  useEffect(() => {
+    if (clientOs === "Other" || platforms.length === 0) return;
+    const listingPlatforms = Array.from(
+      new Set(
+        platforms
+          .filter((item) => platformListing(item.listing_metadata))
+          .map((item) => item.platform),
+      ),
+    );
+    if (listingPlatforms.includes(clientOs)) {
+      setSelectedListingPlatform(clientOs);
+      setScreenshotIndex(null);
+    }
+  }, [clientOs, platforms]);
+
   if (loading) {
     return <div className="store-page mx-auto max-w-7xl space-y-5 pb-14 sm:px-4 sm:pb-20"><div className="h-5 w-32 animate-pulse rounded bg-slate-800/70"/><div className="rounded-[2rem] border border-white/10 bg-slate-900/50 p-5 sm:p-8"><div className="flex gap-5"><div className="h-20 w-20 sm:h-24 sm:w-24 animate-pulse rounded-3xl bg-slate-800/80"/><div className="flex-1 space-y-3 py-2"><div className="h-8 max-w-sm animate-pulse rounded bg-slate-800/80"/><div className="h-4 max-w-xs animate-pulse rounded bg-slate-800/60"/><div className="h-14 max-w-xl animate-pulse rounded-xl bg-slate-800/40"/></div></div></div><div className="h-44 animate-pulse rounded-3xl border border-white/10 bg-slate-900/40"/></div>;
   }
@@ -501,7 +516,10 @@ export default function DiscoverAppPage() {
   const description = activeListing?.fullDescription || app.description;
   const changelog = activeListing?.changelog || app.changelog;
   const downloadablePlatforms = platforms.filter((platform) => Boolean(platform.download_url));
-  const matchingDownloads = downloadablePlatforms.filter((platform) => platform.platform.toLowerCase() === clientOs.toLowerCase());
+  const preferredDownloadPlatform = selectedListingPlatform || (clientOs !== "Other" ? clientOs : null);
+  const matchingDownloads = preferredDownloadPlatform
+    ? downloadablePlatforms.filter((platform) => platform.platform.toLowerCase() === preferredDownloadPlatform.toLowerCase())
+    : [];
   const visibleDownloads = matchingDownloads.length > 0 ? matchingDownloads : downloadablePlatforms;
   const artifactLabel=(platform:StoreAppPlatform)=>platform.platform.toLowerCase()==="linux"?`Linux ${(platform.package_type||platform.linux_package_base||"").toUpperCase().replace("-BASED","")}`:platform.package_type?`${platform.platform} ${platform.package_type.toUpperCase()}`:platform.platform;
   const downloadHref=(platform:StoreAppPlatform)=>`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-app?${app.package_name ? `package_name=${encodeURIComponent(app.package_name)}` : `app_id=${encodeURIComponent(app.id)}`}&platform=${encodeURIComponent(platform.platform)}${platform.package_type?`&package_type=${encodeURIComponent(platform.package_type)}`:""}`;

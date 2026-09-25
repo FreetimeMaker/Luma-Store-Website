@@ -537,7 +537,7 @@ function DiscoverContent() {
                 <h1 className="text-2xl font-semibold text-white">Featured apps</h1>
               </div>
 
-              <div className="grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-x-6 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
                 {featuredApps.map((app) => (
                   <PlayStoreCard
                     key={app.id}
@@ -576,7 +576,7 @@ function DiscoverContent() {
               </div>
             </div>
 
-            <div className="grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-x-6 gap-y-9 sm:grid-cols-2 lg:grid-cols-3">
               {filteredApps.map((app, index) => (
                 <PlayStoreCard
                   key={app.id}
@@ -588,7 +588,7 @@ function DiscoverContent() {
                   downloads={Number(metrics[app.id]?.total_downloads || 0)}
                 />
               ))}
-            </div>>
+            </div>
           </section>
 
           {!hasActiveSearch && recentApps.length > 0 && (
@@ -658,7 +658,7 @@ function PlayStoreCard({
       href={`/${encodeURIComponent(app.package_name || app.id)}`}
       className="group block min-w-0"
     >
-      <div className="aspect-[1024/500] overflow-hidden rounded-2xl bg-[#101722] shadow-[0_1px_3px_rgba(0,0,0,0.28)]">
+      <div className="aspect-[1024/500] overflow-hidden rounded-xl bg-[#101722] shadow-[0_1px_2px_rgba(0,0,0,0.22)]">
         {featureGraphic ? (
           <img
             src={featureGraphic}
@@ -672,17 +672,17 @@ function PlayStoreCard({
         )}
       </div>
 
-      <div className="mt-3 flex items-center gap-3 px-0.5">
+      <div className="mt-3 flex items-center gap-3 px-0.5 pb-1">
         <div className="relative shrink-0">
           <div aria-hidden="true" className="absolute inset-1 rounded-2xl bg-indigo-500/20 blur-lg" />
           {iconSrc ? (
             <img
               src={iconSrc}
               alt={`${name} icon`}
-              className="relative h-16 w-16 rounded-2xl object-cover shadow-[0_4px_14px_rgba(0,0,0,0.24)]"
+              className="relative h-14 w-14 rounded-xl object-cover shadow-[0_4px_14px_rgba(0,0,0,0.22)]"
             />
           ) : (
-            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-[#101722] font-semibold text-indigo-200">
+            <div className="relative flex h-14 w-14 items-center justify-center rounded-xl bg-[#101722] font-semibold text-indigo-200">
               {appInitials(name)}
             </div>
           )}
@@ -693,14 +693,14 @@ function PlayStoreCard({
             {rank !== undefined && (
               <span className="shrink-0 text-sm font-medium text-slate-500">{rank}</span>
             )}
-            <h3 className="truncate text-base font-medium text-white group-hover:text-indigo-200">
+            <h3 className="truncate text-[15px] font-medium text-white group-hover:text-indigo-200">
               {name}
             </h3>
           </div>
-          <p className="mt-0.5 truncate text-sm text-slate-400">
+          <p className="mt-0.5 truncate text-[13px] text-slate-400">
             {app.developer_name || app.package_name || "Unknown developer"}
           </p>
-          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
             <span>
               <span className="text-amber-300">★</span>{" "}
               {rating ? rating.average.toFixed(1) : "—"}

@@ -708,7 +708,10 @@ export default function DiscoverAppPage() {
               <TrustItem label="License" value={app.license_type || "Not provided"} tone={app.license_type ? "good" : "neutral"} />
               <TrustItem label="Anti-features" value={hasJsonValue(app.ant_features) ? stringArray(app.ant_features).join(", ") || "Declared" : "None declared"} tone={hasJsonValue(app.ant_features) ? "warn" : "good"} />
               <TrustItem label="SHA-256" value={platforms.some((p) => p.sha256) ? platforms.filter((p) => p.sha256).map((p) => artifactLabel(p) + ": " + p.sha256).join(" · ") : "Not provided yet"} tone={platforms.some((p) => p.sha256) ? "good" : "neutral"} />
-              <TrustItem label="Android permissions · VirusTotal" value={(() => { const android = platforms.find((p) => p.platform.toLowerCase() === "android"); return android ? (hasJsonValue(android.permissions) ? stringArray(android.permissions).join(", ") || "No permissions reported" : "Not available from VirusTotal yet") : "Not applicable"; })()} tone="neutral" />
+              {(() => {
+                const android = platforms.find((p) => p.platform.toLowerCase() === "android");
+                return android ? <AndroidPermissions permissions={stringArray(android.permissions)} /> : null;
+              })()}
               <TrustItem label="Artifact verification" value={platforms.some((p) => p.artifact_verified_at) ? "SHA-256 calculated by Luma Store" : "Not verified yet"} tone={platforms.some((p) => p.artifact_verified_at) ? "good" : "neutral"} />
             </div>
           </section>
@@ -869,6 +872,90 @@ export default function DiscoverAppPage() {
 
       {androidQrUrl && <div onMouseDown={(e)=>{if(e.target===e.currentTarget)setAndroidQrUrl(null)}} className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-md"><div role="dialog" aria-modal="true" aria-label="Install on Android" className="glass-panel relative w-full max-w-md p-6 text-center"><button type="button" onClick={()=>setAndroidQrUrl(null)} className="absolute right-3 top-3 h-9 w-9 rounded-full border border-white/10 bg-white/5 text-white" aria-label="Close">×</button>{app.icon_url&&<img src={app.icon_url} alt="" className="mx-auto h-16 w-16 rounded-2xl object-cover"/>}<h2 className="mt-4 text-2xl font-bold text-white">Install {name} on Android</h2><p className="mt-2 text-sm text-slate-400">Version {app.version||"latest"} · Scan this code with your Android device.</p><div className="mt-4 rounded-2xl border border-amber-400/15 bg-amber-500/5 p-4 text-left"><p className="text-sm font-semibold text-amber-100">Installing outside your current app store</p><ol className="mt-2 space-y-1.5 text-xs leading-5 text-slate-400"><li><strong className="text-slate-300">1.</strong> Download the APK on your Android device.</li><li><strong className="text-slate-300">2.</strong> Android may ask you to allow installs from the browser or file manager you used.</li><li><strong className="text-slate-300">3.</strong> Enable that permission only for the app you trust, install the APK, then you can disable it again.</li></ol><p className="mt-2 text-[11px] leading-4 text-slate-500">The exact Settings name varies by Android version and manufacturer. Luma Store does not ask you to disable Play Protect or other device security.</p></div><div className="mx-auto mt-5 w-fit rounded-3xl bg-white p-3"><img src={"https://api.qrserver.com/v1/create-qr-code/?size=240x240&data="+encodeURIComponent(androidQrUrl)} alt={"QR code to download "+name} width={240} height={240}/></div><div className="mt-5 flex flex-col gap-2 sm:flex-row"><button type="button" onClick={()=>void navigator.clipboard.writeText(androidQrUrl)} className="glass-action flex-1 px-4 py-2.5 text-sm">Copy link</button><button type="button" onClick={()=>window.location.assign(androidQrUrl)} className="rounded-xl bg-indigo-500 px-4 py-2.5 text-sm font-semibold text-white">Download here instead</button></div></div></div>}
       {screenshotIndex!==null && screenshots[screenshotIndex] && <div onMouseDown={(e)=>{if(e.target===e.currentTarget)setScreenshotIndex(null)}} className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/90 p-3 backdrop-blur-md"><div role="dialog" aria-modal="true" aria-label="Screenshot preview" className="relative flex h-full w-full max-w-6xl items-center justify-center"><button type="button" onClick={()=>setScreenshotIndex(null)} className="absolute right-2 top-2 z-10 h-10 w-10 rounded-full bg-slate-950/80 text-xl text-white" aria-label="Close">×</button>{screenshots.length>1&&<button type="button" onClick={()=>setScreenshotIndex((screenshotIndex-1+screenshots.length)%screenshots.length)} className="absolute left-2 z-10 h-11 w-11 rounded-full bg-slate-950/80 text-2xl text-white" aria-label="Previous">‹</button>}<img src={screenshots[screenshotIndex]} alt={name+" screenshot "+(screenshotIndex+1)} className="max-h-[90vh] max-w-full rounded-2xl object-contain"/>{screenshots.length>1&&<button type="button" onClick={()=>setScreenshotIndex((screenshotIndex+1)%screenshots.length)} className="absolute right-2 z-10 h-11 w-11 rounded-full bg-slate-950/80 text-2xl text-white" aria-label="Next">›</button>}<span className="absolute bottom-2 rounded-full bg-slate-950/80 px-3 py-1 text-xs text-slate-300">{screenshotIndex+1} / {screenshots.length}</span></div></div>}
+    </div>
+  );
+}
+
+function permissionTone(permission: string) {
+  const value = permission.toUpperCase();
+
+  if (
+    value.includes("CAMERA")
+    || value.includes("RECORD_AUDIO")
+    || value.includes("ACCESS_FINE_LOCATION")
+    || value.includes("ACCESS_COARSE_LOCATION")
+    || value.includes("ACCESS_BACKGROUND_LOCATION")
+    || value.includes("READ_CONTACTS")
+    || value.includes("WRITE_CONTACTS")
+    || value.includes("READ_SMS")
+    || value.includes("SEND_SMS")
+    || value.includes("RECEIVE_SMS")
+    || value.includes("READ_CALL_LOG")
+    || value.includes("WRITE_CALL_LOG")
+    || value.includes("CALL_PHONE")
+    || value.includes("ANSWER_PHONE_CALLS")
+    || value.includes("READ_PHONE_STATE")
+    || value.includes("MANAGE_EXTERNAL_STORAGE")
+    || value.includes("REQUEST_INSTALL_PACKAGES")
+    || value.includes("SYSTEM_ALERT_WINDOW")
+    || value.includes("BIND_ACCESSIBILITY_SERVICE")
+  ) {
+    return "border-rose-400/25 bg-rose-500/10 text-rose-200";
+  }
+
+  if (
+    value.includes("READ_EXTERNAL_STORAGE")
+    || value.includes("WRITE_EXTERNAL_STORAGE")
+    || value.includes("READ_MEDIA")
+    || value.includes("POST_NOTIFICATIONS")
+    || value.includes("BLUETOOTH")
+    || value.includes("NEARBY")
+    || value.includes("BODY_SENSORS")
+    || value.includes("ACTIVITY_RECOGNITION")
+    || value.includes("USE_EXACT_ALARM")
+    || value.includes("SCHEDULE_EXACT_ALARM")
+  ) {
+    return "border-amber-400/25 bg-amber-500/10 text-amber-200";
+  }
+
+  if (
+    value.includes("INTERNET")
+    || value.includes("ACCESS_NETWORK_STATE")
+    || value.includes("ACCESS_WIFI_STATE")
+    || value.includes("FOREGROUND_SERVICE")
+    || value.includes("WAKE_LOCK")
+    || value.includes("VIBRATE")
+  ) {
+    return "border-indigo-400/25 bg-indigo-500/10 text-indigo-200";
+  }
+
+  return "border-emerald-400/20 bg-emerald-500/10 text-emerald-200";
+}
+
+function AndroidPermissions({ permissions }: { permissions: string[] }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-slate-950/25 p-4 sm:col-span-2 lg:col-span-3">
+      <div className="flex items-center gap-2">
+        <span className="h-2 w-2 rounded-full bg-indigo-400" />
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          Android permissions
+        </p>
+      </div>
+
+      {permissions.length > 0 ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {permissions.map((permission) => (
+            <span
+              key={permission}
+              className={"rounded-full border px-3 py-1.5 text-xs font-medium " + permissionTone(permission)}
+            >
+              {permission.replace(/^android\.permission\./i, "")}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-2 text-sm font-medium text-slate-400">Not available yet</p>
+      )}
     </div>
   );
 }

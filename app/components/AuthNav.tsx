@@ -21,6 +21,7 @@ export default function AuthNav() {
   const pathname = usePathname();
   const supabase = useMemo(() => createClient(), []);
   const isAppsActive = pathname === "/";
+  const isDevelopersActive = pathname === "/login" || pathname.startsWith("/dashboard");
 
   function handleSearchSubmit() {
     const trimmed = searchValue.trim();
@@ -129,7 +130,8 @@ export default function AuthNav() {
         </Link>
         <Link
           href="/login?next=/dashboard"
-          className="nav-tab text-slate-400 hover:text-white"
+          aria-current={isDevelopersActive ? "page" : undefined}
+          className={`nav-tab ${isDevelopersActive ? "active" : "text-slate-400 hover:text-white"}`}
         >
           Developers
         </Link>

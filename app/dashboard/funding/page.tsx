@@ -185,7 +185,7 @@ export default function DeveloperFundingPage() {
   }
 
   return (
-    <div className="glass-page mx-auto max-w-3xl space-y-6 pb-20">
+    <div className="glass-page mx-auto max-w-3xl space-y-5 pb-14 sm:space-y-6 sm:pb-20">
       <div>
         <Link href="/dashboard" className="text-sm text-indigo-300">
           ← Dashboard
@@ -193,7 +193,7 @@ export default function DeveloperFundingPage() {
 
         <section className="glass-panel mt-4 p-5 sm:p-7">
           <p className="ui-eyebrow">Developer support</p>
-          <h1 className="ui-title mt-1 text-3xl">Developer funding</h1>
+          <h1 className="ui-title mt-1 text-2xl sm:text-3xl">Developer funding</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
             Configure support methods once for your developer profile.
             They are shown for every app you publish.
@@ -207,7 +207,7 @@ export default function DeveloperFundingPage() {
         </div>
       )}
 
-      <form onSubmit={saveFunding} className="glass-panel space-y-6 p-5 sm:p-6">
+      <form onSubmit={saveFunding} className="glass-panel space-y-5 p-4 sm:space-y-6 sm:p-6">
         <div className="grid gap-5">
           {fundingLinks.map(([field, label, placeholder]) => (
             <div key={field}>
@@ -232,7 +232,7 @@ export default function DeveloperFundingPage() {
 
           <div className="mt-5 space-y-4">
             {cryptoOptions.map(([currency, label, networks]) => (
-              <article key={currency} className="ui-panel-muted p-4">
+              <article key={currency} className="ui-panel-muted p-3.5 sm:p-4">
                 <div>
                   <p className="text-sm font-semibold text-white">{label}</p>
                   <p className="mt-1 text-xs text-slate-500">
@@ -272,7 +272,7 @@ export default function DeveloperFundingPage() {
           </p>
           <button
             disabled={saving}
-            className="ui-button-primary px-5 py-2.5 disabled:opacity-50"
+            className="ui-button-primary w-full px-5 py-2.5 disabled:opacity-50 sm:w-auto"
           >
             {saving ? "Saving…" : "Save developer funding"}
           </button>

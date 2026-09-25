@@ -7,6 +7,7 @@ const ALLOWED = {
   exe: { platform: "Windows", extension: ".exe" },
   deb: { platform: "Linux", extension: ".deb" },
   rpm: { platform: "Linux", extension: ".rpm" },
+  appimage: { platform: "Linux", extension: ".appimage" },
 } as const;
 
 type PackageType = keyof typeof ALLOWED;

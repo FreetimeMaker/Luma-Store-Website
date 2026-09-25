@@ -8,7 +8,7 @@ type SubmissionStatus = "Draft" | "Pending" | "In Review" | "Changes Requested" 
 type AppPlatform = "Android" | "Windows" | "Linux";
 type ArtifactInputMode = "link" | "upload";
 type PlatformMetadataInput = { repoUrl: string; title: string; shortDescription: string; fullDescription: string; changelog: string; screenshotsText: string; featureGraphicUrl: string };
-type PlatformArtifact = { platform: AppPlatform; packageType: "apk" | "exe" | "deb" | "rpm"; downloadUrl: string; repoUrl?: string; metadata?: Omit<PlatformMetadataInput,"repoUrl"|"screenshotsText"|"featureGraphicUrl"> & { screenshots: string[]; featureGraphic: string | null } };
+type PlatformArtifact = { platform: AppPlatform; packageType: "apk" | "exe" | "deb" | "rpm" | "appimage"; downloadUrl: string; repoUrl?: string; metadata?: Omit<PlatformMetadataInput,"repoUrl"|"screenshotsText"|"featureGraphicUrl"> & { screenshots: string[]; featureGraphic: string | null } };
 
 type LocalizedMetadata = {
   locale: string;
@@ -426,7 +426,7 @@ export default function LumaDeveloperPortal() {
   const uploadArtifactFile = async (
     file: File,
     platform: AppPlatform,
-    packageType: "apk" | "exe" | "deb" | "rpm",
+    packageType: "apk" | "exe" | "deb" | "rpm" | "appimage",
     setUrl: (value: string) => void,
   ) => {
     const uploadKey = `${platform}-${packageType}`;

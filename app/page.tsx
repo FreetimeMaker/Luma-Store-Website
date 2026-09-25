@@ -560,6 +560,7 @@ function DiscoverContent() {
                   iconSrc={resolveAppIcon(app)}
                   featureGraphic={resolveFeatureGraphic(app)}
                   rating={ratings[app.id]}
+                  listing={resolveListing(app)}
                   rank={sort === "downloads" ? index + 1 : undefined}
                   downloads={Number(metrics[app.id]?.total_downloads || 0)}
                   showThumbnail={false}
@@ -639,8 +640,8 @@ function PlayStoreCard({
       href={`/${encodeURIComponent(app.package_name || app.id)}`}
       className="group block min-w-0"
     >
-      {showThumbnail && (
-        <div className="mx-auto overflow-hidden rounded-xl bg-[#101722] shadow-[0_1px_2px_rgba(0,0,0,0.22)]" style={{ width: "100%", maxWidth: "457.91px", height: "330.56px", margin: "-8px", }}>
+      {showThumbnail ? (
+        <div className="mx-auto overflow-hidden rounded-xl bg-[#101722] shadow-[0_1px_2px_rgba(0,0,0,0.22)]" style={{ width: "100%", maxWidth: "457.91px", height: "330.56px", margin: "-8px" }}>
           {featureGraphic ? (
             <img
               src={featureGraphic}
@@ -665,8 +666,36 @@ function PlayStoreCard({
             </div>
           )}
         </div>
+      ) : (
+        <div className="flex min-w-0 items-center gap-3 rounded-xl px-2 py-2.5 transition group-hover:bg-white/[0.035]">
+          {rank !== undefined && (
+            <span className="w-6 shrink-0 text-right text-sm font-semibold text-slate-500">{rank}</span>
+          )}
+          <div className="relative shrink-0">
+            {iconSrc ? (
+              <img
+                src={iconSrc}
+                alt={`${name} icon`}
+                className="h-14 w-14 rounded-[0.9rem] object-cover shadow-[0_4px_14px_rgba(0,0,0,0.18)]"
+              />
+            ) : (
+              <span className="flex h-14 w-14 items-center justify-center rounded-[0.9rem] bg-[#101722] text-sm font-bold text-indigo-200">
+                {appInitials(name)}
+              </span>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="truncate text-sm font-semibold text-white group-hover:text-indigo-200">{name}</h3>
+            <p className="mt-0.5 truncate text-xs text-slate-400">
+              {listing?.shortDescription || app.short_description || app.developer_name || app.package_name || "No description"}
+            </p>
+            <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+              <span>{rating ? `${rating.average.toFixed(1)} ★` : "— ★"}</span>
+              {downloads !== undefined && downloads > 0 && <span>· {compactDownloads(downloads)} downloads</span>}
+            </div>
+          </div>
+        </div>
       )}
-
     </Link>
   );
 }

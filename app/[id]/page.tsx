@@ -399,13 +399,22 @@ export default function DiscoverAppPage() {
             .map((item) => item.platform),
         ),
       );
-      setSelectedListingPlatform((current) =>
-        current && listingPlatforms.includes(current)
-          ? current
-          : listingPlatforms.includes("Android")
-            ? "Android"
-            : listingPlatforms[0] ?? null,
-      );
+      setSelectedListingPlatform((current) => {
+        if (current && listingPlatforms.includes(current)) return current;
+
+        try {
+          const storedPlatform = localStorage.getItem("luma-selected-platform");
+          if (
+            (storedPlatform === "Android" || storedPlatform === "Linux")
+            && listingPlatforms.includes(storedPlatform)
+          ) {
+            return storedPlatform;
+          }
+        } catch {}
+
+        if (listingPlatforms.includes("Android")) return "Android";
+        return listingPlatforms[0] ?? null;
+      });
 
       // App and platform data are enough for the page to render.
       setLoading(false);
@@ -477,25 +486,32 @@ export default function DiscoverAppPage() {
       ),
     );
 
-    const mobileTouchAndroidFallback =
-      typeof window !== "undefined"
-      && navigator.maxTouchPoints > 0
-      && window.matchMedia("(pointer: coarse)").matches
-      && window.matchMedia("(max-width: 900px)").matches
-      && listingPlatforms.includes("Android");
+    setSelectedListingPlatform((current) => {
+      if (current && listingPlatforms.includes(current)) {
+        return current;
+      }
 
-    const preferredPlatform = mobileTouchAndroidFallback
-      ? "Android"
-      : clientOs !== "Other" && listingPlatforms.includes(clientOs)
-        ? clientOs
-        : listingPlatforms.includes("Android")
-          ? "Android"
-          : listingPlatforms[0] ?? null;
+      try {
+        const storedPlatform = localStorage.getItem("luma-selected-platform");
+        if (
+          (storedPlatform === "Android" || storedPlatform === "Linux")
+          && listingPlatforms.includes(storedPlatform)
+        ) {
+          return storedPlatform;
+        }
+      } catch {}
 
-    if (preferredPlatform) {
-      setSelectedListingPlatform(preferredPlatform);
-      setScreenshotIndex(null);
-    }
+      if (clientOs === "Android" && listingPlatforms.includes("Android")) {
+        return "Android";
+      }
+
+      if (clientOs === "Linux" && !listingPlatforms.includes("Android") && listingPlatforms.includes("Linux")) {
+        return "Linux";
+      }
+
+      if (listingPlatforms.includes("Android")) return "Android";
+      return listingPlatforms[0] ?? null;
+    });
   }, [clientOs, platforms]);
 
   if (loading) {
@@ -589,6 +605,9 @@ export default function DiscoverAppPage() {
                 onClick={() => {
                   setSelectedListingPlatform(platform);
                   setScreenshotIndex(null);
+                  if (platform === "Android" || platform === "Linux") {
+                    localStorage.setItem("luma-selected-platform", platform);
+                  }
                 }}
                 className={`min-h-11 w-full rounded-xl border px-3 py-2 text-xs font-semibold transition sm:min-h-9 sm:w-auto ${selectedListingPlatform === platform ? "border-indigo-400/40 bg-indigo-500/15 text-indigo-100" : "border-transparent bg-transparent text-slate-400 hover:bg-white/[0.04] hover:text-white"}`}
               >

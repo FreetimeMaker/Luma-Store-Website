@@ -119,45 +119,41 @@ function DiscoverContent() {
       setLoading(true);
       setError(null);
 
-      const { data, error: loadError } = await supabase
-        .from("store_apps")
-        .select("*")
-        .is("archived_at", null)
-        .order("updated_at", { ascending: false });
+      const [appResult, metricResult, listingResult] = await Promise.all([
+        supabase
+          .from("store_apps")
+          .select("id,name,short_description,description,developer_name,icon_url,version,package_name,repo_url,license_type,subcategory,categories,created_at,updated_at")
+          .is("archived_at", null)
+          .order("updated_at", { ascending: false }),
+        supabase.rpc("luma_discover_metrics"),
+        supabase
+          .from("store_app_platforms")
+          .select("app_id,platform,listing_metadata")
+          .eq("platform", "Android"),
+      ]);
 
       if (cancelled) return;
 
-      if (loadError) {
-        setError(loadError.message);
+      if (appResult.error) {
+        setError(appResult.error.message);
         setApps([]);
-      } else {
-        const loadedApps = (data ?? []) as StoreApp[];
-        setApps(loadedApps);
-
-        const [metricResult, listingResult] = await Promise.all([
-          supabase.rpc("luma_discover_metrics"),
-          supabase
-            .from("store_app_platforms")
-            .select("app_id,platform,listing_metadata")
-            .eq("platform", "Android"),
-        ]);
-
-        if (!cancelled) {
-          setMetrics(
-            Object.fromEntries(
-              ((metricResult.data ?? []) as DiscoverMetric[]).map((row) => [row.app_id, row]),
-            ),
-          );
-
-          const graphics = Object.fromEntries(
-            ((listingResult.data ?? []) as PlatformListingRow[])
-              .map((row) => [row.app_id, featureGraphicFromMetadata(row.listing_metadata)] as const)
-              .filter((entry): entry is readonly [string, string] => Boolean(entry[1])),
-          );
-          setFeatureGraphics(graphics);
-        }
+        setLoading(false);
+        return;
       }
 
+      setApps((appResult.data ?? []) as StoreApp[]);
+      setMetrics(
+        Object.fromEntries(
+          ((metricResult.data ?? []) as DiscoverMetric[]).map((row) => [row.app_id, row]),
+        ),
+      );
+
+      const graphics = Object.fromEntries(
+        ((listingResult.data ?? []) as PlatformListingRow[])
+          .map((row) => [row.app_id, featureGraphicFromMetadata(row.listing_metadata)] as const)
+          .filter((entry): entry is readonly [string, string] => Boolean(entry[1])),
+      );
+      setFeatureGraphics(graphics);
       setLoading(false);
     }
 

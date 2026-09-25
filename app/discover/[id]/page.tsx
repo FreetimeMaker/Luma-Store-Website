@@ -48,6 +48,7 @@ type StoreApp = {
 type RelatedApp = { id:string; name:string|null; package_name:string|null; short_description:string|null; icon_url:string|null; version:string|null; };
 type PlatformDownloadCount = { platform:string; downloads:number|string; };
 type VersionHistoryItem = { version:string|null; version_code:number|string|null; changelog:string|null; published_at:string|null; };
+type ClientOs = "Android" | "Windows" | "Linux" | "Other";
 
 type DeveloperFunding = { donate_url: string | null; liberapay: string | null; opencollective: string | null; bitcoin: string | null; litecoin: string | null; crypto_addresses: Record<string,string> | null; };
 
@@ -190,12 +191,26 @@ export default function DiscoverAppPage() {
   const [androidQrUrl, setAndroidQrUrl] = useState<string | null>(null);
   const [screenshotIndex, setScreenshotIndex] = useState<number | null>(null);
   const [appIcon, setAppIcon] = useState<string | null>(null);
+  const [clientOs, setClientOs] = useState<ClientOs>("Other");
   const ratingApi = "https://api.free-time.me/lumastore";
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setPageUrl(window.location.href);
+
+    const ua = navigator.userAgent.toLowerCase();
+    const platform = (navigator.platform || "").toLowerCase();
+    const detected: ClientOs =
+      ua.includes("android")
+        ? "Android"
+        : ua.includes("windows") || platform.includes("win")
+          ? "Windows"
+          : ua.includes("linux") || platform.includes("linux")
+            ? "Linux"
+            : "Other";
+    setClientOs(detected);
+
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: "auto" }));
   }, [params.id]);
@@ -387,6 +402,8 @@ export default function DiscoverAppPage() {
   const description = activeListing?.fullDescription || app.description;
   const changelog = activeListing?.changelog || app.changelog;
   const downloadablePlatforms = platforms.filter((platform) => Boolean(platform.download_url));
+  const matchingDownloads = downloadablePlatforms.filter((platform) => platform.platform.toLowerCase() === clientOs.toLowerCase());
+  const visibleDownloads = matchingDownloads.length > 0 ? matchingDownloads : downloadablePlatforms;
   const artifactLabel=(platform:StoreAppPlatform)=>platform.platform.toLowerCase()==="linux"?`Linux ${(platform.package_type||platform.linux_package_base||"").toUpperCase().replace("-BASED","")}`:platform.package_type?`${platform.platform} ${platform.package_type.toUpperCase()}`:platform.platform;
   const downloadHref=(platform:StoreAppPlatform)=>`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-app?${app.package_name ? `package_name=${encodeURIComponent(app.package_name)}` : `app_id=${encodeURIComponent(app.id)}`}&platform=${encodeURIComponent(platform.platform)}${platform.package_type?`&package_type=${encodeURIComponent(platform.package_type)}`:""}`;
 
@@ -437,8 +454,8 @@ export default function DiscoverAppPage() {
           </div>
 
           <div className="mt-7 flex flex-wrap items-center gap-3">
-            {downloadablePlatforms.length > 0 ? (
-              downloadablePlatforms.map((platform) => (
+            {visibleDownloads.length > 0 ? (
+              visibleDownloads.map((platform) => (
                 <button
                   key={platform.id}
                   type="button"
@@ -517,16 +534,6 @@ export default function DiscoverAppPage() {
         </div>
       </section>
 
-      {activeListing?.featureGraphic && (
-        <section className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950">
-          <img
-            src={activeListing.featureGraphic}
-            alt={`${name} feature graphic`}
-            className="aspect-[1024/500] w-full object-cover"
-          />
-        </section>
-      )}
-
       <section className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="min-w-0 space-y-8">
           {screenshots.length > 0 && (
@@ -592,7 +599,7 @@ export default function DiscoverAppPage() {
               <TrustItem label="License" value={app.license_type || "Not provided"} tone={app.license_type ? "good" : "neutral"} />
               <TrustItem label="Anti-features" value={hasJsonValue(app.ant_features) ? stringArray(app.ant_features).join(", ") || "Declared" : "None declared"} tone={hasJsonValue(app.ant_features) ? "warn" : "good"} />
               <TrustItem label="SHA-256" value={platforms.some((p) => p.sha256) ? platforms.filter((p) => p.sha256).map((p) => artifactLabel(p) + ": " + p.sha256).join(" · ") : "Not provided yet"} tone={platforms.some((p) => p.sha256) ? "good" : "neutral"} />
-              <TrustItem label="Android permissions" value={(() => { const android = platforms.find((p) => p.platform.toLowerCase() === "android"); return android ? (hasJsonValue(android.permissions) ? stringArray(android.permissions).join(", ") || "Metadata available" : "Not provided yet") : "Not applicable"; })()} tone="neutral" />
+              <TrustItem label="Android permissions · VirusTotal" value={(() => { const android = platforms.find((p) => p.platform.toLowerCase() === "android"); return android ? (hasJsonValue(android.permissions) ? stringArray(android.permissions).join(", ") || "No permissions reported" : "Not available from VirusTotal yet") : "Not applicable"; })()} tone="neutral" />
               <TrustItem label="Artifact verification" value={platforms.some((p) => p.artifact_verified_at) ? "SHA-256 calculated by Luma Store" : "Not verified yet"} tone={platforms.some((p) => p.artifact_verified_at) ? "good" : "neutral"} />
             </div>
           </section>

@@ -405,106 +405,275 @@ function DiscoverContent() {
       .map(({ app }) => app);
   }, [apps, category, developer, license, search, platform, sort, metrics]);
 
+  const featuredApps = filteredApps
+    .filter((app) => Boolean(featureGraphics[app.id]))
+    .slice(0, 3);
+
   return (
-    <div className="store-page mx-auto max-w-7xl space-y-10 pb-20 pt-2 sm:pt-6">
-      <section className="store-hero overflow-hidden rounded-[2rem] px-5 py-8 sm:px-8 sm:py-10">
-        <div className="max-w-3xl">
-          <p className="text-sm font-semibold text-indigo-300">Luma Store</p>
-          <h1 className="mt-2 text-4xl font-bold tracking-tight text-white sm:text-5xl">
-            Apps for the devices you use
-          </h1>
-          <p className="mt-4 max-w-2xl text-base leading-7 text-slate-400">
-            Discover open-source Android, Linux and Windows apps with clear release, privacy and source information.
-          </p>
-        </div>
-
-        <div className="mt-7 flex max-w-2xl items-center rounded-full border border-white/10 bg-[#111923] px-4 shadow-sm">
-          <span aria-hidden="true" className="mr-3 text-slate-500">⌕</span>
-          <input
-            ref={searchRef}
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search apps, developers or categories"
-            className="min-w-0 flex-1 bg-transparent py-3.5 text-sm text-white outline-none placeholder:text-slate-500"
-          />
-          {search && (
-            <button type="button" onClick={() => setSearch("")} className="ml-2 text-sm text-slate-500 hover:text-white">
-              Clear
-            </button>
-          )}
-        </div>
-      </section>
-
-      <section className="space-y-4">
-        <div className="flex gap-2 overflow-x-auto pb-1">
+    <div className="store-page mx-auto max-w-7xl space-y-10 pb-20 pt-1">
+      <section className="border-b border-white/10">
+        <div className="flex gap-7 overflow-x-auto">
           {[
             ["trending", "For you"],
             ["downloads", "Top charts"],
-            ["new", "New"],
-            ["updated", "Updated"],
+            ["new", "New releases"],
+            ["updated", "Recently updated"],
           ].map(([value, label]) => (
             <button
               key={value}
               type="button"
               onClick={() => setSort(value)}
-              className={`store-chip shrink-0 ${sort === value ? "store-chip-active" : ""}`}
+              className={`relative shrink-0 pb-4 text-sm font-semibold transition ${sort === value ? "text-indigo-300" : "text-slate-400 hover:text-white"}`}
             >
               {label}
+              {sort === value && (
+                <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-indigo-400" />
+              )}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <button
+            type="button"
+            onClick={() => setPlatform("all")}
+            className={`store-chip shrink-0 ${platform === "all" ? "store-chip-active" : ""}`}
+          >
+            All devices
+          </button>
+          {platforms.map((item) => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => setPlatform(item)}
+              className={`store-chip shrink-0 ${platform === item ? "store-chip-active" : ""}`}
+            >
+              {item}
             </button>
           ))}
         </div>
 
-        {platforms.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            <button type="button" onClick={() => setPlatform("all")} className={`store-chip shrink-0 ${platform === "all" ? "store-chip-active" : ""}`}>
-              All devices
+        <div className="flex items-center rounded-full border border-white/10 bg-[#101722] px-4">
+          <span aria-hidden="true" className="mr-3 text-slate-500">⌕</span>
+          <input
+            ref={searchRef}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search apps"
+            className="min-w-0 flex-1 bg-transparent py-3.5 text-sm text-white outline-none placeholder:text-slate-500"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="ml-3 text-xs font-semibold text-indigo-300 hover:text-indigo-200"
+            >
+              Clear
             </button>
-            {platforms.map((item) => (
-              <button key={item} type="button" onClick={() => setPlatform(item)} className={`store-chip shrink-0 ${platform === item ? "store-chip-active" : ""}`}>
-                {item}
-              </button>
-            ))}
-          </div>
-        )}
+          )}
+        </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          <label className="store-filter">
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          <label className="store-filter min-w-52 shrink-0">
             <span>Category</span>
             <select value={category} onChange={(event) => setCategory(event.target.value)}>
-              <option value="all">All categories</option>
+              <option value="all">All</option>
               {categories.map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
           </label>
-          <label className="store-filter">
+          <label className="store-filter min-w-52 shrink-0">
             <span>Developer</span>
             <select value={developer} onChange={(event) => setDeveloper(event.target.value)}>
-              <option value="all">All developers</option>
+              <option value="all">All</option>
               {developers.map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
           </label>
-          <label className="store-filter">
+          <label className="store-filter min-w-52 shrink-0">
             <span>License</span>
             <select value={license} onChange={(event) => setLicense(event.target.value)}>
-              <option value="all">All licenses</option>
+              <option value="all">All</option>
               {licenses.map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
           </label>
         </div>
       </section>
 
-      {!loading && !error && !hasActiveSearch && (
-        <div className="space-y-9">
-          <Collection title="Trending now" apps={trending} ratings={ratings} />
-          <Collection title="New this week" apps={newThisWeek} ratings={ratings} />
-          <Collection title="Recently updated" apps={recentlyUpdated} ratings={ratings} />
-
-          {recentApps.length > 0 && (
+      {loading ? (
+        <div className="space-y-8">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="overflow-hidden rounded-3xl border border-white/10 bg-[#101722]">
+                <div className="aspect-[1024/500] animate-pulse bg-slate-800/60" />
+                <div className="h-24 animate-pulse bg-[#101722]" />
+              </div>
+            ))}
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="h-24 animate-pulse rounded-2xl bg-[#101722]" />
+            ))}
+          </div>
+        </div>
+      ) : error ? (
+        <div className="store-empty text-rose-200">{error}</div>
+      ) : filteredApps.length === 0 ? (
+        <div className="store-empty">
+          <div className="mx-auto text-3xl text-slate-500">⌕</div>
+          <h2 className="mt-3 text-xl font-semibold text-white">No apps found</h2>
+          <p className="mt-2 text-sm text-slate-400">Try another search or clear your filters.</p>
+          {hasFilters && (
+            <button type="button" onClick={resetFilters} className="store-primary mt-5">
+              Clear filters
+            </button>
+          )}
+        </div>
+      ) : (
+        <>
+          {!hasActiveSearch && featuredApps.length > 0 && (
             <section>
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-semibold text-white">Recently viewed</h2>
-                  <p className="mt-1 text-sm text-slate-500">Pick up where you left off.</p>
+                  <h1 className="text-2xl font-semibold text-white">Featured apps</h1>
+                  <p className="mt-1 text-sm text-slate-500">Handy picks from the Luma Store catalog.</p>
                 </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {featuredApps.map((app) => {
+                  const name = app.name?.trim() || app.package_name || "Untitled app";
+                  const iconSrc = resolveAppIcon(app);
+                  const rating = ratings[app.id];
+                  const featureGraphic = featureGraphics[app.id];
+
+                  return (
+                    <Link
+                      key={app.id}
+                      href={`/discover/${encodeURIComponent(app.package_name || app.id)}`}
+                      className="group overflow-hidden rounded-3xl border border-white/10 bg-[#101722] transition hover:border-indigo-400/30 hover:bg-[#131d29]"
+                    >
+                      <div className="aspect-[1024/500] overflow-hidden bg-slate-950">
+                        <img
+                          src={featureGraphic}
+                          alt={`${name} feature graphic`}
+                          className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.015]"
+                        />
+                      </div>
+                      <div className="flex items-center gap-3 p-4">
+                        {iconSrc ? (
+                          <img src={iconSrc} alt="" className="h-14 w-14 rounded-2xl border border-white/10 object-cover" />
+                        ) : (
+                          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 font-semibold text-indigo-200">
+                            {appInitials(name)}
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <h2 className="truncate text-base font-semibold text-white">{name}</h2>
+                          <p className="mt-0.5 truncate text-sm text-slate-400">
+                            {app.developer_name || "Unknown developer"}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            <span className="text-amber-300">★</span>{" "}
+                            {rating ? rating.average.toFixed(1) : "—"}
+                            {rating ? ` · ${rating.count} rating${rating.count === 1 ? "" : "s"}` : ""}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          {!hasActiveSearch && (
+            <div className="space-y-10">
+              <Collection title="Recommended for you" apps={trending} ratings={ratings} resolveIcon={resolveAppIcon} />
+              <Collection title="New & updated" apps={recentlyUpdated} ratings={ratings} resolveIcon={resolveAppIcon} />
+            </div>
+          )}
+
+          <section>
+            <div className="mb-5 flex items-end justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-semibold text-white">
+                  {hasActiveSearch
+                    ? `Search results for “${search.trim()}”`
+                    : sort === "downloads"
+                      ? "Top charts"
+                      : sort === "new"
+                        ? "New releases"
+                        : sort === "updated"
+                          ? "Recently updated"
+                          : "All apps"}
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">{filteredApps.length} apps</p>
+              </div>
+            </div>
+
+            <div className="grid gap-x-8 gap-y-2 md:grid-cols-2">
+              {filteredApps.map((app, index) => {
+                const name = app.name?.trim() || app.package_name || "Untitled app";
+                const iconSrc = resolveAppIcon(app);
+                const rating = ratings[app.id];
+                const metric = metrics[app.id];
+
+                return (
+                  <Link
+                    key={app.id}
+                    href={`/discover/${encodeURIComponent(app.package_name || app.id)}`}
+                    className="group flex items-center gap-4 rounded-2xl px-2 py-3 transition hover:bg-white/[0.035]"
+                  >
+                    {sort === "downloads" && (
+                      <span className="w-5 shrink-0 text-center text-sm font-medium text-slate-500">
+                        {index + 1}
+                      </span>
+                    )}
+
+                    {iconSrc ? (
+                      <div className="relative shrink-0">
+                        <div aria-hidden="true" className="absolute inset-1 rounded-2xl bg-indigo-500/20 blur-lg" />
+                        <img
+                          src={iconSrc}
+                          alt={`${name} icon`}
+                          className="relative h-16 w-16 rounded-2xl border border-white/10 object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-slate-900 font-semibold text-indigo-200">
+                        {appInitials(name)}
+                      </div>
+                    )}
+
+                    <div className="min-w-0 flex-1">
+                      <h3 className="truncate text-sm font-semibold text-white group-hover:text-indigo-200">
+                        {name}
+                      </h3>
+                      <p className="mt-1 truncate text-xs text-slate-500">
+                        {app.developer_name || app.package_name || "Unknown developer"}
+                      </p>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                        <span>
+                          <span className="text-amber-300">★</span>{" "}
+                          {rating ? rating.average.toFixed(1) : "—"}
+                        </span>
+                        {app.subcategory && <span>· {app.subcategory}</span>}
+                        {Number(metric?.total_downloads || 0) > 0 && (
+                          <span>· {Number(metric.total_downloads).toLocaleString()} downloads</span>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+
+          {!hasActiveSearch && recentApps.length > 0 && (
+            <section>
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-2xl font-semibold text-white">Recently viewed</h2>
                 <button
                   type="button"
                   onClick={() => {
@@ -516,9 +685,14 @@ function DiscoverContent() {
                   Clear
                 </button>
               </div>
+
               <div className="flex gap-4 overflow-x-auto pb-2">
                 {recentApps.map((item) => (
-                  <Link key={item.id} href={`/discover/${encodeURIComponent(item.package_name || item.id)}`} className="store-mini-card min-w-60">
+                  <Link
+                    key={item.id}
+                    href={`/discover/${encodeURIComponent(item.package_name || item.id)}`}
+                    className="store-mini-card min-w-60"
+                  >
                     {item.icon_url ? (
                       <img src={item.icon_url} alt="" className="h-14 w-14 rounded-2xl object-cover" />
                     ) : (
@@ -535,91 +709,7 @@ function DiscoverContent() {
               </div>
             </section>
           )}
-        </div>
-      )}
-
-      {loading ? (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <div key={index} className="store-app-card overflow-hidden">
-              <div className="aspect-[1024/500] animate-pulse bg-slate-800/60" />
-              <div className="flex gap-4 p-4">
-                <div className="h-16 w-16 animate-pulse rounded-2xl bg-slate-800/80" />
-                <div className="flex-1 space-y-2 pt-1">
-                  <div className="h-5 w-2/3 animate-pulse rounded bg-slate-800/80" />
-                  <div className="h-3 w-1/2 animate-pulse rounded bg-slate-800/60" />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : error ? (
-        <div className="store-empty text-rose-200">{error}</div>
-      ) : filteredApps.length === 0 ? (
-        <div className="store-empty">
-          <div className="mx-auto text-3xl text-slate-500">⌕</div>
-          <h2 className="mt-3 text-xl font-semibold text-white">No apps found</h2>
-          <p className="mt-2 text-sm text-slate-400">Try another search or clear your filters.</p>
-          {hasFilters && <button type="button" onClick={resetFilters} className="store-primary mt-5">Clear filters</button>}
-        </div>
-      ) : (
-        <section>
-          <div className="mb-5 flex items-end justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-indigo-300">Apps</p>
-              <h2 className="mt-1 text-2xl font-semibold text-white">
-                {hasActiveSearch ? `Results for “${search.trim()}”` : sort === "downloads" ? "Top charts" : sort === "new" ? "New releases" : sort === "updated" ? "Recently updated" : "Recommended for you"}
-              </h2>
-            </div>
-            <span className="text-sm text-slate-500">{filteredApps.length} apps</span>
-          </div>
-
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredApps.map((app) => {
-              const name = app.name?.trim() || app.package_name || "Untitled app";
-              const iconSrc = resolveAppIcon(app);
-              const featureGraphic = featureGraphics[app.id] || null;
-              const rating = ratings[app.id];
-
-              return (
-                <Link key={app.id} href={`/discover/${encodeURIComponent(app.package_name || app.id)}`} className="group store-app-card overflow-hidden">
-                  <div className="aspect-[1024/500] w-full overflow-hidden bg-slate-950">
-                    {featureGraphic ? (
-                      <img src={featureGraphic} alt={`${name} feature graphic`} className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.015]" />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-[#0d131d] text-sm font-medium text-slate-600">
-                        No feature graphic
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-4 p-4">
-                    <div className="relative shrink-0">
-                      <div aria-hidden="true" className="absolute inset-1 rounded-2xl bg-indigo-500/25 blur-xl" />
-                      {iconSrc ? (
-                        <img src={iconSrc} alt={`${name} icon`} className="relative h-16 w-16 rounded-2xl border border-indigo-300/20 bg-slate-950 object-cover shadow-[0_0_24px_rgba(99,102,241,0.18)]" />
-                      ) : (
-                        <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-indigo-300/20 bg-slate-950 font-bold text-indigo-200">
-                          {appInitials(name) || "A"}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <h3 className="truncate text-base font-semibold text-white group-hover:text-indigo-200">{name}</h3>
-                      <p className="mt-1 truncate text-sm text-slate-400">{app.developer_name || app.package_name || "Unknown developer"}</p>
-                      <div className="mt-2 flex items-center gap-3 text-xs text-slate-500">
-                        <span className="text-amber-300">★ <span className="text-slate-400">{rating ? rating.average.toFixed(1) : "—"}</span></span>
-                        {rating && <span>{rating.count} rating{rating.count === 1 ? "" : "s"}</span>}
-                        {app.version && <span>v{app.version}</span>}
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
+        </>
       )}
     </div>
   );
@@ -629,46 +719,51 @@ function Collection({
   title,
   apps,
   ratings,
+  resolveIcon,
 }: {
   title: string;
   apps: StoreApp[];
   ratings: Record<string, RatingSummary>;
+  resolveIcon: (app: StoreApp) => string | null;
 }) {
   if (!apps.length) return null;
 
   return (
     <section>
-      <div className="mb-4 flex items-end justify-between gap-3">
+      <div className="mb-4 flex items-center justify-between">
         <h2 className="text-2xl font-semibold text-white">{title}</h2>
-        <span className="text-sm text-indigo-300">Explore</span>
+        <span className="text-sm font-medium text-indigo-300">More</span>
       </div>
-      <div className="flex snap-x gap-4 overflow-x-auto pb-2">
+
+      <div className="grid gap-x-8 gap-y-2 md:grid-cols-2 lg:grid-cols-3">
         {apps.map((app) => {
           const name = app.name || app.package_name || "Untitled app";
           const rating = ratings[app.id];
+          const iconSrc = resolveIcon(app);
+
           return (
             <Link
               key={app.id}
               href={`/discover/${encodeURIComponent(app.package_name || app.id)}`}
-              className="store-mini-card min-w-72 snap-start"
+              className="group flex items-center gap-3 rounded-2xl px-2 py-3 transition hover:bg-white/[0.035]"
             >
-              <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-slate-900">
-                {app.icon_url ? (
-                  <img src={app.icon_url} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <span className="flex h-full items-center justify-center text-sm font-bold text-indigo-200">
-                    {appInitials(name)}
-                  </span>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <strong className="block truncate text-sm text-white">{name}</strong>
+              {iconSrc ? (
+                <img src={iconSrc} alt="" className="h-14 w-14 rounded-2xl border border-white/10 object-cover" />
+              ) : (
+                <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-sm font-bold text-indigo-200">
+                  {appInitials(name)}
+                </span>
+              )}
+
+              <div className="min-w-0">
+                <strong className="block truncate text-sm text-white group-hover:text-indigo-200">{name}</strong>
                 <span className="mt-1 block truncate text-xs text-slate-500">
                   {app.developer_name || app.package_name || "Unknown developer"}
                 </span>
-                <span className="mt-2 block text-xs text-slate-400">
-                  <span className="text-amber-300">★</span> {rating ? rating.average.toFixed(1) : "—"}
-                  {rating ? ` · ${rating.count}` : ""}
+                <span className="mt-1.5 block text-xs text-slate-500">
+                  <span className="text-amber-300">★</span>{" "}
+                  {rating ? rating.average.toFixed(1) : "—"}
+                  {app.subcategory ? ` · ${app.subcategory}` : ""}
                 </span>
               </div>
             </Link>

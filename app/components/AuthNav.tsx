@@ -114,10 +114,13 @@ export default function AuthNav() {
       <div className="ml-auto flex items-center gap-1.5">
         {showSearch ? (
           <div ref={searchRef} className="absolute left-1/2 top-1/2 flex w-[42rem] max-w-[70vw] -translate-x-1/2 -translate-y-1/2 items-center overflow-hidden rounded-md border border-white/10 bg-[#0f172a] shadow-lg shadow-black/20">
-            <svg viewBox="0 0 24 24" aria-hidden="true" className="ml-3 h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <circle cx="11" cy="11" r="6.5" />
-              <path strokeLinecap="round" d="m16 16 4 4" />
-            </svg>
+            <Image
+              src="/search.png"
+              alt="Search"
+              width={16}
+              height={16}
+              className="ml-3 h-4 w-4 shrink-0 object-contain"
+            />
             <input
               type="text"
               value={searchValue}
@@ -159,10 +162,13 @@ export default function AuthNav() {
             onClick={() => setShowSearch(true)}
             className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/[0.04] hover:text-white"
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <circle cx="11" cy="11" r="6.5" />
-              <path strokeLinecap="round" d="m16 16 4 4" />
-            </svg>
+            <Image
+              src="/search.png"
+              alt="Search"
+              width={16}
+              height={16}
+              className="h-4 w-4 shrink-0 object-contain"
+            />
           </button>
         )}
 

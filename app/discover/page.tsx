@@ -241,38 +241,77 @@ export default function DiscoverPage() {
       if (!matchesLicense || !matchesCategory || !matchesDeveloper || !matchesPlatform) return false;
       if (!query) return true;
 
-      return JSON.stringify(app).toLowerCase().includes(query);
+      const haystack = [
+        app.name || "",
+        app.package_name || "",
+        app.developer_name || "",
+        app.subcategory || "",
+        ...(Array.isArray(app.categories) ? app.categories : []),
+        app.short_description || "",
+        app.description || "",
+      ].join(" ").toLowerCase();
+
+      return haystack.includes(query);
     });
-    return result.sort((a, b) => {
-      const aMetric = metrics[a.id];
-      const bMetric = metrics[b.id];
 
-      if (sort === "trending") {
-        return (
-          Number(bMetric?.recent_downloads || 0)
-          - Number(aMetric?.recent_downloads || 0)
-          || Number(bMetric?.total_downloads || 0)
-          - Number(aMetric?.total_downloads || 0)
-        );
-      }
+    return result
+      .map((app) => {
+        if (!query) {
+          return { app, relevance: 0 };
+        }
 
-      if (sort === "downloads") {
-        return Number(bMetric?.total_downloads || 0)
-          - Number(aMetric?.total_downloads || 0);
-      }
+        const name = (app.name || "").toLowerCase();
+        const packageName = (app.package_name || "").toLowerCase();
+        const developerName = (app.developer_name || "").toLowerCase();
+        const categoryText = [app.subcategory || "", ...(Array.isArray(app.categories) ? app.categories : [])].join(" ").toLowerCase();
+        const description = [app.short_description || "", app.description || ""].join(" ").toLowerCase();
 
-      if (sort === "new") {
-        return new Date(b.created_at || 0).getTime()
-          - new Date(a.created_at || 0).getTime();
-      }
+        let relevance = 0;
 
-      if (sort === "updated") {
-        return new Date(b.updated_at || 0).getTime()
-          - new Date(a.updated_at || 0).getTime();
-      }
+        if (name === query || packageName === query) relevance += 100;
+        if (name.startsWith(query) || packageName.startsWith(query)) relevance += 60;
+        if (name.includes(query) || packageName.includes(query)) relevance += 35;
+        if (developerName.includes(query)) relevance += 20;
+        if (categoryText.includes(query)) relevance += 15;
+        if (description.includes(query)) relevance += 10;
 
-      return (a.name || "").localeCompare(b.name || "");
-    });
+        return { app, relevance };
+      })
+      .filter(({ relevance }) => query ? relevance > 0 : true)
+      .sort((a, b) => {
+        const relevanceDiff = b.relevance - a.relevance;
+        if (relevanceDiff !== 0) return relevanceDiff;
+
+        const aMetric = metrics[a.app.id];
+        const bMetric = metrics[b.app.id];
+
+        if (sort === "trending") {
+          return (
+            Number(bMetric?.recent_downloads || 0)
+            - Number(aMetric?.recent_downloads || 0)
+            || Number(bMetric?.total_downloads || 0)
+            - Number(aMetric?.total_downloads || 0)
+          );
+        }
+
+        if (sort === "downloads") {
+          return Number(bMetric?.total_downloads || 0)
+            - Number(aMetric?.total_downloads || 0);
+        }
+
+        if (sort === "new") {
+          return new Date(b.app.created_at || 0).getTime()
+            - new Date(a.app.created_at || 0).getTime();
+        }
+
+        if (sort === "updated") {
+          return new Date(b.app.updated_at || 0).getTime()
+            - new Date(a.app.updated_at || 0).getTime();
+        }
+
+        return (a.app.name || "").localeCompare(b.app.name || "");
+      })
+      .map(({ app }) => app);
   }, [apps, category, developer, license, search, platform, sort, metrics]);
 
   return (
@@ -280,10 +319,10 @@ export default function DiscoverPage() {
       {!loading && !error && (
         <div className="space-y-5">
           {!hasActiveSearch && <Collection title="Trending now" apps={trending} />}
-          <Collection title="New this week" apps={newThisWeek} />
+          {!hasActiveSearch && <Collection title="New this week" apps={newThisWeek} />}
           {!hasActiveSearch && <Collection title="Recently updated" apps={recentlyUpdated} />}
 
-          {recentApps.length > 0 && (
+          {!hasActiveSearch && recentApps.length > 0 && (
             <section>
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-white">Recently viewed</h2>
@@ -334,13 +373,21 @@ export default function DiscoverPage() {
         <div className="ui-empty sm:p-12"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-2xl">⌕</div><h2 className="mt-4 text-lg font-semibold text-white">No apps found</h2><p className="mt-2 text-sm text-slate-400">Try another search or clear the active filters.</p>{hasFilters&&<button type="button" onClick={resetFilters} className="ui-button-primary mt-5 px-4 py-2 text-sm">Clear filters</button>}</div>
       ) : (
         <section>
-          <div className="mb-4 flex items-end justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Catalog</p>
-              <h2 className="mt-1 text-2xl font-bold text-white">{sort==="trending"?"Trending":sort==="new"?"New releases":sort==="updated"?"Recently updated":sort==="downloads"?"Most downloaded":"All apps"}</h2>
+          {!hasActiveSearch && (
+            <div className="mb-4 flex items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Catalog</p>
+                <h2 className="mt-1 text-2xl font-bold text-white">{sort==="trending"?"Trending":sort==="new"?"New releases":sort==="updated"?"Recently updated":sort==="downloads"?"Most downloaded":"All apps"}</h2>
+              </div>
+              <span className="text-sm text-slate-500">{filteredApps.length} apps</span>
             </div>
-            <span className="text-sm text-slate-500">{filteredApps.length} apps</span>
-          </div>
+          )}
+
+          {hasActiveSearch && (
+            <div className="mb-4 flex justify-end">
+              <span className="text-sm text-slate-500">{filteredApps.length} apps</span>
+            </div>
+          )}
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filteredApps.map((app) => {

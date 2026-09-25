@@ -307,9 +307,10 @@ export default function DiscoverAppPage() {
 
       const identifier = decodeURIComponent(params.id);
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(identifier);
+
       const appResult = await supabase
         .from("store_apps")
-        .select("*")
+        .select("id,name,description,developer_name,developer_id,category_id,icon_url,version,created_at,updated_at,luma_submission_id,package_name,version_code,subcategory,license_type,short_description,screenshots,changelog,ant_features,author_name,author_email,author_website,website_url,source_code_url,repo_url,issue_tracker_url,translation_url,changelog_url,donate_url,liberapay,opencollective,bitcoin,litecoin,categories")
         .is("archived_at", null)
         .eq(isUuid ? "id" : "package_name", identifier)
         .order("updated_at", { ascending: false })
@@ -318,57 +319,155 @@ export default function DiscoverAppPage() {
 
       if (cancelled) return;
 
-      if (appResult.error) {
-        setError(appResult.error.message);
+      if (appResult.error || !appResult.data) {
+        setError(appResult.error?.message || "This app could not be loaded.");
         setApp(null);
         setPlatforms([]);
-      } else {
-        const loadedApp = appResult.data as StoreApp;
-        setApp(loadedApp);
-        setAppIcon(loadedApp.icon_url ?? null);
-        if (!loadedApp.icon_url && loadedApp.repo_url) {
-          const fallbackIcon = await fetchFastlaneIconUrl(loadedApp.repo_url);
-          if (!cancelled) setAppIcon(fallbackIcon ?? null);
-        }
-        try {
-          const key = "luma-recent-apps";
-          const current = JSON.parse(localStorage.getItem(key) || "[]") as Array<{id:string;name:string;package_name:string|null;icon_url:string|null}>;
-          const next = [{id:loadedApp.id,name:loadedApp.name || loadedApp.package_name || "Untitled app",package_name:loadedApp.package_name,icon_url:loadedApp.icon_url}, ...current.filter(item=>item.id!==loadedApp.id)].slice(0,6);
-          localStorage.setItem(key, JSON.stringify(next));
-        } catch {}
-        if (loadedApp.developer_id) {
-          const fundingResult = await supabase.from("luma_developer_funding").select("donate_url,liberapay,opencollective,bitcoin,litecoin,crypto_addresses").eq("developer_id", loadedApp.developer_id).maybeSingle();
-          if (!cancelled) setFunding((fundingResult.data as DeveloperFunding | null) ?? null);
-        } else if (!cancelled) setFunding(null);
-        const platformResult = await supabase.from("store_app_platforms").select("id,app_id,platform,package_type,linux_package_base,download_url,file_size_mb,sha256,artifact_verified_at,artifact_size_bytes,permissions,repo_url,listing_metadata").eq("app_id", loadedApp.id).order("platform", { ascending: true });
-        if (!cancelled) {
-          const loadedPlatforms = (platformResult.data ?? []) as StoreAppPlatform[];
-          setPlatforms(loadedPlatforms);
-          const listingPlatforms = Array.from(new Set(loadedPlatforms.filter((item) => platformListing(item.listing_metadata)).map((item) => item.platform)));
-          setSelectedListingPlatform((current) => current && listingPlatforms.includes(current) ? current : (listingPlatforms.includes("Android") ? "Android" : listingPlatforms[0] ?? null));
-        }
-        const { data: totalDownloads } = await supabase.rpc("luma_app_download_count", { target_app_id: loadedApp.id });
-        if (!cancelled) setDownloadCount(Number(totalDownloads ?? 0));
-        const { data: platformCounts } = await supabase.rpc("luma_app_platform_download_counts", { target_app_id: loadedApp.id });
-        if (!cancelled) setPlatformDownloadCounts((platformCounts ?? []) as PlatformDownloadCount[]);
-        if (loadedApp.developer_id) {
-          const related = await supabase.from("store_apps").select("id,name,package_name,short_description,icon_url,version").eq("developer_id", loadedApp.developer_id).is("archived_at", null).neq("id", loadedApp.id).order("updated_at",{ascending:false}).limit(3);
-          if (!cancelled) setRelatedDeveloperApps((related.data ?? []) as RelatedApp[]);
-        }
-        if (loadedApp.package_name) { const {data:versions}=await supabase.rpc("luma_public_version_history",{target_package_name:loadedApp.package_name}); if(!cancelled)setVersionHistory((versions??[]) as VersionHistoryItem[]); }
-        const appCategories=Array.isArray(loadedApp.categories)?loadedApp.categories:[];
-        if(appCategories.length){const similar=await supabase.from("store_apps").select("id,name,package_name,short_description,icon_url,version,categories").is("archived_at",null).neq("id",loadedApp.id).overlaps("categories",appCategories).limit(6);if(!cancelled)setSimilarApps(((similar.data??[]) as (RelatedApp & {categories?:string[]})[]).sort((a,b)=>((b.categories||[]).filter(x=>appCategories.includes(x)).length)-((a.categories||[]).filter(x=>appCategories.includes(x)).length)).slice(0,3));}
-        const ratingResponse = await fetch(`${ratingApi}/apps/${encodeURIComponent(loadedApp.package_name || loadedApp.id)}/ratings`);
-        if (ratingResponse.ok) {
-          const summary = await ratingResponse.json();
-          if (!cancelled) {
+        setLoading(false);
+        return;
+      }
+
+      const loadedApp = appResult.data as StoreApp;
+      setApp(loadedApp);
+      setAppIcon(loadedApp.icon_url ?? null);
+
+      try {
+        const key = "luma-recent-apps";
+        const current = JSON.parse(localStorage.getItem(key) || "[]") as Array<{id:string;name:string;package_name:string|null;icon_url:string|null}>;
+        const next = [{
+          id: loadedApp.id,
+          name: loadedApp.name || loadedApp.package_name || "Untitled app",
+          package_name: loadedApp.package_name,
+          icon_url: loadedApp.icon_url,
+        }, ...current.filter((item) => item.id !== loadedApp.id)].slice(0, 6);
+        localStorage.setItem(key, JSON.stringify(next));
+      } catch {}
+
+      const platformPromise = supabase
+        .from("store_app_platforms")
+        .select("id,app_id,platform,package_type,linux_package_base,download_url,file_size_mb,sha256,artifact_verified_at,artifact_size_bytes,permissions,repo_url,listing_metadata")
+        .eq("app_id", loadedApp.id)
+        .order("platform", { ascending: true });
+
+      const fundingPromise = loadedApp.developer_id
+        ? supabase
+            .from("luma_developer_funding")
+            .select("donate_url,liberapay,opencollective,bitcoin,litecoin,crypto_addresses")
+            .eq("developer_id", loadedApp.developer_id)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null });
+
+      const totalDownloadsPromise = supabase.rpc("luma_app_download_count", {
+        target_app_id: loadedApp.id,
+      });
+
+      const platformCountsPromise = supabase.rpc("luma_app_platform_download_counts", {
+        target_app_id: loadedApp.id,
+      });
+
+      const relatedPromise = loadedApp.developer_id
+        ? supabase
+            .from("store_apps")
+            .select("id,name,package_name,short_description,icon_url,version")
+            .eq("developer_id", loadedApp.developer_id)
+            .is("archived_at", null)
+            .neq("id", loadedApp.id)
+            .order("updated_at", { ascending: false })
+            .limit(3)
+        : Promise.resolve({ data: [], error: null });
+
+      const versionsPromise = loadedApp.package_name
+        ? supabase.rpc("luma_public_version_history", {
+            target_package_name: loadedApp.package_name,
+          })
+        : Promise.resolve({ data: [], error: null });
+
+      const appCategories = Array.isArray(loadedApp.categories) ? loadedApp.categories : [];
+      const similarPromise = appCategories.length
+        ? supabase
+            .from("store_apps")
+            .select("id,name,package_name,short_description,icon_url,version,categories")
+            .is("archived_at", null)
+            .neq("id", loadedApp.id)
+            .overlaps("categories", appCategories)
+            .limit(6)
+        : Promise.resolve({ data: [], error: null });
+
+      const ratingPromise = fetch(
+        `${ratingApi}/apps/${encodeURIComponent(loadedApp.package_name || loadedApp.id)}/ratings`,
+      ).catch(() => null);
+
+      const platformResult = await platformPromise;
+      if (cancelled) return;
+
+      const loadedPlatforms = (platformResult.data ?? []) as StoreAppPlatform[];
+      setPlatforms(loadedPlatforms);
+      const listingPlatforms = Array.from(
+        new Set(
+          loadedPlatforms
+            .filter((item) => platformListing(item.listing_metadata))
+            .map((item) => item.platform),
+        ),
+      );
+      setSelectedListingPlatform((current) =>
+        current && listingPlatforms.includes(current)
+          ? current
+          : listingPlatforms.includes("Android")
+            ? "Android"
+            : listingPlatforms[0] ?? null,
+      );
+
+      // App and platform data are enough for the page to render.
+      setLoading(false);
+
+      void Promise.all([
+        fundingPromise,
+        totalDownloadsPromise,
+        platformCountsPromise,
+        relatedPromise,
+        versionsPromise,
+        similarPromise,
+        ratingPromise,
+      ]).then(async ([
+        fundingResult,
+        totalDownloadsResult,
+        platformCountsResult,
+        relatedResult,
+        versionsResult,
+        similarResult,
+        ratingResponse,
+      ]) => {
+        if (cancelled) return;
+
+        setFunding((fundingResult.data as DeveloperFunding | null) ?? null);
+        setDownloadCount(Number(totalDownloadsResult.data ?? 0));
+        setPlatformDownloadCounts((platformCountsResult.data ?? []) as PlatformDownloadCount[]);
+        setRelatedDeveloperApps((relatedResult.data ?? []) as RelatedApp[]);
+        setVersionHistory((versionsResult.data ?? []) as VersionHistoryItem[]);
+
+        const sortedSimilar = ((similarResult.data ?? []) as (RelatedApp & { categories?: string[] })[])
+          .sort(
+            (a, b) =>
+              ((b.categories || []).filter((item) => appCategories.includes(item)).length)
+              - ((a.categories || []).filter((item) => appCategories.includes(item)).length),
+          )
+          .slice(0, 3);
+        setSimilarApps(sortedSimilar);
+
+        if (ratingResponse?.ok) {
+          const summary = await ratingResponse.json().catch(() => null);
+          if (!cancelled && summary) {
             setRatingCount(Number(summary.count || 0));
             setRatingAverage(Number(summary.average || 0));
           }
         }
-      }
+      });
 
-      setLoading(false);
+      if (!loadedApp.icon_url && loadedApp.repo_url) {
+        void fetchFastlaneIconUrl(loadedApp.repo_url).then((fallbackIcon) => {
+          if (!cancelled && fallbackIcon) setAppIcon(fallbackIcon);
+        });
+      }
     }
 
     void loadApp();

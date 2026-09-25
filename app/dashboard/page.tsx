@@ -340,6 +340,7 @@ export default function LumaDeveloperPortal() {
   const [windowsDownloadUrl,setWindowsDownloadUrl]=useState("");
   const [linuxDebUrl,setLinuxDebUrl]=useState("");
   const [linuxRpmUrl,setLinuxRpmUrl]=useState("");
+  const [linuxAppImageUrl,setLinuxAppImageUrl]=useState("");
   const [appPackageName, setAppPackageName] = useState("");
   const [appVersionCode, setAppVersionCode] = useState("");
   const [websiteUrl, setWebsiteUrl] = useState("");
@@ -477,6 +478,7 @@ export default function LumaDeveloperPortal() {
     ...(isWindows && windowsDownloadUrl.trim() ? [{ platform: "Windows" as const, packageType: "exe" as const, downloadUrl: windowsDownloadUrl.trim(), ...platformDetails("Windows", androidOverride) }] : []),
     ...(isLinux && linuxDebUrl.trim() ? [{ platform: "Linux" as const, packageType: "deb" as const, downloadUrl: linuxDebUrl.trim(), ...platformDetails("Linux", androidOverride) }] : []),
     ...(isLinux && linuxRpmUrl.trim() ? [{ platform: "Linux" as const, packageType: "rpm" as const, downloadUrl: linuxRpmUrl.trim(), ...platformDetails("Linux", androidOverride) }] : []),
+    ...(isLinux && linuxAppImageUrl.trim() ? [{ platform: "Linux" as const, packageType: "appimage" as const, downloadUrl: linuxAppImageUrl.trim(), ...platformDetails("Linux", androidOverride) }] : []),
   ];
   const platformArtifacts = buildPlatformArtifacts();
   const validAndroidMetadata = !isAndroid || (/^([A-Za-z][A-Za-z0-9_]*\.)+[A-Za-z][A-Za-z0-9_]*$/.test(appPackageName.trim()) && /^\d+$/.test(appVersionCode.trim()) && Number(appVersionCode) > 0);
@@ -567,7 +569,7 @@ export default function LumaDeveloperPortal() {
 
   const resetForm = () => {
     setStep(1); setAppName(""); setAppLink(""); setAppCategories([]); setAppLicenseType(""); setAppIconUrl(""); setIconPreviewError(false);
-    setAppVersion(""); setAppPlatforms([]); setSeparatePlatformRepos(false); setPlatformMetadata({Android:emptyPlatformMetadata(),Windows:emptyPlatformMetadata(),Linux:emptyPlatformMetadata()}); setAndroidDownloadUrl(""); setWindowsDownloadUrl(""); setLinuxDebUrl(""); setLinuxRpmUrl(""); setAppPackageName(""); setAppVersionCode("");
+    setAppVersion(""); setAppPlatforms([]); setSeparatePlatformRepos(false); setPlatformMetadata({Android:emptyPlatformMetadata(),Windows:emptyPlatformMetadata(),Linux:emptyPlatformMetadata()}); setAndroidDownloadUrl(""); setWindowsDownloadUrl(""); setLinuxDebUrl(""); setLinuxRpmUrl(""); setLinuxAppImageUrl(""); setAppPackageName(""); setAppVersionCode("");
     setWebsiteUrl(""); setIssueTrackerUrl(""); setTranslationUrl(""); setAuthorName(""); setAuthorEmail(""); setAuthorWebsite("");
     setDonateUrl(""); setLiberapay(""); setOpencollective(""); setBitcoin(""); setLitecoin("");
     setClosedTitle(""); setClosedShortDescription(""); setClosedFullDescription(""); setClosedChangelog(""); setClosedScreenshotsText(""); setAdditionalClosedMetadata([]);
@@ -701,7 +703,7 @@ export default function LumaDeveloperPortal() {
       if (!appPlatforms.length) throw new Error("Please select at least one platform.");
       if (isAndroid && !androidDownloadUrl.trim()) throw new Error("Android requires an uploaded APK or a download URL.");
       if (isWindows && !windowsDownloadUrl.trim()) throw new Error("Windows requires an uploaded EXE or a download URL.");
-      if (isLinux && !linuxDebUrl.trim() && !linuxRpmUrl.trim()) throw new Error("Linux requires an uploaded .deb/.rpm file or a download URL.");
+      if (isLinux && !linuxDebUrl.trim() && !linuxRpmUrl.trim() && !linuxAppImageUrl.trim()) throw new Error("Linux requires an uploaded .deb/.rpm/AppImage file or a download URL.");
       if (!validAndroidMetadata) throw new Error("Android apps require a valid package name and positive versionCode.");
       if (!appCategories.length || appCategories.some((category) => !FDROID_CATEGORIES.includes(category as typeof FDROID_CATEGORIES[number]))) throw new Error("Please select at least one valid F-Droid category.");
       if (!appLicenseType) throw new Error("Please select an open-source license.");
@@ -931,7 +933,7 @@ https://.../screenshot2.png"/></div></div></div>
                       <>
                         {isAndroid && <div><label className="mb-2 block text-sm text-slate-300">Android APK URL</label><input type="url" required value={androidDownloadUrl} onChange={(e)=>setAndroidDownloadUrl(e.target.value)} className={fieldClass}/></div>}
                         {isWindows && <div><label className="mb-2 block text-sm text-slate-300">Windows EXE URL</label><input type="url" required value={windowsDownloadUrl} onChange={(e)=>setWindowsDownloadUrl(e.target.value)} className={fieldClass}/></div>}
-                        {isLinux && <><div><label className="mb-2 block text-sm text-slate-300">Linux .deb URL</label><input type="url" value={linuxDebUrl} onChange={(e)=>setLinuxDebUrl(e.target.value)} className={fieldClass}/></div><div><label className="mb-2 block text-sm text-slate-300">Linux .rpm URL</label><input type="url" value={linuxRpmUrl} onChange={(e)=>setLinuxRpmUrl(e.target.value)} className={fieldClass}/></div></>}
+                        {isLinux && <><div><label className="mb-2 block text-sm text-slate-300">Linux .deb URL</label><input type="url" value={linuxDebUrl} onChange={(e)=>setLinuxDebUrl(e.target.value)} className={fieldClass}/></div><div><label className="mb-2 block text-sm text-slate-300">Linux .rpm URL</label><input type="url" value={linuxRpmUrl} onChange={(e)=>setLinuxRpmUrl(e.target.value)} className={fieldClass}/></div><div><label className="mb-2 block text-sm text-slate-300">Linux AppImage URL</label><input type="url" value={linuxAppImageUrl} onChange={(e)=>setLinuxAppImageUrl(e.target.value)} className={fieldClass}/></div></>}
                       </>
                     ) : (
                       <>
@@ -979,6 +981,16 @@ https://.../screenshot2.png"/></div></div></div>
                             className={fieldClass}
                           />
                           {linuxRpmUrl && <p className="mt-2 break-all text-xs text-emerald-300">Uploaded · {linuxRpmUrl}</p>}
+                        </div><div>
+                          <label className="mb-2 block text-sm text-slate-300">Linux AppImage</label>
+                          <input
+                            type="file"
+                            accept=".AppImage,.appimage,application/octet-stream"
+                            disabled={uploadingArtifact !== null}
+                            onChange={(e)=>{const file=e.target.files?.[0]; if(file) void uploadArtifactFile(file,"Linux","appimage",setLinuxAppImageUrl);}}
+                            className={fieldClass}
+                          />
+                          {linuxAppImageUrl && <p className="mt-2 break-all text-xs text-emerald-300">Uploaded · {linuxAppImageUrl}</p>}
                         </div></>}
                       </>
                     )}

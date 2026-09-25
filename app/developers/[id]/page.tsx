@@ -66,29 +66,248 @@ export default function DiscoverDeveloperPage() {
   const developerCategories=Array.from(new Set(apps.flatMap(app=>app.categories||[]))).sort();
   const memberSince=profile?.created_at?new Intl.DateTimeFormat("en",{year:"numeric",month:"long"}).format(new Date(profile.created_at)):null;
   const latestUpdate=apps.map(app=>app.updated_at).filter((value):value is string=>Boolean(value)).sort().at(-1)||null;
-  return <div className="store-page mx-auto max-w-7xl space-y-6 px-3 pb-20 sm:space-y-8 sm:px-4">
-    <Link href="/" className="inline-flex text-sm font-medium text-indigo-300 hover:text-indigo-200">← Back to apps</Link>
-    <section className="glass-panel p-5 sm:p-8">
-      <div className="relative flex flex-col items-start gap-5 sm:flex-row">{profile?.avatar_url&&<img src={profile.avatar_url} alt="" className="h-20 w-20 rounded-3xl border border-slate-700 object-cover"/>}<div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-200">Luma Store Developer</p><div className="mt-3 flex flex-wrap items-center gap-2"><h1 className="text-3xl font-bold text-white sm:text-4xl">{developerName}</h1>{profile?.verified&&<span className="rounded-full bg-sky-500/10 px-2.5 py-1 text-xs font-semibold text-sky-200">✓ Verified</span>}</div>{profile?.bio&&<p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">{profile.bio}</p>}<div className="mt-3 flex flex-wrap gap-2">
-          {profile?.website_url&&<a href={profile.website_url} target="_blank" rel="noreferrer" className="text-sm text-indigo-300">Website ↗</a>}
-          {profile?.github_url&&<a href={profile.github_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-sm text-slate-200 transition hover:bg-white/[0.06]">
-            <img src="/github.svg" alt="" className="h-4 w-4 rounded-sm" />
-            GitHub
-          </a>}
-          {profile?.gitlab_url&&<a href={profile.gitlab_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-sm text-slate-200 transition hover:bg-white/[0.06]">
-            <img src="/gitlab.svg" alt="" className="h-4 w-4 object-contain" />
-            GitLab
-          </a>}
-        </div><div className="mt-4 flex flex-wrap gap-2"><span className="rounded-full border border-white/10 bg-slate-950/35 px-3 py-1.5 text-sm text-slate-300">{apps.length} published {apps.length === 1 ? "app" : "apps"}</span><span className="rounded-full border border-white/10 bg-slate-950/35 px-3 py-1.5 text-sm text-slate-300">↓ {totalDownloads === null ? "—" : totalDownloads.toLocaleString()} downloads</span>{memberSince&&<span className="rounded-full border border-white/10 bg-slate-950/35 px-3 py-1.5 text-sm text-slate-300">Member since {memberSince}</span>}{latestUpdate&&<span className="rounded-full border border-white/10 bg-slate-950/35 px-3 py-1.5 text-sm text-slate-300">Updated {new Intl.DateTimeFormat("en",{month:"short",day:"numeric",year:"numeric"}).format(new Date(latestUpdate))}</span>}</div></div></div>
-    </section>
-    {developerCategories.length>0&&<section className="glass-panel p-5 sm:p-6"><p className="text-xs font-semibold uppercase tracking-[.16em] text-slate-500">Focus areas</p><h2 className="mt-1 text-xl font-semibold text-white">Categories</h2><div className="mt-4 flex flex-wrap gap-2">{developerCategories.map(category=><span key={category} className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-1.5 text-xs text-indigo-200">{category}</span>)}</div></section>}
-    {funding && (funding.donate_url || funding.liberapay || funding.opencollective || funding.bitcoin || funding.litecoin || Object.values(funding.crypto_addresses||{}).some(Boolean)) && <section className="glass-panel p-5 sm:p-6"><h2 className="text-xl font-semibold text-white">Support {developerName}</h2><div className="mt-4 flex flex-wrap gap-2">{funding.donate_url&&<a href={funding.donate_url} target="_blank" rel="noreferrer" className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white">Donate ↗</a>}{funding.liberapay&&<a href={fundingHref(funding.liberapay, "liberapay") || "#"} target="_blank" rel="noreferrer" className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-200">Liberapay ↗</a>}{funding.opencollective&&<a href={fundingHref(funding.opencollective, "opencollective") || "#"} target="_blank" rel="noreferrer" className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-200">OpenCollective ↗</a>}</div>{cryptoEntries.length>0&&<div className="mt-4 grid gap-3 sm:grid-cols-2">{cryptoEntries.map(([key,value])=><div key={key} className="rounded-xl border border-slate-800 bg-slate-950/45 p-3"><p className="text-xs text-slate-500">{cryptoLabels[key.split("::")[0]]||key.split("::")[0]}{key.includes("::")?` · ${key.split("::")[1]}`:""}</p><p className="mt-1 break-all font-mono text-xs text-slate-200">{value}</p></div>)}</div>}</section>}
-    <section><div className="mb-4"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Published apps</p><h2 className="mt-1 text-2xl font-bold text-white">Apps by {developerName}</h2></div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{apps.map((app) => { const name=app.name||app.package_name||"Untitled app"; return <Link key={app.id} href={`/${encodeURIComponent(app.package_name || app.id)}`} className="group glass-panel p-5 transition duration-300 hover:border-indigo-400/40 hover:bg-slate-900/70">
-        <div className="flex items-start gap-4">{app.icon_url ? <img src={app.icon_url} alt={`${name} icon`} className="h-16 w-16 rounded-2xl border border-slate-700 bg-slate-950 object-cover" /> : <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-700 bg-slate-950 text-xl font-bold text-indigo-200">{name.slice(0,1).toUpperCase()}</div>}<div className="min-w-0"><h3 className="truncate font-semibold text-white group-hover:text-indigo-200">{name}</h3><p className="mt-1 text-xs text-slate-500">{app.version ? `Version ${app.version}` : app.package_name}</p></div></div>
-        <p className="mt-4 line-clamp-3 text-sm leading-6 text-slate-400">{app.short_description || app.description || "No description available."}</p>
-        <div className="mt-4 flex flex-wrap gap-2">{app.license_type && <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-200">{app.license_type}</span>}{app.categories?.slice(0,2).map((category)=><span key={category} className="rounded-full border border-slate-700 px-2.5 py-1 text-xs text-slate-300">{category}</span>)}</div>
-      </Link>; })}</div>
-    </section>
-  </div>;
+  return (
+    <div className="store-page mx-auto max-w-7xl space-y-10 px-3 pb-20 sm:px-4">
+      <Link
+        href="/"
+        className="inline-flex text-sm font-medium text-indigo-300 transition hover:text-indigo-200"
+      >
+        ← Back to apps
+      </Link>
+
+      <section className="border-b border-white/10 pb-8">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+          <div className="shrink-0">
+            {profile?.avatar_url ? (
+              <img
+                src={profile.avatar_url}
+                alt={developerName}
+                className="h-28 w-28 rounded-[2rem] object-cover shadow-[0_12px_36px_rgba(0,0,0,0.28)]"
+              />
+            ) : (
+              <div className="flex h-28 w-28 items-center justify-center rounded-[2rem] bg-[#101722] text-3xl font-semibold text-indigo-200 shadow-[0_12px_36px_rgba(0,0,0,0.28)]">
+                {developerName.slice(0, 1).toUpperCase()}
+              </div>
+            )}
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+                {developerName}
+              </h1>
+              {profile?.verified && (
+                <span className="rounded-full bg-indigo-500/10 px-2.5 py-1 text-xs font-semibold text-indigo-200">
+                  ✓ Verified
+                </span>
+              )}
+            </div>
+
+            {profile?.bio && (
+              <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-400 sm:text-base">
+                {profile.bio}
+              </p>
+            )}
+
+            <div className="mt-5 flex flex-wrap gap-x-8 gap-y-4">
+              <div>
+                <p className="text-sm font-semibold text-white">{apps.length}</p>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Published {apps.length === 1 ? "app" : "apps"}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white">
+                  {totalDownloads === null ? "—" : totalDownloads.toLocaleString()}+
+                </p>
+                <p className="mt-0.5 text-xs text-slate-500">Downloads</p>
+              </div>
+              {memberSince && (
+                <div>
+                  <p className="text-sm font-semibold text-white">{memberSince}</p>
+                  <p className="mt-0.5 text-xs text-slate-500">Member since</p>
+                </div>
+              )}
+              {latestUpdate && (
+                <div>
+                  <p className="text-sm font-semibold text-white">
+                    {new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(new Date(latestUpdate))}
+                  </p>
+                  <p className="mt-0.5 text-xs text-slate-500">Latest update</p>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              {profile?.website_url && (
+                <a
+                  href={profile.website_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="store-chip"
+                >
+                  Website ↗
+                </a>
+              )}
+              {profile?.github_url && (
+                <a
+                  href={profile.github_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="store-chip inline-flex items-center gap-2"
+                >
+                  <img src="/github.svg" alt="" className="h-4 w-4" />
+                  GitHub
+                </a>
+              )}
+              {profile?.gitlab_url && (
+                <a
+                  href={profile.gitlab_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="store-chip inline-flex items-center gap-2"
+                >
+                  <img src="/gitlab.svg" alt="" className="h-4 w-4 object-contain" />
+                  GitLab
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {developerCategories.length > 0 && (
+        <section>
+          <h2 className="text-xl font-semibold text-white">Categories</h2>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {developerCategories.map((category) => (
+              <span key={category} className="store-chip">
+                {category}
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section>
+        <div className="mb-5">
+          <h2 className="text-2xl font-semibold text-white">Apps by {developerName}</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Published apps from this developer.
+          </p>
+        </div>
+
+        <div className="grid gap-x-8 gap-y-2 md:grid-cols-2">
+          {apps.map((app) => {
+            const name = app.name || app.package_name || "Untitled app";
+
+            return (
+              <Link
+                key={app.id}
+                href={`/${encodeURIComponent(app.package_name || app.id)}`}
+                className="group flex items-center gap-4 rounded-2xl px-2 py-3 transition hover:bg-white/[0.035]"
+              >
+                {app.icon_url ? (
+                  <div className="relative shrink-0">
+                    <div
+                      aria-hidden="true"
+                      className="absolute inset-2 rounded-2xl bg-indigo-500/15 blur-xl"
+                    />
+                    <img
+                      src={app.icon_url}
+                      alt={`${name} icon`}
+                      className="relative h-20 w-20 rounded-2xl object-cover shadow-[0_8px_28px_rgba(0,0,0,0.24)]"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-[#101722] text-xl font-semibold text-indigo-200">
+                    {name.slice(0, 1).toUpperCase()}
+                  </div>
+                )}
+
+                <div className="min-w-0 flex-1">
+                  <h3 className="truncate text-base font-semibold text-white group-hover:text-indigo-200">
+                    {name}
+                  </h3>
+                  <p className="mt-1 line-clamp-1 text-sm text-slate-400">
+                    {app.short_description || app.description || app.package_name || "No description available."}
+                  </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                    {app.version && <span>Version {app.version}</span>}
+                    {app.license_type && <span>· {app.license_type}</span>}
+                    {app.categories?.[0] && <span>· {app.categories[0]}</span>}
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      {funding && (
+        funding.donate_url
+        || funding.liberapay
+        || funding.opencollective
+        || funding.bitcoin
+        || funding.litecoin
+        || Object.values(funding.crypto_addresses || {}).some(Boolean)
+      ) && (
+        <section className="border-t border-white/10 pt-8">
+          <h2 className="text-xl font-semibold text-white">Support {developerName}</h2>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {funding.donate_url && (
+              <a
+                href={funding.donate_url}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-full bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-400"
+              >
+                Donate
+              </a>
+            )}
+            {funding.liberapay && (
+              <a
+                href={fundingHref(funding.liberapay, "liberapay") || "#"}
+                target="_blank"
+                rel="noreferrer"
+                className="store-chip"
+              >
+                Liberapay ↗
+              </a>
+            )}
+            {funding.opencollective && (
+              <a
+                href={fundingHref(funding.opencollective, "opencollective") || "#"}
+                target="_blank"
+                rel="noreferrer"
+                className="store-chip"
+              >
+                OpenCollective ↗
+              </a>
+            )}
+          </div>
+
+          {cryptoEntries.length > 0 && (
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              {cryptoEntries.map(([key, value]) => (
+                <div
+                  key={key}
+                  className="rounded-2xl bg-[#101722] p-4"
+                >
+                  <p className="text-xs font-medium text-slate-500">
+                    {cryptoLabels[key.split("::")[0]] || key.split("::")[0]}
+                    {key.includes("::") ? ` · ${key.split("::")[1]}` : ""}
+                  </p>
+                  <p className="mt-2 break-all font-mono text-xs text-slate-300">
+                    {value}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+    </div>
+  );
 }

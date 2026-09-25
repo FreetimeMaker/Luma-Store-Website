@@ -578,7 +578,7 @@ function PlayStoreCard({
       className="group block min-w-0"
     >
       {showThumbnail && (
-        <div className="mx-auto overflow-hidden rounded-xl bg-[#101722] shadow-[0_1px_2px_rgba(0,0,0,0.22)]" style={{ width: "100%", maxWidth: "457.91px", height: "330.56px", margin: "-8px", position: "0" }}>
+        <div className="mx-auto overflow-hidden rounded-xl bg-[#101722] shadow-[0_1px_2px_rgba(0,0,0,0.22)]" style={{ width: "100%", maxWidth: "457.91px", height: "330.56px", margin: "-8px", }}>
           {featureGraphic ? (
             <img
               src={featureGraphic}

@@ -53,12 +53,38 @@ type PlatformListingRow = {
   listing_metadata: unknown;
 };
 
-function featureGraphicFromMetadata(value: unknown) {
+type PlatformListing = {
+  title: string;
+  shortDescription: string;
+  fullDescription: string;
+  featureGraphic: string | null;
+};
+
+function platformListingKey(appId: string, platform: string) {
+  return `${appId}:${platform.toLowerCase()}`;
+}
+
+function platformListingFromMetadata(value: unknown): PlatformListing | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const row = value as Record<string, unknown>;
-  const featureGraphic = row.featureGraphic ?? row.feature_graphic;
-  return typeof featureGraphic === "string" && featureGraphic.trim()
-    ? featureGraphic.trim()
+  const title = typeof row.title === "string" ? row.title.trim() : "";
+  const shortDescription = typeof row.shortDescription === "string"
+    ? row.shortDescription.trim()
+    : typeof row.short_description === "string"
+      ? row.short_description.trim()
+      : "";
+  const fullDescription = typeof row.fullDescription === "string"
+    ? row.fullDescription.trim()
+    : typeof row.full_description === "string"
+      ? row.full_description.trim()
+      : "";
+  const featureGraphicValue = row.featureGraphic ?? row.feature_graphic;
+  const featureGraphic = typeof featureGraphicValue === "string" && featureGraphicValue.trim()
+    ? featureGraphicValue.trim()
+    : null;
+
+  return title || shortDescription || fullDescription || featureGraphic
+    ? { title, shortDescription, fullDescription, featureGraphic }
     : null;
 }
 
@@ -86,7 +112,7 @@ function DiscoverContent() {
   const [license, setLicense] = useState("all");
   const [category, setCategory] = useState("all");
   const [developer, setDeveloper] = useState("all");
-  const [platform, setPlatform] = useState("all");
+  const [platform, setPlatform] = useState("Android");
   const [sort, setSort] = useState("trending");
   const [metrics, setMetrics] = useState<Record<string, DiscoverMetric>>({});
   const [ratings, setRatings] = useState<Record<string, RatingSummary>>({});
@@ -94,7 +120,7 @@ function DiscoverContent() {
   const [error, setError] = useState<string | null>(null);
   const [recentApps, setRecentApps] = useState<RecentApp[]>([]);
   const [fastlaneIconMap, setFastlaneIconMap] = useState<Record<string, string>>({});
-  const [featureGraphics, setFeatureGraphics] = useState<Record<string, string>>({});
+  const [platformListings, setPlatformListings] = useState<Record<string, PlatformListing>>({});
 
   useEffect(() => {
     const query = searchParams.get("search") ?? "";
@@ -102,6 +128,14 @@ function DiscoverContent() {
       setSearch(query);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    const ua = navigator.userAgent.toLowerCase();
+    const navigatorPlatform = (navigator.platform || "").toLowerCase();
+    if (!ua.includes("android") && (ua.includes("linux") || navigatorPlatform.includes("linux"))) {
+      setPlatform("Linux");
+    }
+  }, []);
 
   useEffect(() => {
     try {
@@ -127,8 +161,7 @@ function DiscoverContent() {
         supabase.rpc("luma_discover_metrics"),
         supabase
           .from("store_app_platforms")
-          .select("app_id,platform,listing_metadata")
-          .eq("platform", "Android"),
+          .select("app_id,platform,listing_metadata"),
         supabase
           .from("store_app_ratings")
           .select("app_id,rating"),
@@ -150,12 +183,14 @@ function DiscoverContent() {
         ),
       );
 
-      const graphics = Object.fromEntries(
+      const listings = Object.fromEntries(
         ((listingResult.data ?? []) as PlatformListingRow[])
-          .map((row) => [row.app_id, featureGraphicFromMetadata(row.listing_metadata)] as const)
-          .filter((entry): entry is readonly [string, string] => Boolean(entry[1])),
+          .flatMap((row) => {
+            const listing = platformListingFromMetadata(row.listing_metadata);
+            return listing ? [[platformListingKey(row.app_id, row.platform), listing] as const] : [];
+          }),
       );
-      setFeatureGraphics(graphics);
+      setPlatformListings(listings);
 
       const ratingBuckets = new Map<string, number[]>();
       for (const row of (ratingResult.data ?? []) as RatingRow[]) {
@@ -223,13 +258,6 @@ function DiscoverContent() {
     [apps],
   );
 
-  const platforms = useMemo(
-    () => Array.from(
-      new Set(Object.values(metrics).flatMap((item) => item.platforms || [])),
-    ).sort(),
-    [metrics],
-  );
-
   const hasFilters =
     Boolean(search.trim())
     || license !== "all"
@@ -242,47 +270,62 @@ function DiscoverContent() {
     setLicense("all");
     setCategory("all");
     setDeveloper("all");
-    setPlatform("all");
+    setPlatform("Android");
   }
 
+  const platformApps = useMemo(
+    () => apps.filter((app) =>
+      platform === "all" || (metrics[app.id]?.platforms || []).includes(platform),
+    ),
+    [apps, metrics, platform],
+  );
+
   const trending = useMemo(
-    () => [...apps]
+    () => [...platformApps]
       .sort((a, b) =>
         Number(metrics[b.id]?.recent_downloads || 0)
         - Number(metrics[a.id]?.recent_downloads || 0),
       )
       .slice(0, 5),
-    [apps, metrics],
+    [platformApps, metrics],
   );
 
   const newThisWeek = useMemo(
-    () => apps
+    () => platformApps
       .filter((app) =>
         app.created_at
         && Date.now() - new Date(app.created_at).getTime() <= 7 * 86400000,
       )
       .slice(0, 5),
-    [apps],
+    [platformApps],
   );
 
   const recentlyUpdated = useMemo(
-    () => [...apps]
+    () => [...platformApps]
       .sort((a, b) =>
         new Date(b.updated_at || 0).getTime()
         - new Date(a.updated_at || 0).getTime(),
       )
       .slice(0, 5),
-    [apps],
+    [platformApps],
   );
 
   const hasActiveSearch = search.trim().length > 0;
   const showFeaturedSection = !hasActiveSearch
-    && platform === "all"
     && license === "all"
     && category === "all"
     && developer === "all";
 
   const resolveAppIcon = (app: StoreApp) => app.icon_url || fastlaneIconMap[app.id] || null;
+  const resolveListing = (app: StoreApp) => {
+    if (platform !== "all") {
+      return platformListings[platformListingKey(app.id, platform)] ?? null;
+    }
+    return platformListings[platformListingKey(app.id, "Android")]
+      ?? platformListings[platformListingKey(app.id, "Linux")]
+      ?? null;
+  };
+  const resolveFeatureGraphic = (app: StoreApp) => resolveListing(app)?.featureGraphic ?? null;
 
   useEffect(() => {
     let cancelled = false;
@@ -325,12 +368,20 @@ function DiscoverContent() {
       if (!matchesLicense || !matchesCategory || !matchesDeveloper || !matchesPlatform) return false;
       if (!query) return true;
 
+      const listing = platform === "all"
+        ? platformListings[platformListingKey(app.id, "Android")]
+          ?? platformListings[platformListingKey(app.id, "Linux")]
+          ?? null
+        : platformListings[platformListingKey(app.id, platform)] ?? null;
       const haystack = [
+        listing?.title || "",
         app.name || "",
         app.package_name || "",
         app.developer_name || "",
         app.subcategory || "",
         ...(Array.isArray(app.categories) ? app.categories : []),
+        listing?.shortDescription || "",
+        listing?.fullDescription || "",
         app.short_description || "",
         app.description || "",
       ].join(" ").toLowerCase();
@@ -344,11 +395,16 @@ function DiscoverContent() {
           return { app, relevance: 0 };
         }
 
-        const name = (app.name || "").toLowerCase();
+        const listing = platform === "all"
+          ? platformListings[platformListingKey(app.id, "Android")]
+            ?? platformListings[platformListingKey(app.id, "Linux")]
+            ?? null
+          : platformListings[platformListingKey(app.id, platform)] ?? null;
+        const name = (listing?.title || app.name || "").toLowerCase();
         const packageName = (app.package_name || "").toLowerCase();
         const developerName = (app.developer_name || "").toLowerCase();
         const categoryText = [app.subcategory || "", ...(Array.isArray(app.categories) ? app.categories : [])].join(" ").toLowerCase();
-        const description = [app.short_description || "", app.description || ""].join(" ").toLowerCase();
+        const description = [listing?.shortDescription || "", listing?.fullDescription || "", app.short_description || "", app.description || ""].join(" ").toLowerCase();
 
         let relevance = 0;
 
@@ -396,9 +452,12 @@ function DiscoverContent() {
         return (a.app.name || "").localeCompare(b.app.name || "");
       })
       .map(({ app }) => app);
-  }, [apps, category, developer, license, search, platform, sort, metrics]);
+  }, [apps, category, developer, license, search, platform, sort, metrics, platformListings]);
 
   const featuredApps = filteredApps.slice(0, 3);
+  const visibleRecentApps = recentApps.filter((item) =>
+    platform === "all" || (metrics[item.id]?.platforms || []).includes(platform),
+  );
 
   return (
     <div className="store-page mx-auto max-w-[1440px] space-y-8 pb-14 pt-1 sm:space-y-10 sm:pb-20">
@@ -476,8 +535,9 @@ function DiscoverContent() {
                   <PlayStoreCard
                     app={app}
                     iconSrc={resolveAppIcon(app)}
-                    featureGraphic={featureGraphics[app.id] || null}
+                    featureGraphic={resolveFeatureGraphic(app)}
                     rating={ratings[app.id]}
+                    listing={resolveListing(app)}
                   />
                 </div>
               ))}
@@ -486,8 +546,8 @@ function DiscoverContent() {
 
           {!hasActiveSearch && (
             <div className="space-y-10">
-              <Collection title="Recommended for you" apps={trending} ratings={ratings} resolveIcon={resolveAppIcon} />
-              <Collection title="New & updated" apps={recentlyUpdated} ratings={ratings} resolveIcon={resolveAppIcon} />
+              <Collection title="Recommended for you" apps={trending} ratings={ratings} resolveIcon={resolveAppIcon} resolveListing={resolveListing} />
+              <Collection title="New & updated" apps={recentlyUpdated} ratings={ratings} resolveIcon={resolveAppIcon} resolveListing={resolveListing} />
             </div>
           )}
 
@@ -498,7 +558,7 @@ function DiscoverContent() {
                   key={app.id}
                   app={app}
                   iconSrc={resolveAppIcon(app)}
-                  featureGraphic={featureGraphics[app.id] || null}
+                  featureGraphic={resolveFeatureGraphic(app)}
                   rating={ratings[app.id]}
                   rank={sort === "downloads" ? index + 1 : undefined}
                   downloads={Number(metrics[app.id]?.total_downloads || 0)}
@@ -508,7 +568,7 @@ function DiscoverContent() {
             </div>
           </section>
 
-          {!hasActiveSearch && recentApps.length > 0 && (
+          {!hasActiveSearch && visibleRecentApps.length > 0 && (
             <section>
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-white sm:text-2xl">Recently viewed</h2>
@@ -525,7 +585,7 @@ function DiscoverContent() {
               </div>
 
               <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-3">
-                {recentApps.map((item) => (
+                {visibleRecentApps.map((item) => (
                   <Link
                     key={item.id}
                     href={`/${encodeURIComponent(item.package_name || item.id)}`}
@@ -557,6 +617,7 @@ function PlayStoreCard({
   app,
   iconSrc,
   featureGraphic,
+  listing,
   rating,
   rank,
   downloads,
@@ -565,12 +626,13 @@ function PlayStoreCard({
   app: StoreApp;
   iconSrc: string | null;
   featureGraphic: string | null;
+  listing?: PlatformListing | null;
   rating?: RatingSummary;
   rank?: number;
   downloads?: number;
   showThumbnail?: boolean;
 }) {
-  const name = app.name || app.package_name || "Untitled app";
+  const name = listing?.title || app.name || app.package_name || "Untitled app";
 
   return (
     <Link
@@ -614,11 +676,13 @@ function Collection({
   apps,
   ratings,
   resolveIcon,
+  resolveListing,
 }: {
   title: string;
   apps: StoreApp[];
   ratings: Record<string, RatingSummary>;
   resolveIcon: (app: StoreApp) => string | null;
+  resolveListing: (app: StoreApp) => PlatformListing | null;
 }) {
   if (!apps.length) return null;
 
@@ -652,7 +716,8 @@ function Collection({
                 return <div key={`empty-${columnIndex}-${itemIndex}`} className="h-[78px]" />;
               }
 
-              const name = app.name || app.package_name || "Untitled app";
+              const listing = resolveListing(app);
+              const name = listing?.title || app.name || app.package_name || "Untitled app";
               const rating = ratings[app.id];
               const iconSrc = resolveIcon(app);
               const rank = columnIndex * columnSize + itemIndex + 1;

@@ -129,7 +129,7 @@ function Field({ label, value, mono = false }: { label: string; value: string | 
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-950/45 p-3">
       <dt className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{label}</dt>
-      <dd className={`mt-1 break-words text-sm text-slate-200 ${mono ? "font-mono text-xs" : ""}`}>{String(value)}</dd>
+      <dd className={`mt-1 min-w-0 [overflow-wrap:anywhere] text-sm text-slate-200 ${mono ? "font-mono text-xs" : ""}`}>{String(value)}</dd>
     </div>
   );
 }
@@ -526,143 +526,136 @@ export default function DiscoverAppPage() {
 
   return (
     <div className="store-page mx-auto max-w-7xl space-y-5 px-3 pb-20 sm:space-y-6 sm:px-4">
-      <div className="flex items-center justify-between gap-2">
-        <Link href="/" className="inline-flex text-sm font-medium text-indigo-300 transition hover:text-indigo-200">← Back to apps</Link>
-        {app.package_name && (
-          <a
-            href={`lumastore://app/${encodeURIComponent(app.package_name)}`}
-            className="ui-button-primary inline-flex min-h-10 shrink-0 items-center justify-center px-3 py-2 text-xs font-semibold text-white sm:px-4 sm:text-sm"
-          >
-            Open in Luma Store
-          </a>
-        )}
+      <div className="flex items-center">
+        <Link href="/" className="inline-flex min-h-10 items-center text-sm font-medium text-indigo-300 transition hover:text-indigo-200">← Back to apps</Link>
       </div>
 
-      <section className="grid gap-5 py-2 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-start">
-        <div className="min-w-0">
-          <h1 className="break-words text-3xl font-bold tracking-tight text-white sm:text-5xl">{name}</h1>
-
-          {app.developer_id ? (
-            <Link
-              href={`/developers/${encodeURIComponent(app.developer_name || app.developer_id)}`}
-              className="mt-4 inline-flex text-base font-semibold text-indigo-300 transition hover:text-indigo-200"
-            >
-              {app.developer_name || app.author_name || "Unknown developer"}
-            </Link>
-          ) : (
-            <p className="mt-4 text-base font-semibold text-indigo-300">
-              {app.developer_name || app.author_name || "Unknown developer"}
-            </p>
-          )}
-
-          <div className="mt-6 grid grid-cols-2 gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:mt-7 sm:flex sm:flex-wrap sm:items-center sm:gap-8 sm:border-0 sm:bg-transparent sm:p-0">
-            <div>
-              <p className="text-sm font-semibold text-white">
-                {ratingCount ? ratingAverage.toFixed(1) : "—"}★
-              </p>
-              <p className="mt-1 text-xs text-slate-500">
-                {ratingCount ? `${ratingCount.toLocaleString()} ratings` : "No ratings"}
-              </p>
-            </div>
-            <div className="hidden h-10 w-px bg-white/10 sm:block" />
-            <div>
-              <p className="text-sm font-semibold text-white">{downloadCount.toLocaleString()}+</p>
-              <p className="mt-1 text-xs text-slate-500">Downloads</p>
-            </div>
-            {app.version && (
-              <>
-                <div className="hidden h-10 w-px bg-white/10 sm:block" />
-                <div>
-                  <p className="text-sm font-semibold text-white">v{app.version}</p>
-                  <p className="mt-1 text-xs text-slate-500">Current version</p>
-                </div>
-              </>
+      <section className="overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#0d131d]/90 p-4 shadow-sm sm:p-6">
+        <div className="flex min-w-0 items-start gap-4 sm:gap-5">
+          <div className="relative shrink-0">
+            <div aria-hidden="true" className="absolute inset-2 rounded-2xl bg-indigo-500/25 blur-2xl" />
+            {appIcon ? (
+              <img
+                src={appIcon}
+                alt={`${name} icon`}
+                className="relative h-20 w-20 rounded-[1.35rem] border border-indigo-300/20 bg-slate-950 object-cover shadow-[0_12px_32px_rgba(79,70,229,0.22)] sm:h-28 sm:w-28 sm:rounded-[1.6rem]"
+              />
+            ) : (
+              <div className="relative flex h-20 w-20 items-center justify-center rounded-[1.35rem] border border-indigo-300/20 bg-slate-950 text-3xl font-bold text-indigo-200 shadow-[0_12px_32px_rgba(79,70,229,0.22)] sm:h-28 sm:w-28 sm:rounded-[1.6rem] sm:text-4xl">
+                {name.slice(0, 1).toUpperCase()}
+              </div>
             )}
           </div>
 
-          <div className="mt-6 grid grid-cols-2 gap-2 sm:mt-7 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
-            {visibleDownloads.length > 0 ? (
-              visibleDownloads.map((platform) => (
-                <button
-                  key={platform.id}
-                  type="button"
-                  onClick={() => startDownload(platform)}
-                  className="col-span-2 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-indigo-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-300/60 sm:col-span-1 sm:w-auto sm:px-7"
-                >
-                  Install {artifactLabel(platform)}
-                  {platform.file_size_mb !== null ? ` · ${platform.file_size_mb.toFixed(2)} MB` : ""}
-                </button>
-              ))
+          <div className="min-w-0 flex-1 pt-0.5">
+            <h1 className="break-words text-2xl font-bold leading-tight tracking-tight text-white sm:text-4xl">{name}</h1>
+            {app.developer_id ? (
+              <Link
+                href={`/developers/${encodeURIComponent(app.developer_name || app.developer_id)}`}
+                className="mt-2 inline-flex max-w-full truncate text-sm font-semibold text-indigo-300 transition hover:text-indigo-200 sm:text-base"
+              >
+                {app.developer_name || app.author_name || "Unknown developer"}
+              </Link>
             ) : (
-              <div className="col-span-2 rounded-xl border border-white/10 bg-slate-900/40 px-4 py-3 text-center text-sm text-slate-500 sm:col-span-1">
-                No download available
-              </div>
+              <p className="mt-2 truncate text-sm font-semibold text-indigo-300 sm:text-base">
+                {app.developer_name || app.author_name || "Unknown developer"}
+              </p>
             )}
+            {app.version && (
+              <p className="mt-1 text-xs text-slate-500">Version {app.version}</p>
+            )}
+          </div>
+        </div>
 
+        {shortDescription && (
+          <p className="mt-4 text-sm leading-6 text-slate-400 sm:max-w-3xl sm:text-base">
+            {shortDescription}
+          </p>
+        )}
+
+        {listingPlatforms.length > 1 && (
+          <div className="mt-4 grid grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-black/10 p-1 sm:flex sm:w-fit sm:flex-wrap">
+            {listingPlatforms.map((platform) => (
+              <button
+                type="button"
+                key={platform}
+                onClick={() => {
+                  setSelectedListingPlatform(platform);
+                  setScreenshotIndex(null);
+                }}
+                className={`min-h-11 w-full rounded-xl border px-3 py-2 text-xs font-semibold transition sm:min-h-9 sm:w-auto ${selectedListingPlatform === platform ? "border-indigo-400/40 bg-indigo-500/15 text-indigo-100" : "border-transparent bg-transparent text-slate-400 hover:bg-white/[0.04] hover:text-white"}`}
+              >
+                {platform}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-4 grid grid-cols-3 divide-x divide-white/10 rounded-2xl border border-white/10 bg-black/10 py-3">
+          <div className="min-w-0 px-2 text-center">
+            <p className="truncate text-sm font-semibold text-white">{ratingCount ? ratingAverage.toFixed(1) : "—"} ★</p>
+            <p className="mt-1 truncate text-[10px] text-slate-500 sm:text-xs">{ratingCount ? `${ratingCount} ratings` : "No ratings"}</p>
+          </div>
+          <div className="min-w-0 px-2 text-center">
+            <p className="truncate text-sm font-semibold text-white">{downloadCount.toLocaleString()}+</p>
+            <p className="mt-1 text-[10px] text-slate-500 sm:text-xs">Downloads</p>
+          </div>
+          <div className="min-w-0 px-2 text-center">
+            <p className="truncate text-sm font-semibold text-white">{selectedListingPlatform || visibleDownloads[0]?.platform || "—"}</p>
+            <p className="mt-1 text-[10px] text-slate-500 sm:text-xs">Platform</p>
+          </div>
+        </div>
+
+        <div className="mt-4 space-y-2">
+          {visibleDownloads.length > 0 ? (
+            visibleDownloads.map((platform) => (
+              <button
+                key={platform.id}
+                type="button"
+                onClick={() => startDownload(platform)}
+                className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-indigo-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-300/60"
+              >
+                Install {artifactLabel(platform)}
+                {platform.file_size_mb !== null ? ` · ${platform.file_size_mb.toFixed(2)} MB` : ""}
+              </button>
+            ))
+          ) : (
+            <div className="rounded-xl border border-white/10 bg-slate-950/40 px-4 py-3 text-center text-sm text-slate-500">
+              No download available
+            </div>
+          )}
+
+          {app.package_name && (
+            <a
+              href={`lumastore://app/${encodeURIComponent(app.package_name)}`}
+              className="ui-button-primary inline-flex min-h-11 w-full items-center justify-center px-4 py-2.5 text-sm font-semibold text-white sm:hidden"
+            >
+              Open in Luma Store
+            </a>
+          )}
+
+          <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={shareApp}
-              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3 text-sm font-medium text-slate-200 transition hover:bg-white/[0.06] hover:text-white sm:w-auto sm:px-4"
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-white/[0.06] hover:text-white"
             >
               <span aria-hidden="true">↗</span>
               Share
             </button>
-
             <button
               type="button"
               onClick={copyAppLink}
-              className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3 text-sm font-medium text-slate-200 transition hover:bg-white/[0.06] hover:text-white sm:w-auto sm:px-4"
+              className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-white/[0.06] hover:text-white"
             >
               {copied ? "Copied!" : "Copy link"}
             </button>
           </div>
-
-          {shortDescription && (
-            <p className="mt-6 max-w-3xl text-sm leading-7 text-slate-400 sm:text-base">
-              {shortDescription}
-            </p>
-          )}
-
-          {listingPlatforms.length > 1 && (
-            <div className="mt-5 grid grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-white/[0.02] p-1 sm:flex sm:w-fit sm:flex-wrap sm:border-0 sm:bg-transparent sm:p-0">
-              {listingPlatforms.map((platform) => (
-                <button
-                  type="button"
-                  key={platform}
-                  onClick={() => {
-                    setSelectedListingPlatform(platform);
-                    setScreenshotIndex(null);
-                  }}
-                  className={`min-h-11 w-full rounded-xl border px-3 py-2 text-xs font-semibold transition sm:min-h-0 sm:w-auto sm:rounded-full sm:py-1.5 ${selectedListingPlatform === platform ? "border-indigo-400/40 bg-indigo-500/15 text-indigo-100" : "border-slate-700 bg-slate-950/40 text-slate-400 hover:text-white"}`}
-                >
-                  {platform}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="order-first flex justify-center lg:order-none lg:justify-end">
-          {appIcon ? (
-            <div className="relative">
-              <div aria-hidden="true" className="absolute inset-4 rounded-[2rem] bg-indigo-500/30 blur-3xl" />
-              <img
-                src={appIcon}
-                alt={`${name} icon`}
-                className="relative h-28 w-28 rounded-[1.6rem] border border-indigo-300/20 bg-slate-950 object-cover shadow-[0_16px_45px_rgba(79,70,229,0.24)] sm:h-44 sm:w-44 sm:rounded-[2rem]"
-              />
-            </div>
-          ) : (
-            <div className="relative flex h-28 w-28 items-center justify-center rounded-[1.6rem] border border-indigo-300/20 bg-slate-950 text-4xl font-bold text-indigo-200 shadow-[0_16px_45px_rgba(79,70,229,0.24)] sm:h-44 sm:w-44 sm:rounded-[2rem] sm:text-5xl">
-              <div aria-hidden="true" className="absolute inset-4 rounded-[2rem] bg-indigo-500/30 blur-3xl" />
-              <span className="relative">{name.slice(0, 1).toUpperCase()}</span>
-            </div>
-          )}
         </div>
       </section>
 
-      <section className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
-        <div className="min-w-0 space-y-8">
+      <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-8">
+        <div className="min-w-0 space-y-6 sm:space-y-8">
           {screenshots.length > 0 && (
             <section>
               <div className="-mx-3 flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-3 sm:mx-0 sm:gap-4 sm:px-0">
@@ -676,7 +669,7 @@ export default function DiscoverAppPage() {
                     <img
                       src={url}
                       alt={`${name} screenshot ${index + 1}`}
-                      className="h-64 w-auto max-w-[86vw] object-contain sm:h-96 sm:max-w-[80vw]"
+                      className="h-[56svh] max-h-[28rem] w-auto max-w-[88vw] object-contain sm:h-96 sm:max-w-[80vw]"
                     />
                   </button>
                 ))}
@@ -693,9 +686,9 @@ export default function DiscoverAppPage() {
             </section>
           )}
 
-          <section className="glass-panel p-4 sm:p-6">
+          <section className="glass-panel min-w-0 overflow-hidden p-4 sm:p-6">
             <h2 className="text-xl font-semibold text-white">App details</h2>
-            <dl className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <dl className="mt-4 grid min-w-0 gap-2.5 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
               <Field label="Package name" value={app.package_name} mono />
               <Field label="Version" value={app.version} />
               <Field label="Version code" value={app.version_code} />
@@ -708,8 +701,8 @@ export default function DiscoverAppPage() {
             </dl>
           </section>
 
-          <section className="glass-panel p-4 sm:p-6">
-            <div className="flex flex-wrap items-start justify-between gap-3">
+          <section className="glass-panel min-w-0 overflow-hidden p-4 sm:p-6">
+            <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[.16em] text-indigo-300">Trust & transparency</p>
                 <h2 className="mt-1 text-xl font-semibold text-white">Integrity & privacy</h2>
@@ -741,7 +734,7 @@ export default function DiscoverAppPage() {
               <div className="mt-4 space-y-3">
                 {versionHistory.map((item, index) => (
                   <details key={String(item.version) + "-" + String(item.version_code) + "-" + index} open={index === 0} className="group ui-panel-muted p-4">
-                    <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2">
+                    <summary className="flex cursor-pointer list-none flex-col items-start gap-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-2">
                       <span className="font-semibold text-white">
                         {item.version ? "v" + item.version : "Version"}
                         {index === 0 && <span className="ml-2 rounded-full bg-indigo-500/10 px-2 py-0.5 text-[11px] text-indigo-200">Latest</span>}
@@ -780,7 +773,7 @@ export default function DiscoverAppPage() {
           </section>
 
           {pageUrl && platforms.some((p) => p.platform.toLowerCase() === "android") && (
-            <section className="rounded-2xl border sm:rounded-3xl border-indigo-400/15 bg-indigo-500/5 p-5 sm:p-6">
+            <section className="hidden rounded-3xl border border-indigo-400/15 bg-indigo-500/5 p-6 sm:block">
               <div className="grid gap-6 sm:grid-cols-[1fr_auto] sm:items-center">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-300">Continue on Android</p>
@@ -803,8 +796,8 @@ export default function DiscoverAppPage() {
           )}
         </div>
 
-        <aside className="space-y-6">
-          <section className="border-t border-white/10 pt-5 lg:border-t-0 lg:pt-0">
+        <aside className="min-w-0 space-y-4 sm:space-y-6">
+          <section className="rounded-2xl border border-white/10 bg-[#0d131d] p-4 lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0">
             <h2 className="text-lg font-semibold text-white">App support</h2>
             <div className="mt-4 space-y-3 text-sm text-slate-400">
               <div className="flex items-center justify-between gap-3">
@@ -828,7 +821,7 @@ export default function DiscoverAppPage() {
           </section>
 
           {relatedDeveloperApps.length > 0 && (
-            <section className="border-t border-white/10 pt-5">
+            <section className="rounded-2xl border border-white/10 bg-[#0d131d] p-4 lg:rounded-none lg:border-x-0 lg:border-b-0 lg:bg-transparent lg:px-0 lg:pb-0 lg:pt-5">
               <h2 className="text-lg font-semibold text-white">More from {app.developer_name || "this developer"}</h2>
               <div className="mt-4 space-y-4">
                 {relatedDeveloperApps.slice(0, 3).map((item) => {
@@ -852,7 +845,7 @@ export default function DiscoverAppPage() {
           )}
 
           {similarApps.length > 0 && (
-            <section className="border-t border-white/10 pt-5">
+            <section className="rounded-2xl border border-white/10 bg-[#0d131d] p-4 lg:rounded-none lg:border-x-0 lg:border-b-0 lg:bg-transparent lg:px-0 lg:pb-0 lg:pt-5">
               <h2 className="text-lg font-semibold text-white">Similar apps</h2>
               <div className="mt-4 space-y-4">
                 {similarApps.slice(0, 3).map((item) => {
@@ -876,7 +869,7 @@ export default function DiscoverAppPage() {
           )}
 
           {funding && (funding.donate_url || funding.liberapay || funding.opencollective) && (
-            <section className="border-t border-white/10 pt-5">
+            <section className="rounded-2xl border border-white/10 bg-[#0d131d] p-4 lg:rounded-none lg:border-x-0 lg:border-b-0 lg:bg-transparent lg:px-0 lg:pb-0 lg:pt-5">
               <h2 className="text-lg font-semibold text-white">Support the developer</h2>
               <div className="mt-4 flex flex-wrap gap-2">
                 <LinkChip href={funding.donate_url ? fundingRedirect(app.id, "donate") : null} label="Donate" />
@@ -965,7 +958,7 @@ function AndroidPermissions({ permissions }: { permissions: string[] }) {
           {permissions.map((permission) => (
             <span
               key={permission}
-              className={"rounded-full border px-3 py-1.5 text-xs font-medium " + permissionTone(permission)}
+              className={"max-w-full break-all rounded-full border px-3 py-1.5 text-xs font-medium " + permissionTone(permission)}
             >
               {permission.replace(/^android\.permission\./i, "")}
             </span>
@@ -978,4 +971,4 @@ function AndroidPermissions({ permissions }: { permissions: string[] }) {
   );
 }
 
-function TrustItem({label,value,tone}:{label:string;value:string;tone:"good"|"warn"|"neutral"}){const style=tone==="good"?"border-emerald-400/15 bg-emerald-500/5":tone==="warn"?"border-amber-400/20 bg-amber-500/10":"border-white/10 bg-slate-950/25";const dot=tone==="good"?"bg-emerald-400":tone==="warn"?"bg-amber-400":"bg-slate-500";return <div className={"rounded-2xl border p-4 "+style}><div className="flex items-center gap-2"><span className={"h-2 w-2 rounded-full "+dot}/><p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p></div><p className="mt-2 break-words text-sm font-medium text-slate-200">{value}</p></div>}
+function TrustItem({label,value,tone}:{label:string;value:string;tone:"good"|"warn"|"neutral"}){const style=tone==="good"?"border-emerald-400/15 bg-emerald-500/5":tone==="warn"?"border-amber-400/20 bg-amber-500/10":"border-white/10 bg-slate-950/25";const dot=tone==="good"?"bg-emerald-400":tone==="warn"?"bg-amber-400":"bg-slate-500";return <div className={"min-w-0 rounded-2xl border p-4 "+style}><div className="flex items-center gap-2"><span className={"h-2 w-2 shrink-0 rounded-full "+dot}/><p className="min-w-0 text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p></div><p className="mt-2 min-w-0 [overflow-wrap:anywhere] text-sm font-medium text-slate-200">{value}</p></div>}

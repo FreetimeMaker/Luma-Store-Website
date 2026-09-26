@@ -169,6 +169,8 @@ export default function SubmissionDetailsPage() {
   const [publishedPlatforms, setPublishedPlatforms] = useState<PublishedPlatform[]>([]);
   const [downloadStats, setDownloadStats] = useState<DownloadStats | null>(null);
   const [badgePlatform, setBadgePlatform] = useState("all");
+  const [siteOrigin, setSiteOrigin] = useState("");
+  const [copiedStoreBadge, setCopiedStoreBadge] = useState<"markdown" | "html" | "url" | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -264,6 +266,16 @@ export default function SubmissionDetailsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submissionId, supabase]);
 
+  useEffect(() => {
+    setSiteOrigin(window.location.origin);
+  }, []);
+
+  async function copyStoreBadge(value: string, type: "markdown" | "html" | "url") {
+    await navigator.clipboard.writeText(value);
+    setCopiedStoreBadge(type);
+    window.setTimeout(() => setCopiedStoreBadge((current) => current === type ? null : current), 1600);
+  }
+
   if (loading) return <div className={`${cardClass} mx-auto max-w-6xl p-8 text-center text-slate-400`}>Loading app details…</div>;
   if (error && !submission) return <div className={`${cardClass} mx-auto max-w-6xl p-8`}><p className="text-red-300">{error}</p><Link href="/dashboard" className="mt-5 inline-flex rounded-xl bg-slate-800 px-4 py-2 text-sm text-white">Back to dashboard</Link></div>;
   if (!submission) return null;
@@ -272,6 +284,19 @@ export default function SubmissionDetailsPage() {
   const repoUrl = publishedApp?.repo_url || submission.repo_url || submission.link;
   const submissionPlatforms = normalizeSubmissionPlatforms(submission.platforms);
   const platformNames = Array.from(new Set(submissionPlatforms.map((item) => item.platform)));
+  const publicAppKey = publishedApp?.package_name || publishedApp?.id || "";
+  const publicAppUrl = siteOrigin && publicAppKey
+    ? `${siteOrigin}/${encodeURIComponent(publicAppKey)}`
+    : "";
+  const storeBadgeUrl = siteOrigin
+    ? `${siteOrigin}/get-it-on-luma-store.svg`
+    : "/get-it-on-luma-store.svg";
+  const storeBadgeMarkdown = publicAppUrl
+    ? `[![Get it on Luma Store](${storeBadgeUrl})](${publicAppUrl})`
+    : "";
+  const storeBadgeHtml = publicAppUrl
+    ? `<a href="${publicAppUrl}"><img src="${storeBadgeUrl}" alt="Get it on Luma Store" width="236" height="72"></a>`
+    : "";
 
   return (
     <div className="glass-page mx-auto max-w-6xl space-y-4 px-3 pb-20 sm:space-y-6 sm:px-4">
@@ -327,6 +352,90 @@ export default function SubmissionDetailsPage() {
               <div className="min-w-0"><p className="text-xs uppercase tracking-wide text-slate-500">Repository</p>{repoUrl ? <a href={repoUrl} target="_blank" rel="noopener noreferrer" className="mt-1 block min-w-0 [overflow-wrap:anywhere] text-sm text-indigo-300 hover:text-indigo-200">{repoUrl}</a> : <p className="mt-1 text-slate-400">—</p>}</div>
               <div><p className="text-xs uppercase tracking-wide text-slate-500">Last published update</p><p className="mt-1 text-slate-200">{formatDate(publishedApp.updated_at)}</p></div>
               {downloadStats && <div className="min-w-0 md:col-span-2"><p className="text-xs uppercase tracking-wide text-slate-500">Luma Store downloads · all versions</p><div className="mt-3"><div className="rounded-xl border border-slate-800 bg-slate-950/45 p-3"><p className="text-xs text-slate-500">All-time</p><p className="mt-1 text-xl font-bold text-white">{Number(downloadStats.total).toLocaleString()}</p></div></div><div className="mt-4 grid gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3"><select value={badgePlatform} onChange={(e)=>setBadgePlatform(e.target.value)} className="min-h-10 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-slate-200 sm:w-auto"><option value="all">All platforms</option><option value="Android">Android</option><option value="Windows">Windows</option><option value="Linux">Linux</option></select><div className="min-w-0 overflow-x-auto rounded-lg border border-slate-800 bg-slate-950/30 p-2 sm:border-0 sm:bg-transparent sm:p-0"><img src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-badge?app_id=${encodeURIComponent(publishedApp.id)}${badgePlatform==="all"?"":`&platform=${encodeURIComponent(badgePlatform)}`}`} alt={`${publishedApp.name} ${badgePlatform==="all"?"all-platform":badgePlatform} Luma Store downloads`} className="h-5 max-w-none"/></div><button type="button" onClick={()=>{const platformPart=badgePlatform==="all"?"":`&platform=${encodeURIComponent(badgePlatform)}`;navigator.clipboard.writeText(`[![Luma Store downloads](${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-badge?app_id=${publishedApp.id}${platformPart})](${window.location.origin}/discover/${publishedApp.id})`)}} className="min-h-10 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-slate-300 hover:text-white sm:w-auto">Copy badge Markdown</button></div></div>}
+
+              <div className="min-w-0 md:col-span-2">
+                <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/[0.06] p-4 sm:p-5">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-300">Store badge</p>
+                      <h3 className="mt-1 text-lg font-semibold text-white">Get it on Luma Store</h3>
+                      <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-400">
+                        Add this badge to your README, website, documentation or release page. It links directly to this app on Luma Store.
+                      </p>
+                    </div>
+                    {publicAppUrl && (
+                      <a
+                        href={publicAppUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0 self-start rounded-xl transition hover:opacity-90"
+                      >
+                        <img
+                          src="/get-it-on-luma-store.svg"
+                          alt="Get it on Luma Store"
+                          width={236}
+                          height={72}
+                          className="h-[54px] w-auto sm:h-[60px]"
+                        />
+                      </a>
+                    )}
+                  </div>
+
+                  <div className="mt-5 grid gap-3">
+                    <div className="min-w-0 rounded-xl border border-slate-800 bg-slate-950/45 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Markdown</p>
+                        <button
+                          type="button"
+                          disabled={!storeBadgeMarkdown}
+                          onClick={() => void copyStoreBadge(storeBadgeMarkdown, "markdown")}
+                          className="shrink-0 rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-slate-300 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {copiedStoreBadge === "markdown" ? "Copied" : "Copy"}
+                        </button>
+                      </div>
+                      <code className="mt-2 block min-w-0 overflow-x-auto whitespace-nowrap rounded-lg bg-black/20 px-3 py-2 font-mono text-[11px] text-slate-300">
+                        {storeBadgeMarkdown || "Preparing badge code…"}
+                      </code>
+                    </div>
+
+                    <div className="min-w-0 rounded-xl border border-slate-800 bg-slate-950/45 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">HTML</p>
+                        <button
+                          type="button"
+                          disabled={!storeBadgeHtml}
+                          onClick={() => void copyStoreBadge(storeBadgeHtml, "html")}
+                          className="shrink-0 rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-slate-300 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {copiedStoreBadge === "html" ? "Copied" : "Copy"}
+                        </button>
+                      </div>
+                      <code className="mt-2 block min-w-0 overflow-x-auto whitespace-nowrap rounded-lg bg-black/20 px-3 py-2 font-mono text-[11px] text-slate-300">
+                        {storeBadgeHtml || "Preparing badge code…"}
+                      </code>
+                    </div>
+
+                    <div className="min-w-0 rounded-xl border border-slate-800 bg-slate-950/45 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Badge URL</p>
+                        <button
+                          type="button"
+                          disabled={!siteOrigin}
+                          onClick={() => void copyStoreBadge(storeBadgeUrl, "url")}
+                          className="shrink-0 rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-slate-300 transition hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {copiedStoreBadge === "url" ? "Copied" : "Copy"}
+                        </button>
+                      </div>
+                      <code className="mt-2 block min-w-0 overflow-x-auto whitespace-nowrap rounded-lg bg-black/20 px-3 py-2 font-mono text-[11px] text-slate-300">
+                        {storeBadgeUrl}
+                      </code>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div className="md:col-span-2"><p className="text-xs uppercase tracking-wide text-slate-500">Anti-Features</p><div className="mt-2 flex flex-wrap gap-2">{antiFeatures.length ? antiFeatures.map((item) => <span key={item} className="rounded-full border border-amber-700/50 bg-amber-950/30 px-2.5 py-1 text-xs text-amber-200">{item}</span>) : <span className="text-sm text-slate-400">No Anti-Features detected or recorded.</span>}</div></div>
             </div>
           ) : <p className="p-5 text-sm text-slate-400">The submission is approved, but no matching published store record was found yet.</p>}

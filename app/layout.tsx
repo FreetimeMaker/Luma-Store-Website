@@ -13,10 +13,10 @@ export const metadata: Metadata = {
   manifest: "/site.webmanifest",
   icons: {
     icon: [
-      { url: "/apple-touch-icon.png?v=20260926", type: "image/png" },
+      { url: "/favicon.svg?v=20260926-2", type: "image/svg+xml" },
     ],
     shortcut: [
-      { url: "/apple-touch-icon.png?v=20260926", type: "image/png" },
+      { url: "/favicon.svg?v=20260926-2", type: "image/svg+xml" },
     ],
     apple: [
       { url: "/apple-touch-icon.png?v=20260926", sizes: "180x180", type: "image/png" },

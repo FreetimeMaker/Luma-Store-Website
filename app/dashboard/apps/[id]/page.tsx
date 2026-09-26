@@ -262,6 +262,11 @@ export default function SubmissionDetailsPage() {
   }
 
   useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    });
+
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [submissionId, supabase]);

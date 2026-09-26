@@ -297,10 +297,10 @@ export default function SubmissionDetailsPage() {
     ? `${siteOrigin}/get-it-on-luma-store.svg`
     : "/get-it-on-luma-store.svg";
   const storeBadgeMarkdown = publicAppUrl
-    ? `[![Get it on Luma Store](${storeBadgeUrl})](${publicAppUrl})`
+    ? `[<img src="${storeBadgeUrl}" alt="Get it on Luma Store" height="80">](${publicAppUrl})`
     : "";
   const storeBadgeHtml = publicAppUrl
-    ? `<a href="${publicAppUrl}"><img src="${storeBadgeUrl}" alt="Get it on Luma Store" width="236" height="72"></a>`
+    ? `<a href="${publicAppUrl}"><img src="${storeBadgeUrl}" alt="Get it on Luma Store" height="80"></a>`
     : "";
 
   return (
@@ -365,7 +365,7 @@ export default function SubmissionDetailsPage() {
                       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-300">Store badge</p>
                       <h3 className="mt-1 text-lg font-semibold text-white">Get it on Luma Store</h3>
                       <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-400">
-                        Add this badge to your README, website, documentation or release page. It links directly to this app on Luma Store.
+                        Uses the same README format as GeoWeather. The app link is generated automatically for every published app.
                       </p>
                     </div>
                     {publicAppUrl && (
@@ -378,9 +378,9 @@ export default function SubmissionDetailsPage() {
                         <img
                           src="/get-it-on-luma-store.svg"
                           alt="Get it on Luma Store"
-                          width={236}
-                          height={72}
-                          className="h-[54px] w-auto sm:h-[60px]"
+                          width={262}
+                          height={80}
+                          className="h-20 w-auto max-w-full"
                         />
                       </a>
                     )}
@@ -389,7 +389,7 @@ export default function SubmissionDetailsPage() {
                   <div className="mt-5 grid gap-3">
                     <div className="min-w-0 rounded-xl border border-slate-800 bg-slate-950/45 p-3">
                       <div className="flex items-center justify-between gap-3">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Markdown</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">README Markdown · GeoWeather style</p>
                         <button
                           type="button"
                           disabled={!storeBadgeMarkdown}

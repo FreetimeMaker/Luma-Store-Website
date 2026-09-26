@@ -222,9 +222,9 @@ export default function AuthNav() {
           {showHelp && (
             <section
               aria-label="Help"
-              className="fixed left-3 right-3 top-[4.5rem] z-50 rounded-2xl border border-white/10 bg-[#0d131d] p-4 shadow-2xl shadow-black/35 sm:absolute sm:left-auto sm:right-0 sm:top-[calc(100%+0.65rem)] sm:w-[22rem]"
+              className="fixed inset-x-2 top-[4.25rem] z-50 flex max-h-[calc(100dvh-4.75rem)] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0d131d]/95 shadow-2xl shadow-black/35 backdrop-blur-xl sm:left-1/2 sm:right-auto sm:top-20 sm:w-[min(32rem,calc(100vw-2rem))] sm:-translate-x-1/2 md:absolute md:left-auto md:right-0 md:top-[calc(100%+0.65rem)] md:w-[24rem] md:max-w-[calc(100vw-2rem)] md:max-h-[min(72dvh,42rem)] md:translate-x-0 xl:w-[27rem]"
             >
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex shrink-0 items-start justify-between gap-4 border-b border-white/10 px-3.5 py-3.5 sm:px-4 sm:py-4">
                 <div>
                   <p className="text-sm font-semibold text-white">Help</p>
                   <p className="mt-1 text-xs leading-5 text-slate-500">
@@ -234,14 +234,14 @@ export default function AuthNav() {
                 <button
                   type="button"
                   onClick={() => setShowHelp(false)}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-lg text-slate-400 transition hover:bg-white/[0.05] hover:text-white"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg text-slate-400 transition hover:bg-white/[0.05] hover:text-white sm:h-8 sm:w-8"
                   aria-label="Close help"
                 >
                   ×
                 </button>
               </div>
 
-              <div className="mt-4 space-y-5">
+              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-3.5 py-4 sm:space-y-5 sm:px-4">
                 <section>
                   <div className="mb-2">
                     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-300">
@@ -253,38 +253,38 @@ export default function AuthNav() {
                   </div>
 
                   <div className="space-y-2">
-                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
-                      <summary className="cursor-pointer list-none text-sm font-medium text-white">
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
+                      <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
                         How do I install an app?
                       </summary>
-                      <p className="mt-2 text-xs leading-5 text-slate-400">
+                      <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
                         Open an app page and use the download button for your platform. On Android, download the APK and install it after allowing installs from your browser or file manager if Android asks.
                       </p>
                     </details>
 
-                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
-                      <summary className="cursor-pointer list-none text-sm font-medium text-white">
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
+                      <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
                         How do I search for an app?
                       </summary>
-                      <p className="mt-2 text-xs leading-5 text-slate-400">
+                      <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
                         Use the search icon in the top bar. You can search by app name, package name, developer, category, or description.
                       </p>
                     </details>
 
-                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
-                      <summary className="cursor-pointer list-none text-sm font-medium text-white">
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
+                      <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
                         Is Luma Store only for Android?
                       </summary>
-                      <p className="mt-2 text-xs leading-5 text-slate-400">
+                      <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
                         No. Luma Store supports Android, Windows, and Linux releases, and the app detail page shows the download that matches your operating system when available.
                       </p>
                     </details>
 
-                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
-                      <summary className="cursor-pointer list-none text-sm font-medium text-white">
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
+                      <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
                         What do the download and rating values mean?
                       </summary>
-                      <p className="mt-2 text-xs leading-5 text-slate-400">
+                      <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
                         Ratings summarize user feedback for an app. Download values show how often releases have been downloaded through Luma Store and may be shortened to values such as 1K+ or 1M+.
                       </p>
                     </details>
@@ -302,47 +302,47 @@ export default function AuthNav() {
                   </div>
 
                   <div className="space-y-2">
-                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
-                      <summary className="cursor-pointer list-none text-sm font-medium text-white">
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
+                      <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
                         How do I submit my app?
                       </summary>
-                      <p className="mt-2 text-xs leading-5 text-slate-400">
+                      <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
                         Sign in with GitHub or GitLab, open the Developer Dashboard, and complete the submission form. Android metadata is read from Fastlane, while Windows and Linux metadata can be entered manually.
                       </p>
                     </details>
 
-                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
-                      <summary className="cursor-pointer list-none text-sm font-medium text-white">
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
+                      <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
                         Can I upload release files instead of using links?
                       </summary>
-                      <p className="mt-2 text-xs leading-5 text-slate-400">
+                      <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
                         Yes. In the submission form, choose between using download links or uploading release files directly. APK, EXE, DEB, RPM, and AppImage files are supported.
                       </p>
                     </details>
 
-                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
-                      <summary className="cursor-pointer list-none text-sm font-medium text-white">
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
+                      <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
                         How do app updates work?
                       </summary>
-                      <p className="mt-2 text-xs leading-5 text-slate-400">
+                      <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
                         Open your existing app in the Developer Dashboard and submit an update. The update goes through the normal review flow before replacing the published version.
                       </p>
                     </details>
 
-                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
-                      <summary className="cursor-pointer list-none text-sm font-medium text-white">
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
+                      <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
                         How do donations work?
                       </summary>
-                      <p className="mt-2 text-xs leading-5 text-slate-400">
+                      <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
                         Developers can configure donation links and crypto wallet addresses once in Developer Funding. These support options are then shown on their published apps.
                       </p>
                     </details>
 
-                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5">
-                      <summary className="cursor-pointer list-none text-sm font-medium text-white">
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
+                      <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
                         What metadata is required?
                       </summary>
-                      <p className="mt-2 text-xs leading-5 text-slate-400">
+                      <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
                         Android submissions use Fastlane metadata, including title, descriptions, changelog and screenshots. Windows and Linux submissions use manual store metadata when Fastlane is not available.
                       </p>
                     </details>

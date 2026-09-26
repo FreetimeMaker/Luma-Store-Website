@@ -916,7 +916,90 @@ export default function DiscoverAppPage() {
         </aside>
       </section>
 
-      {androidQrUrl && <div onMouseDown={(e)=>{if(e.target===e.currentTarget)setAndroidQrUrl(null)}} className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-md"><div role="dialog" aria-modal="true" aria-label="Install on Android" className="glass-panel relative w-full max-w-md p-6 text-center"><button type="button" onClick={()=>setAndroidQrUrl(null)} className="absolute right-3 top-3 h-9 w-9 rounded-full border border-white/10 bg-white/5 text-white" aria-label="Close">×</button>{app.icon_url&&<img src={app.icon_url} alt="" className="mx-auto h-16 w-16 rounded-2xl object-cover"/>}<h2 className="mt-4 text-2xl font-bold text-white">Install {name} on Android</h2><p className="mt-2 text-sm text-slate-400">Version {app.version||"latest"} · Scan this code with your Android device.</p><div className="mt-4 rounded-2xl border border-amber-400/15 bg-amber-500/5 p-4 text-left"><p className="text-sm font-semibold text-amber-100">Installing outside your current app store</p><ol className="mt-2 space-y-1.5 text-xs leading-5 text-slate-400"><li><strong className="text-slate-300">1.</strong> Download the APK on your Android device.</li><li><strong className="text-slate-300">2.</strong> Android may ask you to allow installs from the browser or file manager you used.</li><li><strong className="text-slate-300">3.</strong> Enable that permission only for the app you trust, install the APK, then you can disable it again.</li></ol><p className="mt-2 text-[11px] leading-4 text-slate-500">The exact Settings name varies by Android version and manufacturer. Luma Store does not ask you to disable Play Protect or other device security.</p></div><div className="mx-auto mt-5 w-fit rounded-3xl bg-white p-3"><img src={"https://api.qrserver.com/v1/create-qr-code/?size=240x240&data="+encodeURIComponent(androidQrUrl)} alt={"QR code to download "+name} width={240} height={240}/></div><div className="mt-5 flex flex-col gap-2 sm:flex-row"><button type="button" onClick={()=>void navigator.clipboard.writeText(androidQrUrl)} className="glass-action flex-1 px-4 py-2.5 text-sm">Copy link</button><button type="button" onClick={()=>window.location.assign(androidQrUrl)} className="rounded-xl bg-indigo-500 px-4 py-2.5 text-sm font-semibold text-white">Download here instead</button></div></div></div>}
+      {androidQrUrl && (
+        <div
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setAndroidQrUrl(null);
+          }}
+          className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-slate-950/75 p-2 backdrop-blur-md sm:p-4"
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Install on Android"
+            className="glass-panel relative flex max-h-[calc(100dvh-1rem)] w-full max-w-md flex-col overflow-hidden text-center sm:max-h-[calc(100dvh-2rem)]"
+          >
+            <button
+              type="button"
+              onClick={() => setAndroidQrUrl(null)}
+              className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-slate-950/80 text-white backdrop-blur"
+              aria-label="Close"
+            >
+              ×
+            </button>
+
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-5 sm:px-6 sm:pb-5 sm:pt-6">
+              {app.icon_url && (
+                <img
+                  src={app.icon_url}
+                  alt=""
+                  className="mx-auto h-12 w-12 rounded-xl object-cover sm:h-14 sm:w-14 lg:h-16 lg:w-16 lg:rounded-2xl"
+                />
+              )}
+
+              <h2 className="mt-3 break-words pr-8 text-xl font-bold text-white sm:text-2xl">
+                Install {name} on Android
+              </h2>
+              <p className="mt-1.5 text-xs leading-5 text-slate-400 sm:text-sm">
+                Version {app.version || "latest"} · Scan this code with your Android device.
+              </p>
+
+              <div className="mt-3 rounded-2xl border border-amber-400/15 bg-amber-500/5 p-3 text-left sm:mt-4 sm:p-4">
+                <p className="text-xs font-semibold text-amber-100 sm:text-sm">
+                  Installing outside your current app store
+                </p>
+                <ol className="mt-2 space-y-1 text-[11px] leading-4.5 text-slate-400 sm:space-y-1.5 sm:text-xs sm:leading-5">
+                  <li><strong className="text-slate-300">1.</strong> Download the APK on your Android device.</li>
+                  <li><strong className="text-slate-300">2.</strong> Android may ask you to allow installs from the browser or file manager you used.</li>
+                  <li><strong className="text-slate-300">3.</strong> Enable that permission only for the app you trust, install the APK, then you can disable it again.</li>
+                </ol>
+                <p className="mt-2 text-[10px] leading-4 text-slate-500 sm:text-[11px]">
+                  The exact Settings name varies by Android version and manufacturer. Luma Store does not ask you to disable Play Protect or other device security.
+                </p>
+              </div>
+
+              <div className="mx-auto mt-3 w-fit rounded-2xl bg-white p-2 sm:mt-4 sm:rounded-3xl sm:p-3">
+                <img
+                  src={"https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=" + encodeURIComponent(androidQrUrl)}
+                  alt={"QR code to download " + name}
+                  width={240}
+                  height={240}
+                  className="h-[clamp(9rem,28dvh,13rem)] w-[clamp(9rem,28dvh,13rem)]"
+                />
+              </div>
+            </div>
+
+            <div className="shrink-0 border-t border-white/10 bg-[#0d131d]/95 p-3 backdrop-blur sm:p-4">
+              <div className="grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => void navigator.clipboard.writeText(androidQrUrl)}
+                  className="glass-action min-h-11 w-full px-4 py-2.5 text-sm"
+                >
+                  Copy link
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.location.assign(androidQrUrl)}
+                  className="min-h-11 w-full rounded-xl bg-indigo-500 px-4 py-2.5 text-sm font-semibold text-white"
+                >
+                  Download here instead
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {screenshotIndex!==null && screenshots[screenshotIndex] && <div onMouseDown={(e)=>{if(e.target===e.currentTarget)setScreenshotIndex(null)}} className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/90 p-3 backdrop-blur-md"><div role="dialog" aria-modal="true" aria-label="Screenshot preview" className="relative flex h-full w-full max-w-6xl items-center justify-center"><button type="button" onClick={()=>setScreenshotIndex(null)} className="absolute right-2 top-2 z-10 h-10 w-10 rounded-full bg-slate-950/80 text-xl text-white" aria-label="Close">×</button>{screenshots.length>1&&<button type="button" onClick={()=>setScreenshotIndex((screenshotIndex-1+screenshots.length)%screenshots.length)} className="absolute left-2 z-10 h-11 w-11 rounded-full bg-slate-950/80 text-2xl text-white" aria-label="Previous">‹</button>}<img src={screenshots[screenshotIndex]} alt={name+" screenshot "+(screenshotIndex+1)} className="max-h-[90vh] max-w-full rounded-2xl object-contain"/>{screenshots.length>1&&<button type="button" onClick={()=>setScreenshotIndex((screenshotIndex+1)%screenshots.length)} className="absolute right-2 z-10 h-11 w-11 rounded-full bg-slate-950/80 text-2xl text-white" aria-label="Next">›</button>}<span className="absolute bottom-2 rounded-full bg-slate-950/80 px-3 py-1 text-xs text-slate-300">{screenshotIndex+1} / {screenshots.length}</span></div></div>}
     </div>
   );

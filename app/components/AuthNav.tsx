@@ -284,7 +284,7 @@ export default function AuthNav() {
                         How do I use Luma Store on Linux?
                       </summary>
                       <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
-                        Choose Linux in the store where the platform selector is available, open an app, and download one of the Linux packages published for it. Luma Store can list DEB, RPM, and AppImage artifacts. Which package you should use depends on your Linux distribution and what the developer provides.
+                        Choose Linux in the store where the platform selector is available, then open an app and select a published Linux package. Debian and Ubuntu users normally choose DEB, Fedora/RHEL-family users choose RPM, and AppImage can be downloaded, marked executable (chmod +x AppName.AppImage), and launched directly. The app page only shows formats actually published by that developer.
                       </p>
                     </details>
 
@@ -333,7 +333,7 @@ export default function AuthNav() {
                         Why does developer sign-in use GitHub or GitLab?
                       </summary>
                       <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
-                        Developer accounts use GitHub or GitLab through Supabase Auth so submissions can be associated with a developer and repository-backed workflows can work. These providers are not required for normal store use.
+                        Luma Store supports a direct email/password account through Supabase Auth, so a GitHub, GitLab, or Google account is not required. External providers remain optional for workflows where you prefer them. Browsing and downloading public apps still require no account.
                       </p>
                     </details>
 

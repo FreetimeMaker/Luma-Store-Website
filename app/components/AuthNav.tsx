@@ -115,7 +115,7 @@ export default function AuthNav() {
           className="h-9 w-9 shrink-0 object-cover sm:h-10 sm:w-10"
         />
         <div className="min-w-0">
-          <div className="truncate text-[18px] font-semibold tracking-tight text-white transition-colors group-hover:text-indigo-200 sm:text-[22px]" style={{ fontFamily: "'Google Sans', sans-serif" }}>Luma Store</div>
+          <div className="truncate text-[18px] font-semibold tracking-tight text-white transition-colors group-hover:text-indigo-200 sm:text-[22px]">Luma Store</div>
           <div className="hidden text-[11px] text-slate-500 sm:block"></div>
         </div>
       </Link>
@@ -167,7 +167,6 @@ export default function AuthNav() {
               aria-label="Search apps"
               autoFocus
               className="w-full border-0 bg-transparent px-3 py-3 text-base text-white placeholder:text-slate-500 focus:outline-none"
-              style={{ fontFamily: "'Google Sans', sans-serif" }}
             />
             <button
               type="button"
@@ -258,7 +257,7 @@ export default function AuthNav() {
                         How do I install an app?
                       </summary>
                       <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
-                        Open an app page and use the download button for your platform. On Android, download the APK and install it after allowing installs from your browser or file manager if Android asks.
+                        Open an app page and choose the download for your platform. Android apps are provided as APK files. Linux apps may offer DEB, RPM or AppImage packages, and Windows apps can provide their supported installer format. Only formats published by that app's developer are shown.
                       </p>
                     </details>
 
@@ -282,12 +281,70 @@ export default function AuthNav() {
 
                     <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
                       <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
+                        How do I use Luma Store on Linux?
+                      </summary>
+                      <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
+                        Choose Linux in the store where the platform selector is available, open an app, and download one of the Linux packages published for it. Luma Store can list DEB, RPM, and AppImage artifacts. Which package you should use depends on your Linux distribution and what the developer provides.
+                      </p>
+                    </details>
+
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
+                      <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
+                        How do I use Windows apps from Luma Store?
+                      </summary>
+                      <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
+                        Open an app that publishes a Windows release and use the Windows download shown on its app page. Luma Store does not modify the installer; installation continues using the package supplied by the developer.
+                      </p>
+                    </details>
+
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
+                      <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
                         What do the download and rating values mean?
                       </summary>
                       <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
                         Ratings summarize user feedback for an app. Download values show how often releases have been downloaded through Luma Store and may be shortened to values such as 1K+ or 1M+.
                       </p>
                     </details>
+                  </div>
+                </section>
+
+                <section className="border-t border-white/10 pt-4">
+                  <div className="mb-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-300">
+                      Accounts & privacy
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      What requires a login and what does not.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
+                      <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
+                        Do I need an account to use Luma Store?
+                      </summary>
+                      <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
+                        No. Browsing apps, reading app details and downloading public releases do not require an account. A login is only required for Developer Dashboard features such as submitting and managing apps.
+                      </p>
+                    </details>
+
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
+                      <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
+                        Why does developer sign-in use GitHub or GitLab?
+                      </summary>
+                      <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
+                        Developer accounts use GitHub or GitLab through Supabase Auth so submissions can be associated with a developer and repository-backed workflows can work. These providers are not required for normal store use.
+                      </p>
+                    </details>
+
+                    <Link
+                      href="/privacy"
+                      onClick={() => setShowHelp(false)}
+                      className="flex min-h-10 items-center justify-between rounded-xl border border-indigo-400/20 bg-indigo-500/10 px-3 py-2.5 text-xs font-semibold text-indigo-200 transition hover:bg-indigo-500/15 hover:text-white"
+                    >
+                      Read the full privacy policy
+                      <span aria-hidden="true">→</span>
+                    </Link>
                   </div>
                 </section>
 
@@ -308,6 +365,24 @@ export default function AuthNav() {
                       </summary>
                       <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
                         Sign in with GitHub or GitLab, open the Developer Dashboard, and complete the submission form. Android metadata is read from Fastlane, while Windows and Linux metadata can be entered manually.
+                      </p>
+                    </details>
+
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
+                      <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
+                        How do I add a Linux app to Luma Store?
+                      </summary>
+                      <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
+                        In the Developer Dashboard, create a submission or update and add Linux as a platform. Enter the Linux store listing manually, choose the package type, and either upload the release file or provide its download link. DEB, RPM, and AppImage are supported. If the Linux source repository differs from your Android repository, enable separate repositories per platform and provide the Linux repository URL there.
+                      </p>
+                    </details>
+
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
+                      <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
+                        How do I add a Windows release?
+                      </summary>
+                      <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
+                        Add Windows as a platform in the same submission flow, enter the Windows listing manually, and provide or upload the release artifact. Windows and Linux listings are independent from Android Fastlane metadata.
                       </p>
                     </details>
 

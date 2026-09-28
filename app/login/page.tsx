@@ -1,6 +1,7 @@
 "use client";
 
 import React, { Suspense, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { UserResponse } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
@@ -56,12 +57,22 @@ function LoginContent() {
         <p className="ui-eyebrow mb-3">Developer access</p>
         <h1 className="text-2xl font-semibold text-white">Sign in to Luma Store</h1>
         <p className="mt-2 text-sm leading-6 text-slate-400">
-          Sign in with GitHub or GitLab to access the Developer Dashboard.
+          Sign in with GitHub or GitLab only to access developer features. Browsing apps, reading app information,
+          and downloading public releases do not require an account.
         </p>
+
+        <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.025] p-3 text-xs leading-5 text-slate-400">
+          GitHub and GitLab handle the OAuth sign-in and may process connection information under their own privacy
+          policies. Read the <Link href="/privacy" className="font-medium text-indigo-300 hover:text-indigo-200">Luma Store privacy policy</Link> before signing in.
+        </div>
 
         <div className="mt-6 flex flex-col gap-3">
           <button onClick={() => redirectTo("github")} className="ui-button-primary min-h-12 w-full justify-start px-4 py-3 text-left"><ProviderIcon provider="github" /><span className="font-medium text-slate-200">Sign in with GitHub</span></button><button onClick={() => redirectTo("gitlab")} className="ui-button-secondary min-h-12 w-full justify-start px-4 py-3 text-left"><ProviderIcon provider="gitlab" /><span className="font-medium text-slate-200">Sign in with GitLab</span></button>
         </div>
+
+        <Link href="/" className="mt-4 inline-flex text-sm font-medium text-slate-400 transition hover:text-white">
+          ← Continue without an account
+        </Link>
       </div>
     </main>
   );

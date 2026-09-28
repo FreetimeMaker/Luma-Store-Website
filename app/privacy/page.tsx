@@ -68,7 +68,7 @@ export default function PrivacyPage() {
         <h2 className="text-xl font-semibold text-white">Your choices</h2>
         <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-7 text-slate-300">
           <li>Browse and download apps without signing in.</li>
-          <li>Use a developer account only when you need submission or management features.</li>
+          <li>Create a direct Luma Store email/password account without using a social login provider.</li>\n          <li>Use an account only when you need account, submission, or management features.</li>
           <li>Sign out at any time from the Developer Dashboard.</li>
           <li>Contact the project if you need help with developer-account data.</li>
         </ul>

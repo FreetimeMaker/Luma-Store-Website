@@ -68,7 +68,8 @@ export default function PrivacyPage() {
         <h2 className="text-xl font-semibold text-white">Your choices</h2>
         <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-7 text-slate-300">
           <li>Browse and download apps without signing in.</li>
-          <li>Create a direct Luma Store email/password account without using a social login provider.</li>\n          <li>Use an account only when you need account, submission, or management features.</li>
+          <li>Create a direct Luma Store email/password account without using a social login provider.</li>
+          <li>Use an account only when you need account, submission, or management features.</li>
           <li>Sign out at any time from the Developer Dashboard.</li>
           <li>Contact the project if you need help with developer-account data.</li>
         </ul>
@@ -80,13 +81,21 @@ export default function PrivacyPage() {
             rel="noreferrer"
             className="ui-button-secondary px-4 py-2.5 text-sm text-white"
           >
-            Privacy question / issue ↗
+            Privacy question / issue for Website ↗
+          </a>
+          <a
+            href="https://github.com/FreetimeMaker/Luma-Store-Android/issues"
+            target="_blank"
+            rel="noreferrer"
+            className="ui-button-secondary px-4 py-2.5 text-sm text-white"
+          >
+            Privacy question / issue for Android App ↗
           </a>
         </div>
       </section>
 
       <p className="px-1 text-xs leading-5 text-slate-500">
-        Last updated: September 28, 2026. This page describes the current Luma Store website and developer dashboard.
+        Last updated: September 28, 2026. This page describes the current Luma Store Website, Android App and developer dashboard.
       </p>
     </main>
   );

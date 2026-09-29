@@ -32,7 +32,7 @@ export default function PrivacyPage() {
             funding settings, and submission history, is also stored.
           </p>
           <p>
-            Luma Store does not sell personal data to advertisers or data brokers.
+            Luma Store does not sell personal data to advertisers or data brokers. Luma Store also does not share personal data with third parties for advertising, profiling, data brokerage, or unrelated commercial purposes. Data is only disclosed to service providers when technically necessary to operate Luma Store, such as hosting, authentication, database, storage, and source-code integrations, or when required by law.
           </p>
         </div>
       </section>
@@ -95,7 +95,7 @@ export default function PrivacyPage() {
       </section>
 
       <p className="px-1 text-xs leading-5 text-slate-500">
-        Last updated: September 28, 2026. This page describes the current Luma Store Website, Android App and developer dashboard.
+        Last updated: September 29, 2026. This page describes the current Luma Store Website, Android App and developer dashboard.
       </p>
     </main>
   );

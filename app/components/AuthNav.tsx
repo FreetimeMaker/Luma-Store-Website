@@ -290,6 +290,15 @@ export default function AuthNav() {
 
                     <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
                       <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
+                        Can Luma Store track apps directly from GitHub, GitLab, other forges, or a URL?
+                      </summary>
+                      <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
+                        Luma Store is designed to support repository-backed apps across Android, Linux, and Windows. Developers can provide a source repository and platform-specific release or download URLs when submitting an app. This makes it possible to list FOSS apps that are distributed directly by their developers instead of requiring a traditional Linux distribution repository. Automatic tracking of arbitrary third-party forge repositories is being expanded separately; a repository or direct download URL must currently be added through the Luma Store developer submission flow.
+                      </p>
+                    </details>
+
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
+                      <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
                         How do I use Windows apps from Luma Store?
                       </summary>
                       <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">

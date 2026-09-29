@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 type Asset = { name: string; download_url: string; size: number | null; platform: string };
 type SourceResult = { source_url: string; provider: string; version: string | null; title: string | null; published_at: string | null; assets: Asset[] };
@@ -14,6 +15,7 @@ export default function SourcesPage() {
   const [platform, setPlatform] = useState("Linux");
   const [sources, setSources] = useState<SavedSource[]>([]);
   const [busy, setBusy] = useState(false);
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     try { setSources(JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]")); } catch { setSources([]); }
@@ -25,7 +27,13 @@ export default function SourcesPage() {
   }
 
   async function resolve(source: SavedSource) {
-    const response = await fetch(`${API}/sources/resolve?url=${encodeURIComponent(source.url)}&platform=${encodeURIComponent(source.platform)}`, { cache: "no-store" });
+    const { data: { session } } = await supabase.auth.getSession();
+    const provider = String(session?.user?.app_metadata?.provider || "");
+    const providerToken = session?.provider_token;
+    const response = await fetch(`${API}/sources/resolve?url=${encodeURIComponent(source.url)}&platform=${encodeURIComponent(source.platform)}`, {
+      cache: "no-store",
+      headers: providerToken ? { Authorization: `Bearer ${providerToken}`, "X-VCS-Provider": provider } : {},
+    });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || data.error || "Unable to resolve source");
     return data as SourceResult;
@@ -69,7 +77,7 @@ export default function SourcesPage() {
         </select>
         <button className="ui-button-primary" disabled={busy} onClick={addSource}>{busy ? "Checking…" : "Add source"}</button>
       </div>
-      <p className="mt-3 text-xs text-slate-500">Supported VCS providers: GitHub, GitLab and Codeberg. Direct URLs are treated as a single downloadable artifact.</p>
+      <p className="mt-3 text-xs text-slate-500">Supported VCS providers: GitHub, GitLab and Codeberg. When you are signed in with the matching provider, release checks use your provider account instead of the anonymous API quota. Direct URLs are treated as a single downloadable artifact.</p>
     </section>
 
     <div className="mt-5 flex items-center justify-between gap-3">

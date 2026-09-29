@@ -817,7 +817,7 @@ export default function LumaDeveloperPortal() {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
-          ...(session.provider_token ? { [session.user.app_metadata?.provider === "gitlab" ? "X-GitLab-Token" : "X-GitHub-Token"]: session.provider_token } : {}),
+          ...(session.provider_token ? { [session.user.app_metadata?.provider === "gitlab" ? "X-GitLab-Token" : session.user.app_metadata?.provider === "custom:codeberg" ? "X-Codeberg-Token" : "X-GitHub-Token"]: session.provider_token } : {}),
         },
         body: JSON.stringify({ submission: appMetadata, editingId: draftId || editingId, editingStatus: draftId ? "Draft" : editingStatus }),
       });

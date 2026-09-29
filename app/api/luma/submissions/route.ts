@@ -13,12 +13,13 @@ type SubmissionBody = {
 
 type ForgeRepository =
   | { forge: "github"; owner: string; repo: string; canonicalUrl: string }
-  | { forge: "gitlab"; projectPath: string; canonicalUrl: string };
+  | { forge: "gitlab"; projectPath: string; canonicalUrl: string }
+  | { forge: "codeberg"; owner: string; repo: string; canonicalUrl: string };
 
 function parseForgeRepository(value: unknown): ForgeRepository {
-  if (typeof value !== "string") throw new Error("A GitHub or GitLab repository URL is required.");
+  if (typeof value !== "string") throw new Error("A GitHub, GitLab, or Codeberg repository URL is required.");
   let url: URL;
-  try { url = new URL(value.trim()); } catch { throw new Error("A valid GitHub or GitLab repository URL is required."); }
+  try { url = new URL(value.trim()); } catch { throw new Error("A valid GitHub, GitLab, or Codeberg repository URL is required."); }
   if (url.protocol !== "https:") throw new Error("Repository URLs must use HTTPS.");
   const host = url.hostname.toLowerCase();
   const parts = url.pathname.split("/").filter(Boolean);
@@ -32,7 +33,13 @@ function parseForgeRepository(value: unknown): ForgeRepository {
     const projectPath = parts.join("/").replace(/\.git$/i, "");
     return { forge: "gitlab", projectPath, canonicalUrl: `https://gitlab.com/${projectPath}` };
   }
-  throw new Error("Only github.com and gitlab.com repository URLs are currently supported.");
+  if (host === "codeberg.org") {
+    if (parts.length < 2) throw new Error("A valid Codeberg repository URL is required.");
+    const owner = parts[0];
+    const repo = parts[1].replace(/\.git$/i, "");
+    return { forge: "codeberg", owner, repo, canonicalUrl: `https://codeberg.org/${owner}/${repo}` };
+  }
+  throw new Error("Only github.com, gitlab.com, and codeberg.org repository URLs are currently supported.");
 }
 
 async function gitlabJson(projectPath: string, token?: string | null) {
@@ -44,6 +51,19 @@ async function gitlabJson(projectPath: string, token?: string | null) {
     if (response.status === 401) throw new Error("GitLab authorization expired. Please sign in with GitLab again.");
     if (response.status === 404) throw new Error("GitLab project not found or your authorization cannot access it.");
     throw new Error("GitLab project permission check failed.");
+  }
+  return response.json();
+}
+
+async function codebergJson(path: string, token?: string | null) {
+  const response = await fetch(`https://codeberg.org/api/v1${path}`, {
+    cache: "no-store",
+    headers: { Accept: "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+  });
+  if (!response.ok) {
+    if (response.status === 401 || response.status === 403) throw new Error("Codeberg authorization is missing or expired. Please sign in with Codeberg again.");
+    if (response.status === 404) throw new Error("Codeberg repository not found or your authorization cannot access it.");
+    throw new Error("Codeberg repository permission check failed.");
   }
   return response.json();
 }
@@ -70,6 +90,7 @@ export async function POST(request: Request) {
     const authorization = request.headers.get("authorization");
     const githubToken = request.headers.get("x-github-token");
     const gitlabToken = request.headers.get("x-gitlab-token");
+    const codebergToken = request.headers.get("x-codeberg-token");
     if (!authorization?.startsWith("Bearer ")) {
       return NextResponse.json({ error: "Authentication is required." }, { status: 401 });
     }
@@ -114,6 +135,9 @@ export async function POST(request: Request) {
     const gitlabIdentity = authData.user.identities?.find((identity) => identity.provider === "gitlab");
     const gitlabIdentityData = gitlabIdentity?.identity_data as Record<string, unknown> | undefined;
     const gitlabUsername = String(gitlabIdentityData?.user_name ?? gitlabIdentityData?.preferred_username ?? gitlabIdentityData?.username ?? "").trim();
+    const codebergIdentity = authData.user.identities?.find((identity) => identity.provider === "custom:codeberg" || identity.provider === "codeberg");
+    const codebergIdentityData = codebergIdentity?.identity_data as Record<string, unknown> | undefined;
+    const codebergUsername = String(codebergIdentityData?.user_name ?? codebergIdentityData?.preferred_username ?? codebergIdentityData?.username ?? codebergIdentityData?.login ?? "").trim();
 
     async function verifyRepository(repoUrl: string, label = "repository") {
       const parsed = parseForgeRepository(repoUrl);
@@ -127,6 +151,21 @@ export async function POST(request: Request) {
         if (!owns && !canWrite) {
           if (!githubToken) throw new Error(`Sign in with GitHub and grant repository access to verify the ${label}.`);
           throw new Error(`Your GitHub account must own or have write access to the ${label}.`);
+        }
+        return parsed.canonicalUrl;
+      }
+
+      if (parsed.forge === "codeberg") {
+        const codebergRepo = await codebergJson(`/repos/${encodeURIComponent(parsed.owner)}/${encodeURIComponent(parsed.repo)}`, codebergToken) as Record<string, unknown>;
+        if (codebergRepo.private === true) throw new Error(`The ${label} must be public.`);
+        const ownerData = codebergRepo.owner && typeof codebergRepo.owner === "object" ? codebergRepo.owner as Record<string, unknown> : {};
+        const repoOwner = String(ownerData.login ?? ownerData.username ?? "").trim();
+        const permissions = codebergRepo.permissions && typeof codebergRepo.permissions === "object" ? codebergRepo.permissions as Record<string, unknown> : {};
+        const owns = codebergUsername.length > 0 && repoOwner.toLowerCase() === codebergUsername.toLowerCase();
+        const canWrite = permissions.push === true || permissions.admin === true;
+        if (!owns && !canWrite) {
+          if (!codebergToken) throw new Error(`Sign in with Codeberg and grant write:repository access to verify the ${label}.`);
+          throw new Error(`Your Codeberg account must own or have Write access to the ${label}.`);
         }
         return parsed.canonicalUrl;
       }

@@ -7,9 +7,18 @@ import type { UserResponse } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 
 function ProviderIcon({ provider }: { provider: "github" | "gitlab" | "codeberg" }) {
+  if (provider === "codeberg") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 shrink-0" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#2185D0" d="M2.2 18.2 9.8 4.9a2.55 2.55 0 0 1 4.4 0l7.6 13.3a1.2 1.2 0 0 1-1.04 1.8H3.24a1.2 1.2 0 0 1-1.04-1.8Z" />
+        <path fill="#fff" d="M6.15 18.15 11 9.7a1.15 1.15 0 0 1 2 0l4.85 8.45H6.15Z" />
+        <path fill="#2185D0" d="M9.2 18.15 12 13.3l2.8 4.85H9.2Z" />
+      </svg>
+    );
+  }
   return (
     <img
-      src={provider === "github" ? "/github.svg" : provider === "gitlab" ? "/gitlab.svg" : "/codeberg.svg"}
+      src={provider === "github" ? "/github.svg" : "/gitlab.svg"}
       alt=""
       aria-hidden="true"
       className="h-5 w-5 shrink-0 object-contain"

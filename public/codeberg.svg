@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-labelledby="title">
+<title>Codeberg</title>
+<defs><linearGradient id="a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2185d0"/><stop offset="1" stop-color="#73c6f1"/></linearGradient></defs>
+<path fill="url(#a)" d="M2.2 18.2 9.8 4.9a2.55 2.55 0 0 1 4.4 0l7.6 13.3a1.2 1.2 0 0 1-1.04 1.8H3.24a1.2 1.2 0 0 1-1.04-1.8Z"/>
+<path fill="#fff" fill-opacity=".94" d="M6.15 18.15 11 9.7a1.15 1.15 0 0 1 2 0l4.85 8.45H6.15Z"/>
+<path fill="#2185d0" d="M9.2 18.15 12 13.3l2.8 4.85H9.2Z"/>
+</svg>

@@ -568,7 +568,7 @@ export default function AppMetadataPage() {
         headers: {
           "Content-Type": "application/json",
           Authorization: "Bearer " + session.access_token,
-          ...(session.provider_token ? { "X-GitHub-Token": session.provider_token } : {}),
+          ...(session.provider_token ? { [session.user.app_metadata?.provider === "gitlab" ? "X-GitLab-Token" : "X-GitHub-Token"]: session.provider_token } : {}),
         },
         body: JSON.stringify({ submission, editingId: id, editingStatus: app.status }),
       });

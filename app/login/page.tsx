@@ -45,7 +45,7 @@ function LoginContent() {
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: callbackUrl, scopes: provider === "github" ? "read:user public_repo" : undefined },
+      options: { redirectTo: callbackUrl, scopes: provider === "github" ? "read:user public_repo" : "read_user read_api" },
     });
 
     if (error) console.error("Login error:", error.message);

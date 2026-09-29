@@ -11,14 +11,41 @@ type SubmissionBody = {
   draftStep?: number;
 };
 
-function parseGitHubRepository(value: unknown) {
-  if (typeof value !== "string") throw new Error("A GitHub repository URL is required.");
+type ForgeRepository =
+  | { forge: "github"; owner: string; repo: string; canonicalUrl: string }
+  | { forge: "gitlab"; projectPath: string; canonicalUrl: string };
+
+function parseForgeRepository(value: unknown): ForgeRepository {
+  if (typeof value !== "string") throw new Error("A GitHub or GitLab repository URL is required.");
   let url: URL;
-  try { url = new URL(value.trim()); } catch { throw new Error("A valid GitHub repository URL is required."); }
-  if (url.protocol !== "https:" || url.hostname.toLowerCase() !== "github.com") throw new Error("Only github.com repository URLs are supported.");
+  try { url = new URL(value.trim()); } catch { throw new Error("A valid GitHub or GitLab repository URL is required."); }
+  if (url.protocol !== "https:") throw new Error("Repository URLs must use HTTPS.");
+  const host = url.hostname.toLowerCase();
   const parts = url.pathname.split("/").filter(Boolean);
-  if (parts.length < 2) throw new Error("A valid GitHub repository URL is required.");
-  return { owner: parts[0], repo: parts[1].replace(/\.git$/i, "") };
+  if (host === "github.com") {
+    if (parts.length < 2) throw new Error("A valid GitHub repository URL is required.");
+    const owner = parts[0], repo = parts[1].replace(/\.git$/i, "");
+    return { forge: "github", owner, repo, canonicalUrl: `https://github.com/${owner}/${repo}` };
+  }
+  if (host === "gitlab.com") {
+    if (parts.length < 2) throw new Error("A valid GitLab project URL is required.");
+    const projectPath = parts.join("/").replace(/\.git$/i, "");
+    return { forge: "gitlab", projectPath, canonicalUrl: `https://gitlab.com/${projectPath}` };
+  }
+  throw new Error("Only github.com and gitlab.com repository URLs are currently supported.");
+}
+
+async function gitlabJson(projectPath: string, token?: string | null) {
+  const response = await fetch(`https://gitlab.com/api/v4/projects/${encodeURIComponent(projectPath)}`, {
+    cache: "no-store",
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+  });
+  if (!response.ok) {
+    if (response.status === 401) throw new Error("GitLab authorization expired. Please sign in with GitLab again.");
+    if (response.status === 404) throw new Error("GitLab project not found or your authorization cannot access it.");
+    throw new Error("GitLab project permission check failed.");
+  }
+  return response.json();
 }
 
 async function githubJson(path: string, token?: string | null) {
@@ -42,6 +69,7 @@ export async function POST(request: Request) {
   try {
     const authorization = request.headers.get("authorization");
     const githubToken = request.headers.get("x-github-token");
+    const gitlabToken = request.headers.get("x-gitlab-token");
     if (!authorization?.startsWith("Bearer ")) {
       return NextResponse.json({ error: "Authentication is required." }, { status: 401 });
     }
@@ -81,8 +109,45 @@ export async function POST(request: Request) {
     }
 
     const githubIdentity = authData.user.identities?.find((identity) => identity.provider === "github");
-    const identityData = githubIdentity?.identity_data as Record<string, unknown> | undefined;
-    const githubLogin = String(identityData?.user_name ?? identityData?.preferred_username ?? identityData?.login ?? "").trim();
+    const githubIdentityData = githubIdentity?.identity_data as Record<string, unknown> | undefined;
+    const githubLogin = String(githubIdentityData?.user_name ?? githubIdentityData?.preferred_username ?? githubIdentityData?.login ?? "").trim();
+    const gitlabIdentity = authData.user.identities?.find((identity) => identity.provider === "gitlab");
+    const gitlabIdentityData = gitlabIdentity?.identity_data as Record<string, unknown> | undefined;
+    const gitlabUsername = String(gitlabIdentityData?.user_name ?? gitlabIdentityData?.preferred_username ?? gitlabIdentityData?.username ?? "").trim();
+
+    async function verifyRepository(repoUrl: string, label = "repository") {
+      const parsed = parseForgeRepository(repoUrl);
+      if (parsed.forge === "github") {
+        const githubRepo = await githubJson(`/repos/${encodeURIComponent(parsed.owner)}/${encodeURIComponent(parsed.repo)}`, githubToken) as Record<string, unknown>;
+        if (githubRepo.private === true) throw new Error(`The ${label} must be public.`);
+        const repoOwner = githubRepo.owner && typeof githubRepo.owner === "object" && "login" in githubRepo.owner ? String((githubRepo.owner as { login?: unknown }).login ?? "") : "";
+        const permissions = githubRepo.permissions && typeof githubRepo.permissions === "object" ? githubRepo.permissions as Record<string, unknown> : {};
+        const owns = githubLogin.length > 0 && repoOwner.toLowerCase() === githubLogin.toLowerCase();
+        const canWrite = permissions.push === true || permissions.maintain === true || permissions.admin === true;
+        if (!owns && !canWrite) {
+          if (!githubToken) throw new Error(`Sign in with GitHub and grant repository access to verify the ${label}.`);
+          throw new Error(`Your GitHub account must own or have write access to the ${label}.`);
+        }
+        return parsed.canonicalUrl;
+      }
+
+      const project = await gitlabJson(parsed.projectPath, gitlabToken) as Record<string, unknown>;
+      if (project.visibility !== "public") throw new Error(`The ${label} must be public.`);
+      const namespace = project.namespace && typeof project.namespace === "object" ? project.namespace as Record<string, unknown> : {};
+      const namespacePath = String(namespace.full_path ?? namespace.path ?? "").trim();
+      const permissions = project.permissions && typeof project.permissions === "object" ? project.permissions as Record<string, unknown> : {};
+      const projectAccess = permissions.project_access && typeof permissions.project_access === "object" ? permissions.project_access as Record<string, unknown> : {};
+      const groupAccess = permissions.group_access && typeof permissions.group_access === "object" ? permissions.group_access as Record<string, unknown> : {};
+      const accessLevel = Math.max(Number(projectAccess.access_level ?? 0), Number(groupAccess.access_level ?? 0));
+      const owns = gitlabUsername.length > 0 && namespacePath.toLowerCase() === gitlabUsername.toLowerCase();
+      const canWrite = accessLevel >= 30;
+      if (!owns && !canWrite) {
+        if (!gitlabToken) throw new Error(`Sign in with GitLab and grant read_api access to verify the ${label}.`);
+        throw new Error(`Your GitLab account must own the ${label} or have at least the Developer role.`);
+      }
+      return parsed.canonicalUrl;
+    }
+
     const separatePlatformRepos = submission.separate_platform_repos === true;
     submission.separate_platform_repos = separatePlatformRepos;
     if (separatePlatformRepos) {
@@ -92,67 +157,34 @@ export async function POST(request: Request) {
         const repoUrl = entries.find((item) => item.repoUrl)?.repoUrl;
         const metadata = entries.find((item) => item.metadata)?.metadata as Record<string, unknown> | undefined;
         if (!repoUrl) return NextResponse.json({ error: `${platform} requires its own repository URL when separate repositories are enabled.` }, { status: 400 });
-        try { parseGitHubRepository(repoUrl); } catch (error) { return NextResponse.json({ error: `${platform}: ${error instanceof Error ? error.message : "Invalid repository URL."}` }, { status: 400 }); }
+        try { parseForgeRepository(repoUrl); } catch (error) { return NextResponse.json({ error: `${platform}: ${error instanceof Error ? error.message : "Invalid repository URL."}` }, { status: 400 }); }
         const screenshots = Array.isArray(metadata?.screenshots) ? metadata.screenshots.filter((value) => typeof value === "string" && value.trim()) : [];
         if (!metadata || !String(metadata.title??"").trim() || !String(metadata.shortDescription??"").trim() || !String(metadata.fullDescription??"").trim() || !String(metadata.changelog??"").trim() || screenshots.length === 0) {
           return NextResponse.json({ error: `${platform} requires complete store metadata and at least one screenshot when separate repositories are enabled.` }, { status: 400 });
         }
       }
     }
+
     const primaryRepoUrl = separatePlatformRepos ? platforms.find((item) => item.repoUrl)?.repoUrl : String(submission.repo_url ?? submission.link ?? "");
-    const { owner, repo } = parseGitHubRepository(primaryRepoUrl);
-    const githubRepo = await githubJson(
-      `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`,
-      githubToken,
-    ) as Record<string, unknown>;
-
-    if (githubRepo.private === true) {
-      return NextResponse.json({ error: "The submitted repository must be public." }, { status: 400 });
-    }
-
-    const login = githubLogin;
-    const repoOwner = githubRepo.owner && typeof githubRepo.owner === "object" && "login" in githubRepo.owner
-      ? String((githubRepo.owner as { login?: unknown }).login ?? "")
-      : "";
-    const permissions = githubRepo.permissions && typeof githubRepo.permissions === "object"
-      ? githubRepo.permissions as Record<string, unknown>
-      : {};
-    const ownsRepository = login.length > 0 && repoOwner.toLowerCase() === login.toLowerCase();
-    const canWrite = permissions.push === true || permissions.maintain === true || permissions.admin === true;
-
-    if (!ownsRepository && !canWrite) {
-      if (!githubToken) {
-        return NextResponse.json(
-          { error: "This repository is not owned by your linked GitHub account. Sign in with GitHub again only if you need to verify collaborator write access." },
-          { status: 403 },
-        );
-      }
-      return NextResponse.json({ error: "Your GitHub account must own this repository or have write access to it." }, { status: 403 });
-    }
+    if (!primaryRepoUrl) return NextResponse.json({ error: "A source repository URL is required." }, { status: 400 });
+    const canonicalPrimaryRepo = await verifyRepository(primaryRepoUrl, "submitted repository");
 
     if (separatePlatformRepos) {
-      const checked = new Set<string>([`https://github.com/${owner}/${repo}`.toLowerCase()]);
+      const checked = new Set<string>([canonicalPrimaryRepo.toLowerCase()]);
       for (const item of platforms) {
         if (!item.repoUrl) continue;
-        const parsed = parseGitHubRepository(item.repoUrl);
-        const canonical = `https://github.com/${parsed.owner}/${parsed.repo}`;
-        if (checked.has(canonical.toLowerCase())) continue;
-        const platformRepo = await githubJson(`/repos/${encodeURIComponent(parsed.owner)}/${encodeURIComponent(parsed.repo)}`, githubToken) as Record<string, unknown>;
-        if (platformRepo.private === true) return NextResponse.json({ error: `${item.platform} repository must be public.` }, { status: 400 });
-        const platformOwner = platformRepo.owner && typeof platformRepo.owner === "object" && "login" in platformRepo.owner ? String((platformRepo.owner as { login?: unknown }).login ?? "") : "";
-        const platformPermissions = platformRepo.permissions && typeof platformRepo.permissions === "object" ? platformRepo.permissions as Record<string, unknown> : {};
-        const platformOwned = login.length > 0 && platformOwner.toLowerCase() === login.toLowerCase();
-        const platformWritable = platformPermissions.push === true || platformPermissions.maintain === true || platformPermissions.admin === true;
-        if (!platformOwned && !platformWritable) return NextResponse.json({ error: `Your GitHub account must own or have write access to the ${item.platform} repository.` }, { status: 403 });
+        const parsed = parseForgeRepository(item.repoUrl);
+        if (checked.has(parsed.canonicalUrl.toLowerCase())) continue;
+        const canonical = await verifyRepository(item.repoUrl, `${item.platform} repository`);
         checked.add(canonical.toLowerCase());
       }
     }
 
     const safeSubmission = {
       ...submission,
-      link: `https://github.com/${owner}/${repo}`,
-      repo_url: `https://github.com/${owner}/${repo}`,
-      source_code_url: `https://github.com/${owner}/${repo}`,
+      link: canonicalPrimaryRepo,
+      repo_url: canonicalPrimaryRepo,
+      source_code_url: canonicalPrimaryRepo,
       closed_source: false,
       status: "Pending",
       status_updated_at: new Date().toISOString(),

@@ -45,7 +45,7 @@ function LoginContent() {
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: provider === "codeberg" ? "custom:codeberg" : provider,
-      options: { redirectTo: callbackUrl, scopes: provider === "github" ? "read:user public_repo" : provider === "gitlab" ? "read_user read_api" : "openid profile email read:user write:repository" },
+      options: { redirectTo: callbackUrl, scopes: provider === "github" ? "read:user public_repo" : provider === "gitlab" ? "read_user read_api" : "openid profile email read:user read:repository write:repository" },
     });
 
     if (error) console.error("Login error:", error.message);

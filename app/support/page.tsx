@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { configuredCryptoNetworks } from "@/lib/luma/crypto-funding";
 
 type DeveloperFunding = {
   donate_url: string | null;
@@ -19,35 +20,6 @@ type FundingLink = {
   value: string;
 };
 
-type CryptoMethod = {
-  key: string;
-  label: string;
-  network: string;
-  value: string;
-};
-
-const cryptoLabels: Record<string, string> = {
-  bitcoin: "Bitcoin (BTC)",
-  ethereum: "Ethereum (ETH)",
-  tether: "Tether (USDT)",
-  usdc: "USD Coin (USDC)",
-  bnb: "BNB",
-  solana: "Solana (SOL)",
-  cardano: "Cardano (ADA)",
-  dogecoin: "Dogecoin (DOGE)",
-  tron: "TRON (TRX)",
-  polkadot: "Polkadot (DOT)",
-  avalanche: "Avalanche (AVAX)",
-  chainlink: "Chainlink (LINK)",
-  polygon: "Polygon (POL)",
-  litecoin: "Litecoin (LTC)",
-  bitcoin_cash: "Bitcoin Cash (BCH)",
-  stellar: "Stellar (XLM)",
-  monero: "Monero (XMR)",
-  toncoin: "Toncoin (TON)",
-  shiba_inu: "Shiba Inu (SHIB)",
-};
-
 function fundingToLinks(funding: DeveloperFunding | null): FundingLink[] {
   if (!funding) return [];
 
@@ -58,47 +30,13 @@ function fundingToLinks(funding: DeveloperFunding | null): FundingLink[] {
   ].filter((item): item is FundingLink => Boolean(item.value));
 }
 
-function fundingToCryptoMethods(funding: DeveloperFunding | null): CryptoMethod[] {
-  if (!funding) return [];
-
-  const addresses: Record<string, string> = {
-    ...(funding.crypto_addresses || {}),
-  };
-
-  if (funding.bitcoin && !addresses["bitcoin::Bitcoin"]) {
-    addresses["bitcoin::Bitcoin"] = funding.bitcoin;
-  }
-
-  if (funding.litecoin && !addresses["litecoin::Litecoin"]) {
-    addresses["litecoin::Litecoin"] = funding.litecoin;
-  }
-
-  return Object.entries(addresses)
-    .flatMap(([key, rawValue]) => {
-      const value = rawValue?.trim();
-      if (!value || key.startsWith("xrp::") || key === "bnb::BNB Beacon Chain") return [];
-
-      const [currency, ...networkParts] = key.split("::");
-      const network = networkParts.join("::").trim();
-      const label = cryptoLabels[currency] || currency;
-
-      return [{
-        key,
-        label,
-        network,
-        value,
-      }];
-    })
-    .sort((a, b) => a.label.localeCompare(b.label) || a.network.localeCompare(b.network));
-}
-
 function CopyValue({
   label,
-  network,
+  assets,
   value,
 }: {
   label: string;
-  network: string;
+  assets: string;
   value: string;
 }) {
   const [copied, setCopied] = useState(false);
@@ -117,9 +55,7 @@ function CopyValue({
     <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4">
       <div>
         <p className="text-sm font-semibold text-white">{label}</p>
-        {network && (
-          <p className="mt-1 text-xs text-slate-500">{network}</p>
-        )}
+        <p className="mt-1 text-xs leading-5 text-slate-500">For: {assets}</p>
       </div>
       <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <code className="min-w-0 break-all text-sm leading-6 text-slate-200">{value}</code>
@@ -181,7 +117,7 @@ export default function SupportPage() {
   }, [supabase]);
 
   const fundingLinks = useMemo(() => fundingToLinks(funding), [funding]);
-  const cryptoMethods = useMemo(() => fundingToCryptoMethods(funding), [funding]);
+  const cryptoMethods = useMemo(() => configuredCryptoNetworks(funding), [funding]);
   const hasSupportMethod = fundingLinks.length > 0 || cryptoMethods.length > 0;
 
   return (
@@ -250,17 +186,18 @@ export default function SupportPage() {
               <p className="ui-eyebrow mb-2">Crypto</p>
               <h2 className="text-xl font-semibold text-white">Direct crypto support</h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-                These payment destinations come directly from the Freetime Maker developer profile. Check both the asset
-                and network carefully before sending; blockchain transfers normally cannot be reversed.
+                Each network uses one wallet address for all supported coins and tokens on that network. These payment
+                destinations come directly from the Freetime Maker developer profile. Check the network carefully before
+                sending; blockchain transfers normally cannot be reversed.
               </p>
 
               <div className="mt-5 grid gap-3 lg:grid-cols-2">
                 {cryptoMethods.map((method) => (
                   <CopyValue
-                    key={method.key}
+                    key={method.id}
                     label={method.label}
-                    network={method.network}
-                    value={method.value}
+                    assets={method.assets.map((asset) => asset.label).join(", ")}
+                    value={method.address}
                   />
                 ))}
               </div>
@@ -273,8 +210,8 @@ export default function SupportPage() {
         <h2 className="text-xl font-semibold text-white">One funding profile</h2>
         <p className="mt-3 text-sm leading-7 text-slate-300">
           Luma Store support reuses the complete Freetime Maker Developer Funding configuration. Updating the
-          Donation URL, Liberapay, OpenCollective, a supported coin or token, network, or wallet address in the
-          Developer Dashboard automatically updates this page too.
+          Donation URL, Liberapay, OpenCollective, or a network wallet address in the Developer Dashboard
+          automatically updates this page too. One network address is reused for all supported assets on that network.
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
           <Link href="/" className="ui-button-primary px-4 py-2.5 text-sm font-medium text-white">

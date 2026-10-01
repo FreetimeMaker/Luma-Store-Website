@@ -3,6 +3,11 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import {
+  CRYPTO_NETWORKS,
+  fundingToNetworkAddressMap,
+  networkAddressKey,
+} from "@/lib/luma/crypto-funding";
 
 type FundingForm = {
   donate_url: string;
@@ -13,37 +18,11 @@ type FundingForm = {
 
 type FundingLinkField = "donate_url" | "liberapay" | "opencollective";
 
-const cryptoOptions = [
-  ["bitcoin", "Bitcoin (BTC)", ["Bitcoin"]],
-  ["ethereum", "Ethereum (ETH)", ["Ethereum"]],
-  ["tether", "Tether (USDT)", ["Ethereum (ERC-20)", "TRON (TRC-20)", "BNB Smart Chain (BEP-20)", "Solana", "Polygon", "Avalanche C-Chain", "Arbitrum", "Optimism"]],
-  ["usdc", "USD Coin (USDC)", ["Ethereum (ERC-20)", "Solana", "Base", "Arbitrum", "Optimism", "Polygon", "Avalanche C-Chain"]],
-  ["bnb", "BNB", ["BNB Smart Chain (BEP-20)"]],
-  ["solana", "Solana (SOL)", ["Solana"]],
-  ["cardano", "Cardano (ADA)", ["Cardano"]],
-  ["dogecoin", "Dogecoin (DOGE)", ["Dogecoin"]],
-  ["tron", "TRON (TRX)", ["TRON"]],
-  ["polkadot", "Polkadot (DOT)", ["Polkadot"]],
-  ["avalanche", "Avalanche (AVAX)", ["Avalanche C-Chain", "Avalanche P-Chain"]],
-  ["chainlink", "Chainlink (LINK)", ["Ethereum (ERC-20)", "BNB Smart Chain (BEP-20)", "Polygon", "Arbitrum", "Optimism"]],
-  ["polygon", "Polygon (POL)", ["Polygon", "Ethereum (ERC-20)"]],
-  ["litecoin", "Litecoin (LTC)", ["Litecoin"]],
-  ["bitcoin_cash", "Bitcoin Cash (BCH)", ["Bitcoin Cash"]],
-  ["stellar", "Stellar (XLM)", ["Stellar"]],
-  ["monero", "Monero (XMR)", ["Monero"]],
-  ["toncoin", "Toncoin (TON)", ["TON"]],
-  ["shiba_inu", "Shiba Inu (SHIB)", ["Ethereum (ERC-20)", "Shibarium"]],
-] as const;
-
 const fundingLinks: Array<[FundingLinkField, string, string]> = [
   ["donate_url", "Donation URL", "https://example.com/donate"],
   ["liberapay", "Liberapay URL", "https://liberapay.com/..."],
   ["opencollective", "OpenCollective URL", "https://opencollective.com/..."],
 ];
-
-function cryptoKey(currency: string, network: string) {
-  return `${currency}::${network}`;
-}
 
 function clean(value: string) {
   return value.trim() || null;
@@ -81,15 +60,13 @@ export default function DeveloperFundingPage() {
         .maybeSingle();
 
       if (data) {
-        const addresses = {
-          ...(data.crypto_addresses || {}),
-          ...(data.bitcoin && !data.crypto_addresses?.["bitcoin::Bitcoin"]
-            ? { "bitcoin::Bitcoin": data.bitcoin }
-            : {}),
-          ...(data.litecoin && !data.crypto_addresses?.["litecoin::Litecoin"]
-            ? { "litecoin::Litecoin": data.litecoin }
-            : {}),
-        };
+        const networkAddresses = fundingToNetworkAddressMap(data);
+        const addresses = Object.fromEntries(
+          Object.entries(networkAddresses).map(([networkId, address]) => [
+            networkAddressKey(networkId),
+            address,
+          ]),
+        );
 
         setForm({
           donate_url: data.donate_url || "",
@@ -129,11 +106,7 @@ export default function DeveloperFundingPage() {
     const cryptoAddresses = Object.fromEntries(
       Object.entries(form.crypto_addresses)
         .map(([key, value]) => [key, value.trim()])
-        .filter(([key, value]) =>
-          Boolean(value)
-          && !key.startsWith("xrp::")
-          && key !== "bnb::BNB Beacon Chain"
-        ),
+        .filter(([key, value]) => Boolean(value) && key.startsWith("network::")),
     );
 
     const { error } = await supabase
@@ -145,8 +118,8 @@ export default function DeveloperFundingPage() {
           liberapay: clean(form.liberapay),
           opencollective: clean(form.opencollective),
           crypto_addresses: cryptoAddresses,
-          bitcoin: clean(form.crypto_addresses["bitcoin::Bitcoin"] || ""),
-          litecoin: clean(form.crypto_addresses["litecoin::Litecoin"] || ""),
+          bitcoin: clean(form.crypto_addresses[networkAddressKey("bitcoin")] || ""),
+          litecoin: clean(form.crypto_addresses[networkAddressKey("litecoin")] || ""),
           updated_at: new Date().toISOString(),
         },
         { onConflict: "developer_id" },
@@ -227,42 +200,37 @@ export default function DeveloperFundingPage() {
           <p className="ui-eyebrow">Cryptocurrency</p>
           <h2 className="mt-1 text-xl font-semibold text-white">Wallet addresses</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Add only the currencies you accept. Leave all others empty.
+            Enter one wallet address per network. The same network address is reused for every supported coin or token on that network.
           </p>
 
           <div className="mt-5 space-y-4">
-            {cryptoOptions.map(([currency, label, networks]) => (
-              <article key={currency} className="ui-panel-muted p-3.5 sm:p-4">
-                <div>
-                  <p className="text-sm font-semibold text-white">{label}</p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {networks.length > 1
-                      ? "Multiple supported networks"
-                      : "Native network"}
-                  </p>
-                </div>
+            {CRYPTO_NETWORKS.map((network) => {
+              const key = networkAddressKey(network.id);
+              const assetLabels = network.assets.map((asset) => asset.label).join(", ");
 
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {networks.map((network) => {
-                    const key = cryptoKey(currency, network);
+              return (
+                <article key={network.id} className="ui-panel-muted p-3.5 sm:p-4">
+                  <div>
+                    <p className="text-sm font-semibold text-white">{network.label}</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      One address for: {assetLabels}
+                    </p>
+                  </div>
 
-                    return (
-                      <div key={key}>
-                        <label className="mb-1.5 block text-xs text-slate-400">
-                          {network}
-                        </label>
-                        <input
-                          value={form.crypto_addresses[key] || ""}
-                          onChange={(event) => updateCrypto(key, event.target.value)}
-                          className="glass-input"
-                          placeholder={`${label} · ${network}`}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </article>
-            ))}
+                  <div className="mt-4">
+                    <label className="mb-1.5 block text-xs text-slate-400">
+                      {network.label} address
+                    </label>
+                    <input
+                      value={form.crypto_addresses[key] || ""}
+                      onChange={(event) => updateCrypto(key, event.target.value)}
+                      className="glass-input"
+                      placeholder={`${network.label} wallet address`}
+                    />
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </section>
 

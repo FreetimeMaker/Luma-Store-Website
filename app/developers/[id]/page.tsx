@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { configuredCryptoNetworks } from "@/lib/luma/crypto-funding";
 
 type StoreApp = {
   id: string;
@@ -62,7 +63,7 @@ export default function DiscoverDeveloperPage() {
   if (error || apps.length === 0) return <div className="store-page mx-auto max-w-3xl rounded-2xl border border-rose-500/25 bg-rose-950/20 p-6"><h1 className="text-xl font-semibold text-rose-200">Developer not found</h1><p className="mt-2 text-sm text-rose-100/70">{error || "No published apps were found for this developer."}</p><Link href="/" className="mt-4 inline-flex text-sm font-medium text-indigo-300">← Back to apps</Link></div>;
 
   const developerName = profile?.display_name || apps.find((app) => app.developer_name)?.developer_name || "Luma Store developer";
-  const cryptoLabels:Record<string,string>={bitcoin:"Bitcoin (BTC)",ethereum:"Ethereum (ETH)",tether:"Tether (USDT)",usdc:"USD Coin (USDC)",bnb:"BNB",solana:"Solana (SOL)",cardano:"Cardano (ADA)",dogecoin:"Dogecoin (DOGE)",tron:"TRON (TRX)",polkadot:"Polkadot (DOT)",avalanche:"Avalanche (AVAX)",chainlink:"Chainlink (LINK)",polygon:"Polygon (POL)",litecoin:"Litecoin (LTC)",bitcoin_cash:"Bitcoin Cash (BCH)",stellar:"Stellar (XLM)",monero:"Monero (XMR)",toncoin:"Toncoin (TON)",shiba_inu:"Shiba Inu (SHIB)"}; const cryptoEntries=Object.entries(funding?.crypto_addresses||{}).filter(([key,value])=>Boolean(value)&&!key.startsWith("xrp::")&&key!=="bnb::BNB Beacon Chain");
+  const cryptoNetworks = configuredCryptoNetworks(funding);
   const developerCategories=Array.from(new Set(apps.flatMap(app=>app.categories||[]))).sort();
   const memberSince=profile?.created_at?new Intl.DateTimeFormat("en",{year:"numeric",month:"long"}).format(new Date(profile.created_at)):null;
   const latestUpdate=apps.map(app=>app.updated_at).filter((value):value is string=>Boolean(value)).sort().at(-1)||null;
@@ -288,19 +289,21 @@ export default function DiscoverDeveloperPage() {
             )}
           </div>
 
-          {cryptoEntries.length > 0 && (
+          {cryptoNetworks.length > 0 && (
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              {cryptoEntries.map(([key, value]) => (
+              {cryptoNetworks.map((network) => (
                 <div
-                  key={key}
+                  key={network.id}
                   className="rounded-2xl bg-[#101722] p-4"
                 >
                   <p className="text-xs font-medium text-slate-500">
-                    {cryptoLabels[key.split("::")[0]] || key.split("::")[0]}
-                    {key.includes("::") ? ` · ${key.split("::")[1]}` : ""}
+                    {network.label}
+                  </p>
+                  <p className="mt-1 text-[11px] leading-5 text-slate-600">
+                    For: {network.assets.map((asset) => asset.label).join(", ")}
                   </p>
                   <p className="mt-2 break-all font-mono text-xs text-slate-300">
-                    {value}
+                    {network.address}
                   </p>
                 </div>
               ))}

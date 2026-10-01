@@ -332,7 +332,7 @@ export default function LumaDeveloperPortal() {
   const [appIconUrl, setAppIconUrl] = useState("");
   const [iconPreviewError, setIconPreviewError] = useState(false);
   const [appVersion, setAppVersion] = useState("");
-  const [appPlatforms, setAppPlatforms] = useState<AppPlatform[]>([]);
+  const [appPlatforms, setAppPlatforms] = useState<AppPlatform[]>(["Android"]);
   const [separatePlatformRepos,setSeparatePlatformRepos]=useState(false);
   const emptyPlatformMetadata=():PlatformMetadataInput=>({repoUrl:"",title:"",shortDescription:"",fullDescription:"",changelog:"",screenshotsText:"",featureGraphicUrl:""});
   const [platformMetadata,setPlatformMetadata]=useState<Record<AppPlatform,PlatformMetadataInput>>({Android:emptyPlatformMetadata(),Windows:emptyPlatformMetadata(),Linux:emptyPlatformMetadata()});
@@ -382,10 +382,10 @@ export default function LumaDeveloperPortal() {
   const [artifactUploadError, setArtifactUploadError] = useState<string | null>(null);
   const formTopRef = React.useRef<HTMLFormElement>(null);
 
-  const isAndroid = appPlatforms.includes("Android");
-  const isWindows = appPlatforms.includes("Windows");
-  const isLinux = appPlatforms.includes("Linux");
-  const manualStoreMetadata = isWindows || isLinux;
+  const isAndroid = true;
+  const isWindows = false;
+  const isLinux = false;
+  const manualStoreMetadata = false;
   const platformDetails = (platform: AppPlatform, androidOverride: FastlaneMetadata | null = fastlaneMetadata) => {
     const item = platformMetadata[platform];
     const repoPart = separatePlatformRepos ? { repoUrl: item.repoUrl.trim() } : {};
@@ -569,7 +569,7 @@ export default function LumaDeveloperPortal() {
 
   const resetForm = () => {
     setStep(1); setAppName(""); setAppLink(""); setAppCategories([]); setAppLicenseType(""); setAppIconUrl(""); setIconPreviewError(false);
-    setAppVersion(""); setAppPlatforms([]); setSeparatePlatformRepos(false); setPlatformMetadata({Android:emptyPlatformMetadata(),Windows:emptyPlatformMetadata(),Linux:emptyPlatformMetadata()}); setAndroidDownloadUrl(""); setWindowsDownloadUrl(""); setLinuxDebUrl(""); setLinuxRpmUrl(""); setLinuxAppImageUrl(""); setAppPackageName(""); setAppVersionCode("");
+    setAppVersion(""); setAppPlatforms(["Android"]); setSeparatePlatformRepos(false); setPlatformMetadata({Android:emptyPlatformMetadata(),Windows:emptyPlatformMetadata(),Linux:emptyPlatformMetadata()}); setAndroidDownloadUrl(""); setWindowsDownloadUrl(""); setLinuxDebUrl(""); setLinuxRpmUrl(""); setLinuxAppImageUrl(""); setAppPackageName(""); setAppVersionCode("");
     setWebsiteUrl(""); setIssueTrackerUrl(""); setTranslationUrl(""); setAuthorName(""); setAuthorEmail(""); setAuthorWebsite("");
     setDonateUrl(""); setLiberapay(""); setOpencollective(""); setBitcoin(""); setLitecoin("");
     setClosedTitle(""); setClosedShortDescription(""); setClosedFullDescription(""); setClosedChangelog(""); setClosedScreenshotsText(""); setAdditionalClosedMetadata([]);
@@ -582,7 +582,7 @@ export default function LumaDeveloperPortal() {
     setEditingId(app.id); setEditingStatus(app.status); setAppName(app.name); setAppLink(app.repoUrl || app.link);
     setAppCategories((app.categories?.length ? app.categories : [app.category]).filter((category) => FDROID_CATEGORIES.includes(category as typeof FDROID_CATEGORIES[number])));
     setAppLicenseType(app.licenseType || ""); setAppIconUrl(app.iconUrl); setIconPreviewError(false); setAppVersion(app.version);
-    setAppPlatforms(Array.from(new Set(app.platforms.map((item)=>item.platform))));
+    setAppPlatforms(["Android"]);
     setSeparatePlatformRepos(app.separatePlatformRepos);
     setPlatformMetadata((current)=>{const next={...current};(["Android","Windows","Linux"] as AppPlatform[]).forEach(platform=>{const item=app.platforms.find(entry=>entry.platform===platform);if(item?.metadata)next[platform]={repoUrl:item.repoUrl||app.repoUrl||app.link||"",title:item.metadata.title||"",shortDescription:item.metadata.shortDescription||"",fullDescription:item.metadata.fullDescription||"",changelog:item.metadata.changelog||"",screenshotsText:(item.metadata.screenshots||[]).join("\\n"),featureGraphicUrl:item.metadata.featureGraphic||""};else if(item?.repoUrl)next[platform]={...next[platform],repoUrl:item.repoUrl};});return next;});
     setAndroidDownloadUrl(app.platforms.find((item)=>item.platform==="Android")?.downloadUrl||""); setWindowsDownloadUrl(app.platforms.find((item)=>item.platform==="Windows")?.downloadUrl||"");
@@ -700,14 +700,14 @@ export default function LumaDeveloperPortal() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-      if (!appPlatforms.length) throw new Error("Please select at least one platform.");
+      if (!appPlatforms.length) throw new Error("Luma Store requires Android.");
       if (isAndroid && !androidDownloadUrl.trim()) throw new Error("Android requires an uploaded APK or a download URL.");
       if (isWindows && !windowsDownloadUrl.trim()) throw new Error("Windows requires an uploaded EXE or a download URL.");
       if (isLinux && !linuxDebUrl.trim() && !linuxRpmUrl.trim() && !linuxAppImageUrl.trim()) throw new Error("Linux requires an uploaded .deb/.rpm/AppImage file or a download URL.");
       if (!validAndroidMetadata) throw new Error("Android apps require a valid package name and positive versionCode.");
       if (!appCategories.length || appCategories.some((category) => !FDROID_CATEGORIES.includes(category as typeof FDROID_CATEGORIES[number]))) throw new Error("Please select at least one valid F-Droid category.");
       if (!appLicenseType) throw new Error("Please select an open-source license.");
-      if (manualStoreMetadata && !separatePlatformRepos && !manualMetadataValid) throw new Error("Linux and Windows require complete manual store metadata.");
+      if (manualStoreMetadata && !separatePlatformRepos && !manualMetadataValid) throw new Error("Only Android apps are supported.");
       if (separatePlatformRepos) {
         for (const platform of appPlatforms) {
           const item = platformMetadata[platform];
@@ -860,7 +860,7 @@ export default function LumaDeveloperPortal() {
     <div className="glass-page mx-auto max-w-6xl space-y-8 pb-20">
       <header className="border-b border-slate-800 pb-7">
         <h1 className="text-3xl font-bold text-white"><span className="bg-gradient-to-r from-pink-500 to-indigo-500 bg-clip-text text-transparent">Luma Store</span> Developer Portal</h1>
-        <p className="mt-2 max-w-2xl text-slate-400">Submit and maintain Android, Windows and Linux apps.</p>
+        <p className="mt-2 max-w-2xl text-slate-400">Submit and maintain Android apps.</p>
       </header>
 
       <section className="grid gap-4 sm:grid-cols-3"><Link href="/dashboard/analytics" className="rounded-3xl border border-white/10 bg-slate-900/50 p-5 shadow-lg shadow-black/10 backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-indigo-400/30 hover:bg-slate-900/70"><h2 className="font-semibold text-white">Analytics</h2><p className="mt-1 text-sm text-slate-400">Downloads, platforms, top apps and funding clicks.</p></Link><Link href="/dashboard/profile" className="rounded-3xl border border-white/10 bg-slate-900/50 p-5 shadow-lg shadow-black/10 backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-indigo-400/30 hover:bg-slate-900/70"><h2 className="font-semibold text-white">Developer profile</h2><p className="mt-1 text-sm text-slate-400">Bio, avatar, website and source-hosting links.</p></Link><Link href="/dashboard/funding" className="rounded-3xl border border-white/10 bg-slate-900/50 p-5 shadow-lg shadow-black/10 backdrop-blur-xl transition duration-300 hover:-translate-y-0.5 hover:border-indigo-400/30 hover:bg-slate-900/70"><h2 className="font-semibold text-white">Developer funding</h2><p className="mt-1 text-sm text-slate-400">Manage support methods for all of your apps.</p></Link></section>
@@ -878,7 +878,7 @@ export default function LumaDeveloperPortal() {
               {step === 1 && <div className="space-y-6">
                 
                 <div className="grid gap-5 md:grid-cols-2">
-                  <div><label className="mb-2 block text-sm font-medium text-slate-300">Platforms</label><div className="overflow-hidden rounded-xl border border-slate-700 bg-slate-950/70">{(["Android","Windows","Linux"] as AppPlatform[]).map((platform)=><label key={platform} className="flex cursor-pointer items-center gap-3 border-b border-slate-800 px-4 py-3 text-sm text-slate-200 last:border-b-0 hover:bg-slate-900/80"><input type="checkbox" checked={appPlatforms.includes(platform)} onChange={(e)=>{setAppPlatforms((current)=>e.target.checked ? [...new Set([...current,platform])] : current.filter((item)=>item!==platform));invalidateFastlane();}} className="h-4 w-4 accent-indigo-500"/><span>{platform}</span></label>)}</div><p className="mt-2 text-xs text-slate-500">{appPlatforms.length ? `${appPlatforms.length} selected · ${appPlatforms.join(" · ")}` : "No platform selected"} · Select one or more platforms.</p></div>
+                  <div><label className="mb-2 block text-sm font-medium text-slate-300">Platform</label><div className="rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm font-medium text-slate-200">Android</div><p className="mt-2 text-xs text-slate-500">Luma Store accepts Android APK apps only.</p></div>
                 </div>
                 <div className="grid gap-5 md:grid-cols-2">
                   <div><label className="mb-2 block text-sm font-medium text-slate-300">F-Droid Categories</label><div className="max-h-64 overflow-y-auto rounded-xl border border-slate-700 bg-slate-950/70">{FDROID_CATEGORIES.map((category)=><label key={category} className="flex cursor-pointer items-center gap-3 border-b border-slate-800 px-4 py-3 text-sm text-slate-200 last:border-b-0 hover:bg-slate-900/80"><input type="checkbox" checked={appCategories.includes(category)} onChange={(e)=>setAppCategories((current)=>e.target.checked ? [...new Set([...current, category])] : current.filter((item)=>item!==category))} className="h-4 w-4 accent-indigo-500"/><span>{category}</span></label>)}</div><p className="mt-2 text-xs text-slate-500">{appCategories.length ? `${appCategories.length} selected` : "No category selected"} · Select all categories that apply.</p></div>

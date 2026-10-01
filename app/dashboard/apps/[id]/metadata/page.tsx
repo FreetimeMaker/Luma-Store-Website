@@ -587,9 +587,9 @@ export default function AppMetadataPage() {
   if (loading) return <div className={cardClass + " mx-auto max-w-6xl p-8 text-center text-slate-400"}>Loading app metadata…</div>;
   if (!app) return <div className={cardClass + " mx-auto max-w-6xl p-8 text-red-300"}>{error || "App not found."}</div>;
 
-  const isAndroid = form.selectedPlatforms.includes("Android");
-  const isWindows = form.selectedPlatforms.includes("Windows");
-  const isLinux = form.selectedPlatforms.includes("Linux");
+  const isAndroid = true;
+  const isWindows = false;
+  const isLinux = false;
   const androidRepo = repoForPlatform("Android");
 
   return (
@@ -599,7 +599,7 @@ export default function AppMetadataPage() {
           <p className="text-xs font-semibold uppercase tracking-[.16em] text-indigo-300">Platform-specific store listings</p>
           <h1 className="mt-1 text-3xl font-bold text-white">App metadata</h1>
           <p className="mt-2 max-w-3xl text-slate-400">
-            Android and Linux keep separate listings. Android is always sourced from Fastlane; Linux uses the same listing fields but is edited manually.
+            Android is the only supported platform and its listing is sourced from Fastlane.
           </p>
         </div>
         <Link href={"/dashboard/apps/" + id} className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-slate-800">Back to app</Link>
@@ -652,7 +652,7 @@ export default function AppMetadataPage() {
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-300">Platforms</label>
               <div className="overflow-hidden ui-panel-muted">
-                {(["Android", "Windows", "Linux"] as AppPlatform[]).map((platform) => (
+                {(["Android"] as AppPlatform[]).map((platform) => (
                   <label key={platform} className="flex cursor-pointer items-center gap-3 border-b border-white/10 px-4 py-3 text-sm text-slate-200 last:border-b-0 hover:bg-white/5">
                     <input type="checkbox" checked={form.selectedPlatforms.includes(platform)} onChange={() => togglePlatform(platform)} className="h-4 w-4 accent-indigo-500" />
                     <span>{platform}</span>

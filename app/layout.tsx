@@ -38,7 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/" className="transition hover:text-white">Home</Link>
               <Link href="/" className="transition hover:text-white">Apps</Link>
               <Link href="/login?next=/dashboard" className="transition hover:text-white">Developers</Link>
-              <Link href="/support" className="transition hover:text-white">Support</Link>
+              <Link href="/support" className="transition hover:text-white">Donate</Link>
               <Link href="/privacy" className="transition hover:text-white">Privacy</Link>
             </nav>
           </div>

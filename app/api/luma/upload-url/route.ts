@@ -4,10 +4,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 const BUCKET = "luma-apps";
 const ALLOWED = {
   apk: { platform: "Android", extension: ".apk" },
-  exe: { platform: "Windows", extension: ".exe" },
-  deb: { platform: "Linux", extension: ".deb" },
-  rpm: { platform: "Linux", extension: ".rpm" },
-  appimage: { platform: "Linux", extension: ".appimage" },
 } as const;
 
 type PackageType = keyof typeof ALLOWED;

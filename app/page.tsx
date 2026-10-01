@@ -36,6 +36,13 @@ type RatingRow = {
   rating: number;
 };
 
+type VersionActivityRow = {
+  package_name: string | null;
+  published_at: string | null;
+  created_at: string | null;
+  status: string | null;
+};
+
 type RatingSummary = {
   average: number;
   count: number;
@@ -117,6 +124,7 @@ function DiscoverContent() {
   const [sort, setSort] = useState("trending");
   const [metrics, setMetrics] = useState<Record<string, DiscoverMetric>>({});
   const [ratings, setRatings] = useState<Record<string, RatingSummary>>({});
+  const [latestReleaseByPackage, setLatestReleaseByPackage] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [recentApps, setRecentApps] = useState<RecentApp[]>([]);
@@ -128,6 +136,11 @@ function DiscoverContent() {
     const query = searchParams.get("search") ?? "";
     if (query) {
       setSearch(query);
+    }
+
+    const requestedSort = searchParams.get("sort");
+    if (requestedSort && ["trending", "downloads", "new", "updated", "name"].includes(requestedSort)) {
+      setSort(requestedSort);
     }
   }, [searchParams]);
 
@@ -159,7 +172,7 @@ function DiscoverContent() {
       setLoading(true);
       setError(null);
 
-      const [appResult, metricResult, listingResult, ratingResult] = await Promise.all([
+      const [appResult, metricResult, listingResult, ratingResult, versionResult] = await Promise.all([
         supabase
           .from("store_apps")
           .select("id,name,short_description,description,developer_name,icon_url,version,package_name,repo_url,license_type,subcategory,categories,created_at,updated_at")
@@ -172,6 +185,10 @@ function DiscoverContent() {
         supabase
           .from("store_app_ratings")
           .select("app_id,rating"),
+        supabase
+          .from("luma_app_versions")
+          .select("package_name,published_at,created_at,status")
+          .eq("status", "Approved"),
       ]);
 
       if (cancelled) return;
@@ -216,6 +233,19 @@ function DiscoverContent() {
           ]),
         ),
       );
+
+      const latestByPackage: Record<string, string> = {};
+      for (const row of (versionResult.data ?? []) as VersionActivityRow[]) {
+        const packageName = row.package_name?.trim();
+        const timestamp = row.published_at || row.created_at;
+        if (!packageName || !timestamp) continue;
+
+        const current = latestByPackage[packageName];
+        if (!current || new Date(timestamp).getTime() > new Date(current).getTime()) {
+          latestByPackage[packageName] = timestamp;
+        }
+      }
+      setLatestReleaseByPackage(latestByPackage);
       setLoading(false);
     }
 
@@ -307,21 +337,19 @@ function DiscoverContent() {
     [platformApps],
   );
 
+  const latestActivityTime = (app: StoreApp) => Math.max(
+    new Date(app.created_at || 0).getTime(),
+    new Date(app.updated_at || 0).getTime(),
+    app.package_name && latestReleaseByPackage[app.package_name]
+      ? new Date(latestReleaseByPackage[app.package_name]).getTime()
+      : 0,
+  );
+
   const recentlyUpdated = useMemo(
     () => [...platformApps]
-      .sort((a, b) => {
-        const aLatest = Math.max(
-          new Date(a.created_at || 0).getTime(),
-          new Date(a.updated_at || 0).getTime(),
-        );
-        const bLatest = Math.max(
-          new Date(b.created_at || 0).getTime(),
-          new Date(b.updated_at || 0).getTime(),
-        );
-        return bLatest - aLatest;
-      })
-      .slice(0, 5),
-    [platformApps],
+      .sort((a, b) => latestActivityTime(b) - latestActivityTime(a))
+      .slice(0, 9),
+    [platformApps, latestReleaseByPackage],
   );
 
   const hasActiveSearch = search.trim().length > 0;
@@ -493,14 +521,13 @@ function DiscoverContent() {
         }
 
         if (sort === "updated") {
-          return new Date(b.app.updated_at || 0).getTime()
-            - new Date(a.app.updated_at || 0).getTime();
+          return latestActivityTime(b.app) - latestActivityTime(a.app);
         }
 
         return (a.app.name || "").localeCompare(b.app.name || "");
       })
       .map(({ app }) => app);
-  }, [apps, category, developer, license, search, platform, sort, metrics, platformListings]);
+  }, [apps, category, developer, license, search, platform, sort, metrics, platformListings, latestReleaseByPackage]);
 
   const featuredApps = filteredApps.slice(0, 3);
   const visibleRecentApps = recentApps.filter((item) =>
@@ -567,8 +594,8 @@ function DiscoverContent() {
 
           {!hasActiveSearch && (
             <div className="space-y-10">
-              <Collection title="Recommended for you" apps={trending} ratings={ratings} resolveIcon={resolveAppIcon} resolveListing={resolveListing} />
-              <Collection title="New & updated" apps={recentlyUpdated} ratings={ratings} resolveIcon={resolveAppIcon} resolveListing={resolveListing} />
+              <Collection title="Recommended for you" apps={trending} ratings={ratings} resolveIcon={resolveAppIcon} resolveListing={resolveListing} moreHref="/?sort=trending" />
+              <Collection title="New & updated" apps={recentlyUpdated} ratings={ratings} resolveIcon={resolveAppIcon} resolveListing={resolveListing} moreHref="/?sort=updated" />
             </div>
           )}
 
@@ -756,12 +783,14 @@ function Collection({
   ratings,
   resolveIcon,
   resolveListing,
+  moreHref,
 }: {
   title: string;
   apps: StoreApp[];
   ratings: Record<string, RatingSummary>;
   resolveIcon: (app: StoreApp) => string | null;
   resolveListing: (app: StoreApp) => PlatformListing | null;
+  moreHref?: string;
 }) {
   if (!apps.length) return null;
 
@@ -784,7 +813,14 @@ function Collection({
     <section>
       <div className="mb-4 flex items-center justify-between gap-4">
         <h2 className="text-xl font-semibold text-white sm:text-2xl">{title}</h2>
-        <span className="text-sm font-medium text-indigo-300">More</span>
+        {moreHref && (
+          <Link
+            href={moreHref}
+            className="rounded-lg px-2 py-1 text-sm font-medium text-indigo-300 transition hover:bg-indigo-500/10 hover:text-indigo-200"
+          >
+            More
+          </Link>
+        )}
       </div>
 
       <div className="space-y-2 md:hidden">

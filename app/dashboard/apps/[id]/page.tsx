@@ -253,7 +253,7 @@ export default function SubmissionDetailsPage() {
           ]);
           const stats = ((statsRows ?? []) as DownloadStats[]).find((row) => row.app_id === published.id) ?? null;
           setDownloadStats(stats);
-          if (!platformResult.error) setPublishedPlatforms((platformResult.data ?? []) as PublishedPlatform[]);
+          if (!platformResult.error) setPublishedPlatforms(((platformResult.data ?? []) as PublishedPlatform[]).filter((item) => item.platform === "Android"));
         }
       }
     }
@@ -287,7 +287,7 @@ export default function SubmissionDetailsPage() {
 
   const antiFeatures = stringArray((publishedApp?.ant_features ?? submission.ant_features));
   const repoUrl = publishedApp?.repo_url || submission.repo_url || submission.link;
-  const submissionPlatforms = normalizeSubmissionPlatforms(submission.platforms);
+  const submissionPlatforms = normalizeSubmissionPlatforms(submission.platforms).filter((item) => item.platform === "Android");
   const platformNames = Array.from(new Set(submissionPlatforms.map((item) => item.platform)));
   const publicAppKey = publishedApp?.package_name || publishedApp?.id || "";
   const publicAppUrl = siteOrigin && publicAppKey
@@ -356,7 +356,7 @@ export default function SubmissionDetailsPage() {
               <div><p className="text-xs uppercase tracking-wide text-slate-500">License</p><p className="mt-1 text-slate-200">{publishedApp.license_type || submission.license_type || "—"}</p></div>
               <div className="min-w-0"><p className="text-xs uppercase tracking-wide text-slate-500">Repository</p>{repoUrl ? <a href={repoUrl} target="_blank" rel="noopener noreferrer" className="mt-1 block min-w-0 [overflow-wrap:anywhere] text-sm text-indigo-300 hover:text-indigo-200">{repoUrl}</a> : <p className="mt-1 text-slate-400">—</p>}</div>
               <div><p className="text-xs uppercase tracking-wide text-slate-500">Last published update</p><p className="mt-1 text-slate-200">{formatDate(publishedApp.updated_at)}</p></div>
-              {downloadStats && <div className="min-w-0 md:col-span-2"><p className="text-xs uppercase tracking-wide text-slate-500">Luma Store downloads · all versions</p><div className="mt-3"><div className="rounded-xl border border-slate-800 bg-slate-950/45 p-3"><p className="text-xs text-slate-500">All-time</p><p className="mt-1 text-xl font-bold text-white">{Number(downloadStats.total).toLocaleString()}</p></div></div><div className="mt-4 grid gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3"><select value={badgePlatform} onChange={(e)=>setBadgePlatform(e.target.value)} className="min-h-10 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-slate-200 sm:w-auto"><option value="all">All platforms</option><option value="Android">Android</option><option value="Windows">Windows</option><option value="Linux">Linux</option></select><div className="min-w-0 overflow-x-auto rounded-lg border border-slate-800 bg-slate-950/30 p-2 sm:border-0 sm:bg-transparent sm:p-0"><img src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-badge?app_id=${encodeURIComponent(publishedApp.id)}${badgePlatform==="all"?"":`&platform=${encodeURIComponent(badgePlatform)}`}`} alt={`${publishedApp.name} ${badgePlatform==="all"?"all-platform":badgePlatform} Luma Store downloads`} className="h-5 max-w-none"/></div><button type="button" onClick={()=>{const platformPart=badgePlatform==="all"?"":`&platform=${encodeURIComponent(badgePlatform)}`;navigator.clipboard.writeText(`[![Luma Store downloads](${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-badge?app_id=${publishedApp.id}${platformPart})](${window.location.origin}/discover/${publishedApp.id})`)}} className="min-h-10 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-slate-300 hover:text-white sm:w-auto">Copy badge Markdown</button></div></div>}
+              {downloadStats && <div className="min-w-0 md:col-span-2"><p className="text-xs uppercase tracking-wide text-slate-500">Luma Store downloads · all versions</p><div className="mt-3"><div className="rounded-xl border border-slate-800 bg-slate-950/45 p-3"><p className="text-xs text-slate-500">All-time</p><p className="mt-1 text-xl font-bold text-white">{Number(downloadStats.total).toLocaleString()}</p></div></div><div className="mt-4 grid gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3"><div className="min-h-10 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-slate-200">Android</div><div className="min-w-0 overflow-x-auto rounded-lg border border-slate-800 bg-slate-950/30 p-2 sm:border-0 sm:bg-transparent sm:p-0"><img src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-badge?app_id=${encodeURIComponent(publishedApp.id)}${badgePlatform==="all"?"":`&platform=${encodeURIComponent(badgePlatform)}`}`} alt={`${publishedApp.name} ${badgePlatform==="all"?"all-platform":badgePlatform} Luma Store downloads`} className="h-5 max-w-none"/></div><button type="button" onClick={()=>{const platformPart=badgePlatform==="all"?"":`&platform=${encodeURIComponent(badgePlatform)}`;navigator.clipboard.writeText(`[![Luma Store downloads](${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/download-badge?app_id=${publishedApp.id}${platformPart})](${window.location.origin}/discover/${publishedApp.id})`)}} className="min-h-10 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-slate-300 hover:text-white sm:w-auto">Copy badge Markdown</button></div></div>}
 
               <div className="min-w-0 md:col-span-2">
                 <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/[0.06] p-4 sm:p-5">
@@ -451,7 +451,7 @@ export default function SubmissionDetailsPage() {
         <section className={`${cardClass} overflow-hidden`}>
           <div className="border-b border-slate-800 px-4 py-4 sm:px-5">
             <h2 className="font-semibold text-white">Published platform artifacts</h2>
-            <p className="mt-1 text-sm text-slate-400">Files currently available from Luma Store for each platform.</p>
+            <p className="mt-1 text-sm text-slate-400">Android APK files currently available from Luma Store.</p>
           </div>
           <div className="grid gap-3 p-4 sm:gap-4 sm:p-5 md:grid-cols-2">
             {publishedPlatforms.map((item) => (
@@ -477,7 +477,7 @@ export default function SubmissionDetailsPage() {
         <section className={`${cardClass} overflow-hidden`}>
           <div className="border-b border-slate-800 px-4 py-4 sm:px-5">
             <h2 className="font-semibold text-white">Platform listings & artifacts</h2>
-            <p className="mt-1 text-sm text-slate-400">Android, Linux and Windows keep their own listing metadata and package files. Repository URLs are shown per platform only when separate repositories are enabled.</p>
+            <p className="mt-1 text-sm text-slate-400">Android listing metadata and APK artifacts.</p>
           </div>
           <div className="space-y-4 p-4 sm:space-y-5 sm:p-5">
             {platformNames.map((platform) => {

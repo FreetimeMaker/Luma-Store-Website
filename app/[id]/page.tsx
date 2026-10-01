@@ -390,7 +390,8 @@ export default function DiscoverAppPage() {
       const platformResult = await platformPromise;
       if (cancelled) return;
 
-      const loadedPlatforms = (platformResult.data ?? []) as StoreAppPlatform[];
+      const loadedPlatforms = ((platformResult.data ?? []) as StoreAppPlatform[])
+        .filter((item) => item.platform === "Android");
       setPlatforms(loadedPlatforms);
       const listingPlatforms = Array.from(
         new Set(
@@ -405,8 +406,8 @@ export default function DiscoverAppPage() {
         try {
           const storedPlatform = localStorage.getItem("luma-selected-platform");
           if (
-            (storedPlatform === "Android" || storedPlatform === "Linux")
-            && listingPlatforms.includes(storedPlatform)
+            storedPlatform === "Android"
+            && listingPlatforms.includes("Android")
           ) {
             return storedPlatform;
           }
@@ -505,9 +506,6 @@ export default function DiscoverAppPage() {
         return "Android";
       }
 
-      if (clientOs === "Linux" && !listingPlatforms.includes("Android") && listingPlatforms.includes("Linux")) {
-        return "Linux";
-      }
 
       if (listingPlatforms.includes("Android")) return "Android";
       return listingPlatforms[0] ?? null;
@@ -613,8 +611,8 @@ export default function DiscoverAppPage() {
                 onClick={() => {
                   setSelectedListingPlatform(platform);
                   setScreenshotIndex(null);
-                  if (platform === "Android" || platform === "Linux") {
-                    localStorage.setItem("luma-selected-platform", platform);
+                  if (platform === "Android") {
+                    localStorage.setItem("luma-selected-platform", "Android");
                   }
                 }}
                 className={`min-h-11 w-full rounded-xl border px-3 py-2 text-xs font-semibold transition sm:min-h-9 sm:w-auto ${selectedListingPlatform === platform ? "border-indigo-400/40 bg-indigo-500/15 text-indigo-100" : "border-transparent bg-transparent text-slate-400 hover:bg-white/[0.04] hover:text-white"}`}

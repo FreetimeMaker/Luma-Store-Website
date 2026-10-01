@@ -32,11 +32,9 @@ function fundingToLinks(funding: DeveloperFunding | null): FundingLink[] {
 
 function CopyValue({
   label,
-  assets,
   value,
 }: {
   label: string;
-  assets: string;
   value: string;
 }) {
   const [copied, setCopied] = useState(false);
@@ -55,7 +53,7 @@ function CopyValue({
     <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4">
       <div>
         <p className="text-sm font-semibold text-white">{label}</p>
-        <p className="mt-1 text-xs leading-5 text-slate-500">For: {assets}</p>
+        <p className="mt-1 text-xs leading-5 text-slate-500">Global address for this network</p>
       </div>
       <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <code className="min-w-0 break-all text-sm leading-6 text-slate-200">{value}</code>
@@ -186,9 +184,9 @@ export default function SupportPage() {
               <p className="ui-eyebrow mb-2">Crypto</p>
               <h2 className="text-xl font-semibold text-white">Direct crypto support</h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-                Each network uses one wallet address for all supported coins and tokens on that network. These payment
-                destinations come directly from the Freetime Maker developer profile. Check the network carefully before
-                sending; blockchain transfers normally cannot be reversed.
+                Each network has one global wallet address. Every coin or token using that network uses the same
+                configured destination, so Luma does not need a separate address for each asset. Check the network
+                carefully before sending; blockchain transfers normally cannot be reversed.
               </p>
 
               <div className="mt-5 grid gap-3 lg:grid-cols-2">
@@ -196,7 +194,6 @@ export default function SupportPage() {
                   <CopyValue
                     key={method.id}
                     label={method.label}
-                    assets={method.assets.map((asset) => asset.label).join(", ")}
                     value={method.address}
                   />
                 ))}
@@ -211,7 +208,7 @@ export default function SupportPage() {
         <p className="mt-3 text-sm leading-7 text-slate-300">
           Luma Store support reuses the complete Freetime Maker Developer Funding configuration. Updating the
           Donation URL, Liberapay, OpenCollective, or a network wallet address in the Developer Dashboard
-          automatically updates this page too. One network address is reused for all supported assets on that network.
+          automatically updates this page too. The address applies globally to every asset that uses that network.
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
           <Link href="/" className="ui-button-primary px-4 py-2.5 text-sm font-medium text-white">

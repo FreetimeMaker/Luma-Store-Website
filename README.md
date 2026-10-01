@@ -15,6 +15,6 @@ The dashboard includes Fastlane metadata import, current F-Droid categories, app
 
 The public support page at `/support` loads the complete **Freetime Maker** developer funding configuration from `luma_developer_funding`, including the Donation URL, Liberapay, OpenCollective, and crypto network wallet addresses.
 
-Crypto funding uses **one address per network**, not one address per token. For example, the configured Ethereum address is reused for Ethereum (ETH), USDT (ERC-20), USDC, LINK, POL, and SHIB. The same rule applies to Solana, Polygon, BNB Smart Chain, TRON, Avalanche, Arbitrum, Optimism, and the other supported networks. Existing legacy `coin::network` values remain readable and are collapsed into the network-based format the next time Developer Funding is saved.
+Crypto funding uses **one global address per network**, never one address per token. A configured Ethereum address therefore applies to every current or future asset using Ethereum; a Solana address applies to every asset using Solana; and so on. Luma does not need to know or maintain a token list for this mapping. Existing legacy `coin::network` values remain readable and are collapsed into the network-based format the next time Developer Funding is saved.
 
 Manage these methods from **Developer Dashboard → Developer funding**. Changes to that profile are picked up automatically by the public Luma Store support page, so separate support-payment environment variables are not required.

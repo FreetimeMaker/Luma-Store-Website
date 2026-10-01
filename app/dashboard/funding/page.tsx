@@ -200,20 +200,18 @@ export default function DeveloperFundingPage() {
           <p className="ui-eyebrow">Cryptocurrency</p>
           <h2 className="mt-1 text-xl font-semibold text-white">Wallet addresses</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Enter one wallet address per network. The same network address is reused for every supported coin or token on that network.
+            Enter one wallet address per network. That address is global for every current or future coin/token on the same network.
           </p>
 
           <div className="mt-5 space-y-4">
             {CRYPTO_NETWORKS.map((network) => {
               const key = networkAddressKey(network.id);
-              const assetLabels = network.assets.map((asset) => asset.label).join(", ");
-
               return (
                 <article key={network.id} className="ui-panel-muted p-3.5 sm:p-4">
                   <div>
                     <p className="text-sm font-semibold text-white">{network.label}</p>
                     <p className="mt-1 text-xs leading-5 text-slate-500">
-                      One address for: {assetLabels}
+                      Global address for every coin or token using this network.
                     </p>
                   </div>
 

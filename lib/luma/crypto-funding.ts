@@ -4,16 +4,10 @@ export type FundingCryptoSource = {
   crypto_addresses?: Record<string, string> | null;
 };
 
-export type CryptoAsset = {
-  id: string;
-  label: string;
-};
-
 export type CryptoNetwork = {
   id: string;
   label: string;
   legacyNetworkNames: string[];
-  assets: CryptoAsset[];
 };
 
 export type ConfiguredCryptoNetwork = CryptoNetwork & {
@@ -21,162 +15,27 @@ export type ConfiguredCryptoNetwork = CryptoNetwork & {
 };
 
 export const CRYPTO_NETWORKS: CryptoNetwork[] = [
-  {
-    id: "bitcoin",
-    label: "Bitcoin",
-    legacyNetworkNames: ["Bitcoin"],
-    assets: [{ id: "bitcoin", label: "Bitcoin (BTC)" }],
-  },
-  {
-    id: "ethereum",
-    label: "Ethereum",
-    legacyNetworkNames: ["Ethereum", "Ethereum (ERC-20)"],
-    assets: [
-      { id: "ethereum", label: "Ethereum (ETH)" },
-      { id: "tether", label: "Tether (USDT)" },
-      { id: "usdc", label: "USD Coin (USDC)" },
-      { id: "chainlink", label: "Chainlink (LINK)" },
-      { id: "polygon", label: "Polygon (POL)" },
-      { id: "shiba_inu", label: "Shiba Inu (SHIB)" },
-    ],
-  },
-  {
-    id: "tron",
-    label: "TRON",
-    legacyNetworkNames: ["TRON", "TRON (TRC-20)"],
-    assets: [
-      { id: "tron", label: "TRON (TRX)" },
-      { id: "tether", label: "Tether (USDT)" },
-    ],
-  },
-  {
-    id: "bnb-smart-chain",
-    label: "BNB Smart Chain",
-    legacyNetworkNames: ["BNB Smart Chain (BEP-20)"],
-    assets: [
-      { id: "bnb", label: "BNB" },
-      { id: "tether", label: "Tether (USDT)" },
-      { id: "chainlink", label: "Chainlink (LINK)" },
-    ],
-  },
-  {
-    id: "solana",
-    label: "Solana",
-    legacyNetworkNames: ["Solana"],
-    assets: [
-      { id: "solana", label: "Solana (SOL)" },
-      { id: "tether", label: "Tether (USDT)" },
-      { id: "usdc", label: "USD Coin (USDC)" },
-    ],
-  },
-  {
-    id: "polygon",
-    label: "Polygon",
-    legacyNetworkNames: ["Polygon"],
-    assets: [
-      { id: "polygon", label: "Polygon (POL)" },
-      { id: "tether", label: "Tether (USDT)" },
-      { id: "usdc", label: "USD Coin (USDC)" },
-      { id: "chainlink", label: "Chainlink (LINK)" },
-    ],
-  },
-  {
-    id: "avalanche-c",
-    label: "Avalanche C-Chain",
-    legacyNetworkNames: ["Avalanche C-Chain"],
-    assets: [
-      { id: "avalanche", label: "Avalanche (AVAX)" },
-      { id: "tether", label: "Tether (USDT)" },
-      { id: "usdc", label: "USD Coin (USDC)" },
-    ],
-  },
-  {
-    id: "arbitrum",
-    label: "Arbitrum",
-    legacyNetworkNames: ["Arbitrum"],
-    assets: [
-      { id: "tether", label: "Tether (USDT)" },
-      { id: "usdc", label: "USD Coin (USDC)" },
-      { id: "chainlink", label: "Chainlink (LINK)" },
-    ],
-  },
-  {
-    id: "optimism",
-    label: "Optimism",
-    legacyNetworkNames: ["Optimism"],
-    assets: [
-      { id: "tether", label: "Tether (USDT)" },
-      { id: "usdc", label: "USD Coin (USDC)" },
-      { id: "chainlink", label: "Chainlink (LINK)" },
-    ],
-  },
-  {
-    id: "base",
-    label: "Base",
-    legacyNetworkNames: ["Base"],
-    assets: [{ id: "usdc", label: "USD Coin (USDC)" }],
-  },
-  {
-    id: "cardano",
-    label: "Cardano",
-    legacyNetworkNames: ["Cardano"],
-    assets: [{ id: "cardano", label: "Cardano (ADA)" }],
-  },
-  {
-    id: "dogecoin",
-    label: "Dogecoin",
-    legacyNetworkNames: ["Dogecoin"],
-    assets: [{ id: "dogecoin", label: "Dogecoin (DOGE)" }],
-  },
-  {
-    id: "polkadot",
-    label: "Polkadot",
-    legacyNetworkNames: ["Polkadot"],
-    assets: [{ id: "polkadot", label: "Polkadot (DOT)" }],
-  },
-  {
-    id: "avalanche-p",
-    label: "Avalanche P-Chain",
-    legacyNetworkNames: ["Avalanche P-Chain"],
-    assets: [{ id: "avalanche", label: "Avalanche (AVAX)" }],
-  },
-  {
-    id: "litecoin",
-    label: "Litecoin",
-    legacyNetworkNames: ["Litecoin"],
-    assets: [{ id: "litecoin", label: "Litecoin (LTC)" }],
-  },
-  {
-    id: "bitcoin-cash",
-    label: "Bitcoin Cash",
-    legacyNetworkNames: ["Bitcoin Cash"],
-    assets: [{ id: "bitcoin_cash", label: "Bitcoin Cash (BCH)" }],
-  },
-  {
-    id: "stellar",
-    label: "Stellar",
-    legacyNetworkNames: ["Stellar"],
-    assets: [{ id: "stellar", label: "Stellar (XLM)" }],
-  },
-  {
-    id: "monero",
-    label: "Monero",
-    legacyNetworkNames: ["Monero"],
-    assets: [{ id: "monero", label: "Monero (XMR)" }],
-  },
-  {
-    id: "ton",
-    label: "TON",
-    legacyNetworkNames: ["TON"],
-    assets: [{ id: "toncoin", label: "Toncoin (TON)" }],
-  },
-  {
-    id: "shibarium",
-    label: "Shibarium",
-    legacyNetworkNames: ["Shibarium"],
-    assets: [{ id: "shiba_inu", label: "Shiba Inu (SHIB)" }],
-  },
-];
+  { id: "bitcoin", label: "Bitcoin", legacyNetworkNames: ["Bitcoin"] },
+  { id: "ethereum", label: "Ethereum", legacyNetworkNames: ["Ethereum", "Ethereum (ERC-20)"] },
+  { id: "tron", label: "TRON", legacyNetworkNames: ["TRON", "TRON (TRC-20)"] },
+  { id: "bnb-smart-chain", label: "BNB Smart Chain", legacyNetworkNames: ["BNB Smart Chain (BEP-20)"] },
+  { id: "solana", label: "Solana", legacyNetworkNames: ["Solana"] },
+  { id: "polygon", label: "Polygon", legacyNetworkNames: ["Polygon"] },
+  { id: "avalanche-c", label: "Avalanche C-Chain", legacyNetworkNames: ["Avalanche C-Chain"] },
+  { id: "arbitrum", label: "Arbitrum", legacyNetworkNames: ["Arbitrum"] },
+  { id: "optimism", label: "Optimism", legacyNetworkNames: ["Optimism"] },
+  { id: "base", label: "Base", legacyNetworkNames: ["Base"] },
+  { id: "cardano", label: "Cardano", legacyNetworkNames: ["Cardano"] },
+  { id: "dogecoin", label: "Dogecoin", legacyNetworkNames: ["Dogecoin"] },
+  { id: "polkadot", label: "Polkadot", legacyNetworkNames: ["Polkadot"] },
+  { id: "avalanche-p", label: "Avalanche P-Chain", legacyNetworkNames: ["Avalanche P-Chain"] },
+  { id: "litecoin", label: "Litecoin", legacyNetworkNames: ["Litecoin"] },
+  { id: "bitcoin-cash", label: "Bitcoin Cash", legacyNetworkNames: ["Bitcoin Cash"] },
+  { id: "stellar", label: "Stellar", legacyNetworkNames: ["Stellar"] },
+  { id: "monero", label: "Monero", legacyNetworkNames: ["Monero"] },
+  { id: "ton", label: "TON", legacyNetworkNames: ["TON"] },
+  { id: "shibarium", label: "Shibarium", legacyNetworkNames: ["Shibarium"] },
+]
 
 export function networkAddressKey(networkId: string) {
   return `network::${networkId}`;
@@ -202,15 +61,14 @@ export function fundingToNetworkAddressMap(source: FundingCryptoSource | null | 
     }
 
     if (!address) {
-      outer:
-      for (const asset of network.assets) {
-        for (const legacyNetworkName of network.legacyNetworkNames) {
-          const legacyAddress = cleanAddress(raw[`${asset.id}::${legacyNetworkName}`]);
-          if (legacyAddress) {
-            address = legacyAddress;
-            break outer;
-          }
-        }
+      const legacyEntry = Object.entries(raw).find(([key, value]) => {
+        if (!cleanAddress(value) || !key.includes("::")) return false;
+        const networkName = key.split("::").slice(1).join("::");
+        return network.legacyNetworkNames.includes(networkName);
+      });
+
+      if (legacyEntry) {
+        address = cleanAddress(legacyEntry[1]);
       }
     }
 

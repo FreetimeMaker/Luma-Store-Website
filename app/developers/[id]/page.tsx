@@ -300,7 +300,7 @@ export default function DiscoverDeveloperPage() {
                     {network.label}
                   </p>
                   <p className="mt-1 text-[11px] leading-5 text-slate-600">
-                    For: {network.assets.map((asset) => asset.label).join(", ")}
+                    Global address for every asset on this network
                   </p>
                   <p className="mt-2 break-all font-mono text-xs text-slate-300">
                     {network.address}

@@ -67,13 +67,7 @@ export default function SupportPage() {
     [],
   );
 
-  const beneficiary = process.env.NEXT_PUBLIC_LUMA_SUPPORT_BANK_BENEFICIARY?.trim() || "";
-  const bankName = process.env.NEXT_PUBLIC_LUMA_SUPPORT_BANK_NAME?.trim() || "";
-  const iban = process.env.NEXT_PUBLIC_LUMA_SUPPORT_IBAN?.trim() || "";
-  const bic = process.env.NEXT_PUBLIC_LUMA_SUPPORT_BIC?.trim() || "";
-  const reference = process.env.NEXT_PUBLIC_LUMA_SUPPORT_BANK_REFERENCE?.trim() || "";
-  const hasBank = Boolean(iban);
-  const hasSupportMethod = hasBank || cryptoMethods.length > 0;
+  const hasSupportMethod = cryptoMethods.length > 0;
 
   return (
     <main className="glass-page mx-auto max-w-5xl space-y-6 px-3 pb-16 sm:px-4 sm:pb-20">
@@ -84,8 +78,8 @@ export default function SupportPage() {
         </h1>
         <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">
           Luma Store is free and open source. If the project is useful to you, you can support its development
-          voluntarily with a direct bank transfer or crypto payment. Supporting Luma Store does not unlock paid
-          features and is not required to browse, download, or publish apps.
+          voluntarily with a direct crypto payment. Supporting Luma Store does not unlock paid features and is not
+          required to browse, download, or publish apps.
         </p>
       </section>
 
@@ -96,25 +90,6 @@ export default function SupportPage() {
             No public payment destination has been configured yet. The store remains fully usable while support
             methods are being prepared.
           </p>
-        </section>
-      )}
-
-      {hasBank && (
-        <section className="glass-panel p-5 sm:p-8">
-          <p className="ui-eyebrow mb-2">Fiat</p>
-          <h2 className="text-xl font-semibold text-white">Bank transfer</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-            Send a voluntary bank transfer directly to the account below. Your bank may charge its own transfer or
-            currency-conversion fee.
-          </p>
-
-          <div className="mt-5 space-y-3">
-            {beneficiary && <CopyValue label="Beneficiary" value={beneficiary} />}
-            {bankName && <CopyValue label="Bank" value={bankName} />}
-            <CopyValue label="IBAN" value={iban} />
-            {bic && <CopyValue label="BIC / SWIFT" value={bic} />}
-            {reference && <CopyValue label="Reference" value={reference} />}
-          </div>
         </section>
       )}
 

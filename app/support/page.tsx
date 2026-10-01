@@ -5,9 +5,18 @@ import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 type DeveloperFunding = {
+  donate_url: string | null;
+  liberapay: string | null;
+  opencollective: string | null;
   bitcoin: string | null;
   litecoin: string | null;
   crypto_addresses: Record<string, string> | null;
+};
+
+type FundingLink = {
+  key: "donate_url" | "liberapay" | "opencollective";
+  label: string;
+  value: string;
 };
 
 type CryptoMethod = {
@@ -38,6 +47,16 @@ const cryptoLabels: Record<string, string> = {
   toncoin: "Toncoin (TON)",
   shiba_inu: "Shiba Inu (SHIB)",
 };
+
+function fundingToLinks(funding: DeveloperFunding | null): FundingLink[] {
+  if (!funding) return [];
+
+  return [
+    { key: "donate_url", label: "Donation", value: funding.donate_url?.trim() || "" },
+    { key: "liberapay", label: "Liberapay", value: funding.liberapay?.trim() || "" },
+    { key: "opencollective", label: "OpenCollective", value: funding.opencollective?.trim() || "" },
+  ].filter((item): item is FundingLink => Boolean(item.value));
+}
 
 function fundingToCryptoMethods(funding: DeveloperFunding | null): CryptoMethod[] {
   if (!funding) return [];
@@ -144,7 +163,7 @@ export default function SupportPage() {
 
       const fundingResult = await supabase
         .from("luma_developer_funding")
-        .select("bitcoin,litecoin,crypto_addresses")
+        .select("donate_url,liberapay,opencollective,bitcoin,litecoin,crypto_addresses")
         .eq("developer_id", developerId)
         .maybeSingle();
 
@@ -161,8 +180,9 @@ export default function SupportPage() {
     };
   }, [supabase]);
 
+  const fundingLinks = useMemo(() => fundingToLinks(funding), [funding]);
   const cryptoMethods = useMemo(() => fundingToCryptoMethods(funding), [funding]);
-  const hasSupportMethod = cryptoMethods.length > 0;
+  const hasSupportMethod = fundingLinks.length > 0 || cryptoMethods.length > 0;
 
   return (
     <main className="glass-page mx-auto max-w-5xl space-y-6 px-3 pb-16 sm:px-4 sm:pb-20">
@@ -173,8 +193,8 @@ export default function SupportPage() {
         </h1>
         <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">
           Luma Store is free and open source. If the project is useful to you, you can support its development
-          voluntarily with a direct crypto payment. The available coins, tokens, networks, and wallet addresses are
-          loaded from the Freetime Maker developer funding profile.
+          voluntarily using any funding method configured on the Freetime Maker developer profile. Donation links,
+          Liberapay, OpenCollective, coins, tokens, networks, and wallet addresses are loaded from that one profile.
         </p>
       </section>
 
@@ -189,38 +209,72 @@ export default function SupportPage() {
         </section>
       ) : !hasSupportMethod ? (
         <section className="glass-panel p-5 sm:p-8">
-          <h2 className="text-xl font-semibold text-white">No crypto support methods configured</h2>
+          <h2 className="text-xl font-semibold text-white">No support methods configured</h2>
           <p className="mt-3 text-sm leading-7 text-slate-400">
-            Add wallet addresses to the Freetime Maker Developer Funding profile. They will automatically appear here.
+            Add funding links or wallet addresses to the Freetime Maker Developer Funding profile. They will
+            automatically appear here.
           </p>
         </section>
       ) : (
-        <section className="glass-panel p-5 sm:p-8">
-          <p className="ui-eyebrow mb-2">Crypto</p>
-          <h2 className="text-xl font-semibold text-white">Direct crypto support</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-            These payment destinations come directly from the Freetime Maker developer profile. Check both the asset
-            and network carefully before sending; blockchain transfers normally cannot be reversed.
-          </p>
+        <>
+          {fundingLinks.length > 0 && (
+            <section className="glass-panel p-5 sm:p-8">
+              <p className="ui-eyebrow mb-2">Funding</p>
+              <h2 className="text-xl font-semibold text-white">Support links</h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+                These links are loaded directly from the Freetime Maker Developer Funding profile.
+              </p>
 
-          <div className="mt-5 grid gap-3 lg:grid-cols-2">
-            {cryptoMethods.map((method) => (
-              <CopyValue
-                key={method.key}
-                label={method.label}
-                network={method.network}
-                value={method.value}
-              />
-            ))}
-          </div>
-        </section>
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {fundingLinks.map((method) => (
+                  <a
+                    key={method.key}
+                    href={method.value}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 transition hover:border-indigo-400/30 hover:bg-white/[0.05]"
+                  >
+                    <p className="text-sm font-semibold text-white">{method.label}</p>
+                    <p className="mt-2 break-all text-xs leading-5 text-slate-500">{method.value}</p>
+                    <span className="mt-4 inline-flex text-xs font-semibold text-indigo-300">
+                      Open ↗
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {cryptoMethods.length > 0 && (
+            <section className="glass-panel p-5 sm:p-8">
+              <p className="ui-eyebrow mb-2">Crypto</p>
+              <h2 className="text-xl font-semibold text-white">Direct crypto support</h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+                These payment destinations come directly from the Freetime Maker developer profile. Check both the asset
+                and network carefully before sending; blockchain transfers normally cannot be reversed.
+              </p>
+
+              <div className="mt-5 grid gap-3 lg:grid-cols-2">
+                {cryptoMethods.map((method) => (
+                  <CopyValue
+                    key={method.key}
+                    label={method.label}
+                    network={method.network}
+                    value={method.value}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+        </>
       )}
 
       <section className="glass-panel p-5 sm:p-8">
         <h2 className="text-xl font-semibold text-white">One funding profile</h2>
         <p className="mt-3 text-sm leading-7 text-slate-300">
-          Luma Store support now reuses the Freetime Maker Developer Funding configuration. Updating a supported
-          coin, token, network, or wallet address in the Developer Dashboard automatically updates this page too.
+          Luma Store support reuses the complete Freetime Maker Developer Funding configuration. Updating the
+          Donation URL, Liberapay, OpenCollective, a supported coin or token, network, or wallet address in the
+          Developer Dashboard automatically updates this page too.
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
           <Link href="/" className="ui-button-primary px-4 py-2.5 text-sm font-medium text-white">

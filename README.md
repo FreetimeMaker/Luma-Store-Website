@@ -13,6 +13,6 @@ The dashboard includes Fastlane metadata import, current F-Droid categories, app
 
 ## Luma Store support payments
 
-The public support page at `/support` loads its crypto payment destinations from the **Freetime Maker** developer profile in `luma_developer_funding`.
+The public support page at `/support` loads the complete **Freetime Maker** developer funding configuration from `luma_developer_funding`, including the Donation URL, Liberapay, OpenCollective, coins, tokens, networks, and wallet addresses.
 
-Manage supported coins, tokens, networks, and wallet addresses from **Developer Dashboard → Developer funding**. Changes to that profile are picked up automatically by the public Luma Store support page, so separate support-payment environment variables are not required.
+Manage these methods from **Developer Dashboard → Developer funding**. Changes to that profile are picked up automatically by the public Luma Store support page, so separate support-payment environment variables are not required.

@@ -129,11 +129,11 @@ export default function AuthNav() {
           Apps
         </Link>
         <Link
-          href="/sources"
-          aria-current={pathname === "/sources" ? "page" : undefined}
-          className={`nav-tab ${pathname === "/sources" ? "active" : "text-slate-400 hover:text-white"}`}
+          href="/support"
+          aria-current={pathname === "/support" ? "page" : undefined}
+          className={`nav-tab ${pathname === "/support" ? "active" : "text-slate-400 hover:text-white"}`}
         >
-          Sources
+          Support
         </Link>
         <Link
           href="/login?next=/dashboard"

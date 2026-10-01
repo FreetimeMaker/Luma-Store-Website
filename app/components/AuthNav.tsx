@@ -133,7 +133,7 @@ export default function AuthNav() {
           aria-current={pathname === "/support" ? "page" : undefined}
           className={`nav-tab ${pathname === "/support" ? "active" : "text-slate-400 hover:text-white"}`}
         >
-          Support
+          Donate
         </Link>
         <Link
           href="/login?next=/dashboard"

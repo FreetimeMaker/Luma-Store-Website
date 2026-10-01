@@ -309,10 +309,17 @@ function DiscoverContent() {
 
   const recentlyUpdated = useMemo(
     () => [...platformApps]
-      .sort((a, b) =>
-        new Date(b.updated_at || 0).getTime()
-        - new Date(a.updated_at || 0).getTime(),
-      )
+      .sort((a, b) => {
+        const aLatest = Math.max(
+          new Date(a.created_at || 0).getTime(),
+          new Date(a.updated_at || 0).getTime(),
+        );
+        const bLatest = Math.max(
+          new Date(b.created_at || 0).getTime(),
+          new Date(b.updated_at || 0).getTime(),
+        );
+        return bLatest - aLatest;
+      })
       .slice(0, 5),
     [platformApps],
   );

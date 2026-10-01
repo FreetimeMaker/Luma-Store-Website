@@ -132,13 +132,13 @@ function DiscoverContent() {
 
   useEffect(() => {
     const detectedPlatform = detectClientPlatform();
-    if (detectedPlatform === "Android" || detectedPlatform === "Linux") {
-      setPlatform(detectedPlatform);
+    if (detectedPlatform === "Android") {
+      setPlatform("Android");
     }
   }, []);
 
   useEffect(() => {
-    if (platform === "Android" || platform === "Linux") {
+    if (platform === "Android") {
       localStorage.setItem("luma-selected-platform", platform);
     }
   }, [platform]);
@@ -468,23 +468,12 @@ function DiscoverContent() {
   return (
     <div className="store-page mx-auto max-w-[1440px] space-y-8 pb-14 pt-1 sm:space-y-10 sm:pb-20">
       <section className="space-y-3">
-        <div className="grid grid-cols-2 gap-2 rounded-2xl border border-white/10 bg-white/[0.025] p-1 sm:flex sm:w-fit sm:items-center sm:gap-2 sm:border-0 sm:bg-transparent sm:p-0">
-          <button
-            type="button"
-            onClick={() => setPlatform("Linux")}
-            aria-pressed={platform === "Linux"}
-            className={`store-chip min-h-11 w-full rounded-xl px-3 text-center sm:w-auto sm:rounded-none ${platform === "Linux" ? "active store-chip-active bg-indigo-500/10 sm:bg-transparent" : ""}`}
-          >
-            <span className="flex items-center justify-center gap-2">
-              <img src="/desktop.png" alt="" className="h-4 w-4 object-contain" />
-              <span>Linux-PC</span>
-            </span>
-          </button>
+        <div className="flex w-fit items-center">
           <button
             type="button"
             onClick={() => setPlatform("Android")}
             aria-pressed={platform === "Android"}
-            className={`store-chip min-h-11 w-full rounded-xl px-3 text-center sm:w-auto sm:rounded-none ${platform === "Android" ? "active store-chip-active bg-indigo-500/10 sm:bg-transparent" : ""}`}
+            className="store-chip active store-chip-active min-h-11 px-3 text-center"
           >
             <span className="flex items-center justify-center gap-2">
               <img src="/android.png" alt="" className="h-4 w-4 object-contain" />

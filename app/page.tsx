@@ -22,6 +22,8 @@ type StoreApp = {
   categories: string[];
   created_at: string | null;
   updated_at: string | null;
+  latest_detected_version: string | null;
+  latest_detected_at: string | null;
   [key: string]: unknown;
 };
 type DiscoverMetric = {
@@ -34,13 +36,6 @@ type DiscoverMetric = {
 type RatingRow = {
   app_id: string;
   rating: number;
-};
-
-type VersionActivityRow = {
-  package_name: string | null;
-  published_at: string | null;
-  created_at: string | null;
-  status: string | null;
 };
 
 type RatingSummary = {
@@ -124,7 +119,6 @@ function DiscoverContent() {
   const [sort, setSort] = useState("trending");
   const [metrics, setMetrics] = useState<Record<string, DiscoverMetric>>({});
   const [ratings, setRatings] = useState<Record<string, RatingSummary>>({});
-  const [latestReleaseByPackage, setLatestReleaseByPackage] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [recentApps, setRecentApps] = useState<RecentApp[]>([]);
@@ -172,10 +166,10 @@ function DiscoverContent() {
       setLoading(true);
       setError(null);
 
-      const [appResult, metricResult, listingResult, ratingResult, versionResult] = await Promise.all([
+      const [appResult, metricResult, listingResult, ratingResult] = await Promise.all([
         supabase
           .from("store_apps")
-          .select("id,name,short_description,description,developer_name,icon_url,version,package_name,repo_url,license_type,subcategory,categories,created_at,updated_at")
+          .select("id,name,short_description,description,developer_name,icon_url,version,package_name,repo_url,license_type,subcategory,categories,created_at,updated_at,latest_detected_version,latest_detected_at")
           .is("archived_at", null)
           .order("updated_at", { ascending: false }),
         supabase.rpc("luma_discover_metrics"),
@@ -185,10 +179,6 @@ function DiscoverContent() {
         supabase
           .from("store_app_ratings")
           .select("app_id,rating"),
-        supabase
-          .from("luma_app_versions")
-          .select("package_name,published_at,created_at,status")
-          .eq("status", "Approved"),
       ]);
 
       if (cancelled) return;
@@ -234,18 +224,6 @@ function DiscoverContent() {
         ),
       );
 
-      const latestByPackage: Record<string, string> = {};
-      for (const row of (versionResult.data ?? []) as VersionActivityRow[]) {
-        const packageName = row.package_name?.trim();
-        const timestamp = row.published_at || row.created_at;
-        if (!packageName || !timestamp) continue;
-
-        const current = latestByPackage[packageName];
-        if (!current || new Date(timestamp).getTime() > new Date(current).getTime()) {
-          latestByPackage[packageName] = timestamp;
-        }
-      }
-      setLatestReleaseByPackage(latestByPackage);
       setLoading(false);
     }
 
@@ -337,19 +315,23 @@ function DiscoverContent() {
     [platformApps],
   );
 
-  const latestActivityTime = (app: StoreApp) => Math.max(
-    new Date(app.created_at || 0).getTime(),
-    new Date(app.updated_at || 0).getTime(),
-    app.package_name && latestReleaseByPackage[app.package_name]
-      ? new Date(latestReleaseByPackage[app.package_name]).getTime()
-      : 0,
-  );
+  const latestActivityTime = (app: StoreApp) => {
+    const createdAt = new Date(app.created_at || 0).getTime();
+    const publishedUpdateAt =
+      app.version
+      && app.latest_detected_version === app.version
+      && app.latest_detected_at
+        ? new Date(app.latest_detected_at).getTime()
+        : 0;
+
+    return Math.max(createdAt, publishedUpdateAt);
+  };
 
   const recentlyUpdated = useMemo(
     () => [...platformApps]
       .sort((a, b) => latestActivityTime(b) - latestActivityTime(a))
       .slice(0, 9),
-    [platformApps, latestReleaseByPackage],
+    [platformApps],
   );
 
   const hasActiveSearch = search.trim().length > 0;
@@ -527,7 +509,7 @@ function DiscoverContent() {
         return (a.app.name || "").localeCompare(b.app.name || "");
       })
       .map(({ app }) => app);
-  }, [apps, category, developer, license, search, platform, sort, metrics, platformListings, latestReleaseByPackage]);
+  }, [apps, category, developer, license, search, platform, sort, metrics, platformListings]);
 
   const featuredApps = filteredApps.slice(0, 3);
   const visibleRecentApps = recentApps.filter((item) =>
@@ -594,12 +576,12 @@ function DiscoverContent() {
 
           {!hasActiveSearch && (
             <div className="space-y-10">
-              <Collection title="Recommended for you" apps={trending} ratings={ratings} resolveIcon={resolveAppIcon} resolveListing={resolveListing} moreHref="/?sort=trending" />
-              <Collection title="New & updated" apps={recentlyUpdated} ratings={ratings} resolveIcon={resolveAppIcon} resolveListing={resolveListing} moreHref="/?sort=updated" />
+              <Collection title="Recommended for you" apps={trending} ratings={ratings} resolveIcon={resolveAppIcon} resolveListing={resolveListing} moreHref="/?sort=trending#all-apps" />
+              <Collection title="New & updated" apps={recentlyUpdated} ratings={ratings} resolveIcon={resolveAppIcon} resolveListing={resolveListing} moreHref="/?sort=updated#all-apps" />
             </div>
           )}
 
-          <section>
+          <section id="all-apps" className="scroll-mt-24">
             <div className="grid gap-x-10 gap-y-2 md:grid-cols-2">
               {filteredApps.map((app, index) => (
                 <PlayStoreCard

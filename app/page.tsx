@@ -467,30 +467,14 @@ function DiscoverContent() {
 
   return (
     <div className="store-page mx-auto max-w-[1440px] space-y-8 pb-14 pt-1 sm:space-y-10 sm:pb-20">
-      <section className="space-y-3">
-        <div className="flex w-fit items-center">
-          <button
-            type="button"
-            onClick={() => setPlatform("Android")}
-            aria-pressed={platform === "Android"}
-            className="store-chip active store-chip-active min-h-11 px-3 text-center"
-          >
-            <span className="flex items-center justify-center gap-2">
-              <img src="/android.png" alt="" className="h-4 w-4 object-contain" />
-              <span>Android</span>
-            </span>
-          </button>
-        </div>
-
-        {(developer !== "all" || license !== "all" || category !== "all") && (
-          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-            <span>Active filters:</span>
-            {category !== "all" && <button type="button" onClick={() => setCategory("all")} className="store-chip">{category} ×</button>}
-            {developer !== "all" && <button type="button" onClick={() => setDeveloper("all")} className="store-chip">{developer} ×</button>}
-            {license !== "all" && <button type="button" onClick={() => setLicense("all")} className="store-chip">{license} ×</button>}
-          </div>
-        )}
-      </section>
+      {(developer !== "all" || license !== "all" || category !== "all") && (
+        <section className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+          <span>Active filters:</span>
+          {category !== "all" && <button type="button" onClick={() => setCategory("all")} className="store-chip">{category} ×</button>}
+          {developer !== "all" && <button type="button" onClick={() => setDeveloper("all")} className="store-chip">{developer} ×</button>}
+          {license !== "all" && <button type="button" onClick={() => setLicense("all")} className="store-chip">{license} ×</button>}
+        </section>
+      )}
 
       {loading ? (
         <div className="space-y-8">

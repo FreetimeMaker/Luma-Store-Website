@@ -13,10 +13,6 @@ The dashboard includes Fastlane metadata import, current F-Droid categories, app
 
 ## Luma Store support payments
 
-The public support page at `/support` is optional and only shows methods that are configured.
+The public support page at `/support` loads its crypto payment destinations from the **Freetime Maker** developer profile in `luma_developer_funding`.
 
-For direct crypto support, set `NEXT_PUBLIC_LUMA_SUPPORT_CRYPTO_JSON` to a JSON object whose keys are the labels shown to users and whose values are the public receiving addresses, for example:
-
-`{"Bitcoin (BTC)":"bc1...","Monero (XMR)":"4...","Solana (SOL)":"..."}`
-
-These values are intentionally public because they are rendered on the support page. Do not put private keys, seed phrases, exchange API secrets, or other credentials in any `NEXT_PUBLIC_*` variable.
+Manage supported coins, tokens, networks, and wallet addresses from **Developer Dashboard → Developer funding**. Changes to that profile are picked up automatically by the public Luma Store support page, so separate support-payment environment variables are not required.

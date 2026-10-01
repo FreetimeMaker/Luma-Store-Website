@@ -1,35 +1,85 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+
+type DeveloperFunding = {
+  bitcoin: string | null;
+  litecoin: string | null;
+  crypto_addresses: Record<string, string> | null;
+};
 
 type CryptoMethod = {
+  key: string;
   label: string;
+  network: string;
   value: string;
 };
 
-function parseCryptoMethods(raw: string | undefined): CryptoMethod[] {
-  if (!raw?.trim()) return [];
+const cryptoLabels: Record<string, string> = {
+  bitcoin: "Bitcoin (BTC)",
+  ethereum: "Ethereum (ETH)",
+  tether: "Tether (USDT)",
+  usdc: "USD Coin (USDC)",
+  bnb: "BNB",
+  solana: "Solana (SOL)",
+  cardano: "Cardano (ADA)",
+  dogecoin: "Dogecoin (DOGE)",
+  tron: "TRON (TRX)",
+  polkadot: "Polkadot (DOT)",
+  avalanche: "Avalanche (AVAX)",
+  chainlink: "Chainlink (LINK)",
+  polygon: "Polygon (POL)",
+  litecoin: "Litecoin (LTC)",
+  bitcoin_cash: "Bitcoin Cash (BCH)",
+  stellar: "Stellar (XLM)",
+  monero: "Monero (XMR)",
+  toncoin: "Toncoin (TON)",
+  shiba_inu: "Shiba Inu (SHIB)",
+};
 
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return [];
+function fundingToCryptoMethods(funding: DeveloperFunding | null): CryptoMethod[] {
+  if (!funding) return [];
 
-    return Object.entries(parsed as Record<string, unknown>)
-      .flatMap(([label, value]) => {
-        if (typeof value !== "string" || !value.trim()) return [];
-        return [{ label: label.trim() || "Crypto", value: value.trim() }];
-      });
-  } catch {
-    return [];
+  const addresses: Record<string, string> = {
+    ...(funding.crypto_addresses || {}),
+  };
+
+  if (funding.bitcoin && !addresses["bitcoin::Bitcoin"]) {
+    addresses["bitcoin::Bitcoin"] = funding.bitcoin;
   }
+
+  if (funding.litecoin && !addresses["litecoin::Litecoin"]) {
+    addresses["litecoin::Litecoin"] = funding.litecoin;
+  }
+
+  return Object.entries(addresses)
+    .flatMap(([key, rawValue]) => {
+      const value = rawValue?.trim();
+      if (!value || key.startsWith("xrp::") || key === "bnb::BNB Beacon Chain") return [];
+
+      const [currency, ...networkParts] = key.split("::");
+      const network = networkParts.join("::").trim();
+      const label = cryptoLabels[currency] || currency;
+
+      return [{
+        key,
+        label,
+        network,
+        value,
+      }];
+    })
+    .sort((a, b) => a.label.localeCompare(b.label) || a.network.localeCompare(b.network));
 }
 
 function CopyValue({
   label,
+  network,
   value,
 }: {
   label: string;
+  network: string;
   value: string;
 }) {
   const [copied, setCopied] = useState(false);
@@ -46,8 +96,13 @@ function CopyValue({
 
   return (
     <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{label}</p>
-      <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="text-sm font-semibold text-white">{label}</p>
+        {network && (
+          <p className="mt-1 text-xs text-slate-500">{network}</p>
+        )}
+      </div>
+      <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <code className="min-w-0 break-all text-sm leading-6 text-slate-200">{value}</code>
         <button
           type="button"
@@ -62,11 +117,51 @@ function CopyValue({
 }
 
 export default function SupportPage() {
-  const cryptoMethods = useMemo(
-    () => parseCryptoMethods(process.env.NEXT_PUBLIC_LUMA_SUPPORT_CRYPTO_JSON),
-    [],
-  );
+  const supabase = useMemo(() => createClient(), []);
+  const [funding, setFunding] = useState<DeveloperFunding | null>(null);
+  const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadFreetimeMakerFunding() {
+      setLoading(true);
+
+      const profileResult = await supabase
+        .from("luma_developer_profiles")
+        .select("developer_id")
+        .ilike("display_name", "Freetime Maker")
+        .limit(1);
+
+      if (cancelled) return;
+
+      const developerId = profileResult.data?.[0]?.developer_id;
+      if (!developerId) {
+        setFunding(null);
+        setLoading(false);
+        return;
+      }
+
+      const fundingResult = await supabase
+        .from("luma_developer_funding")
+        .select("bitcoin,litecoin,crypto_addresses")
+        .eq("developer_id", developerId)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      setFunding((fundingResult.data as DeveloperFunding | null) ?? null);
+      setLoading(false);
+    }
+
+    void loadFreetimeMakerFunding();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase]);
+
+  const cryptoMethods = useMemo(() => fundingToCryptoMethods(funding), [funding]);
   const hasSupportMethod = cryptoMethods.length > 0;
 
   return (
@@ -78,43 +173,54 @@ export default function SupportPage() {
         </h1>
         <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-300 sm:text-base">
           Luma Store is free and open source. If the project is useful to you, you can support its development
-          voluntarily with a direct crypto payment. Supporting Luma Store does not unlock paid features and is not
-          required to browse, download, or publish apps.
+          voluntarily with a direct crypto payment. The available coins, tokens, networks, and wallet addresses are
+          loaded from the Freetime Maker developer funding profile.
         </p>
       </section>
 
-      {!hasSupportMethod && (
+      {loading ? (
         <section className="glass-panel p-5 sm:p-8">
-          <h2 className="text-xl font-semibold text-white">Support methods are being configured</h2>
+          <div className="h-5 w-40 animate-pulse rounded bg-slate-800/70" />
+          <div className="mt-5 grid gap-3 lg:grid-cols-2">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="h-28 animate-pulse rounded-2xl bg-slate-800/40" />
+            ))}
+          </div>
+        </section>
+      ) : !hasSupportMethod ? (
+        <section className="glass-panel p-5 sm:p-8">
+          <h2 className="text-xl font-semibold text-white">No crypto support methods configured</h2>
           <p className="mt-3 text-sm leading-7 text-slate-400">
-            No public payment destination has been configured yet. The store remains fully usable while support
-            methods are being prepared.
+            Add wallet addresses to the Freetime Maker Developer Funding profile. They will automatically appear here.
           </p>
         </section>
-      )}
-
-      {cryptoMethods.length > 0 && (
+      ) : (
         <section className="glass-panel p-5 sm:p-8">
           <p className="ui-eyebrow mb-2">Crypto</p>
           <h2 className="text-xl font-semibold text-white">Direct crypto support</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-            Crypto is sent directly to the published receiving address. Check the asset and network carefully before
-            sending; blockchain transfers normally cannot be reversed.
+            These payment destinations come directly from the Freetime Maker developer profile. Check both the asset
+            and network carefully before sending; blockchain transfers normally cannot be reversed.
           </p>
 
           <div className="mt-5 grid gap-3 lg:grid-cols-2">
             {cryptoMethods.map((method) => (
-              <CopyValue key={`${method.label}:${method.value}`} label={method.label} value={method.value} />
+              <CopyValue
+                key={method.key}
+                label={method.label}
+                network={method.network}
+                value={method.value}
+              />
             ))}
           </div>
         </section>
       )}
 
       <section className="glass-panel p-5 sm:p-8">
-        <h2 className="text-xl font-semibold text-white">Developers keep their own funding</h2>
+        <h2 className="text-xl font-semibold text-white">One funding profile</h2>
         <p className="mt-3 text-sm leading-7 text-slate-300">
-          Developer funding shown on individual app and developer pages remains separate from Luma Store support.
-          Those links and wallet addresses belong to the respective developer; this page supports Luma Store itself.
+          Luma Store support now reuses the Freetime Maker Developer Funding configuration. Updating a supported
+          coin, token, network, or wallet address in the Developer Dashboard automatically updates this page too.
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
           <Link href="/" className="ui-button-primary px-4 py-2.5 text-sm font-medium text-white">

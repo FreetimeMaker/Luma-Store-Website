@@ -346,7 +346,7 @@ export default function AppMetadataPage() {
         Linux: emptyListing(),
       };
 
-      (["Android", "Windows", "Linux"] as AppPlatform[]).forEach((platform) => {
+      (["Android"] as AppPlatform[]).forEach((platform) => {
         const artifact = artifacts.find((item) => item.platform === platform);
         nextListings[platform] = {
           repoUrl: artifact?.repoUrl || commonRepo,
@@ -663,7 +663,7 @@ export default function AppMetadataPage() {
 
             <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-4">
               <label className="flex cursor-pointer items-center gap-3 text-sm font-medium text-slate-200">
-                <input type="checkbox" checked={form.separatePlatformRepos} onChange={(e) => setField("separatePlatformRepos", e.target.checked)} className="h-4 w-4 accent-indigo-500" />
+                <input type="checkbox" checked={form.separatePlatformRepos} onChange={(e) => setField("separatePlatformRepos", false)} className="h-4 w-4 accent-indigo-500" />
                 Different repository per platform
               </label>
               <p className="mt-2 text-xs leading-5 text-slate-500">Listings stay separate regardless of this setting. This switch controls only whether the source repositories are different.</p>

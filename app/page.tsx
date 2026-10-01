@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { fetchFastlaneIconUrl } from "@/lib/luma/fastlane";
+import { fetchFastlaneFeatureGraphicUrl, fetchFastlaneIconUrl } from "@/lib/luma/fastlane";
 import { detectClientPlatform } from "@/lib/client-platform";
 
 type StoreApp = {
@@ -121,6 +121,7 @@ function DiscoverContent() {
   const [error, setError] = useState<string | null>(null);
   const [recentApps, setRecentApps] = useState<RecentApp[]>([]);
   const [fastlaneIconMap, setFastlaneIconMap] = useState<Record<string, string>>({});
+  const [fastlaneFeatureGraphicMap, setFastlaneFeatureGraphicMap] = useState<Record<string, string>>({});
   const [platformListings, setPlatformListings] = useState<Record<string, PlatformListing>>({});
 
   useEffect(() => {
@@ -331,7 +332,41 @@ function DiscoverContent() {
       ?? platformListings[platformListingKey(app.id, "Linux")]
       ?? null;
   };
-  const resolveFeatureGraphic = (app: StoreApp) => resolveListing(app)?.featureGraphic ?? null;
+  const resolveFeatureGraphic = (app: StoreApp) =>
+    resolveListing(app)?.featureGraphic
+    ?? fastlaneFeatureGraphicMap[app.id]
+    ?? null;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadFastlaneFeatureGraphics() {
+      const missing = apps.filter((app) =>
+        app.repo_url
+        && !resolveListing(app)?.featureGraphic
+      );
+
+      if (!missing.length) {
+        if (!cancelled) setFastlaneFeatureGraphicMap({});
+        return;
+      }
+
+      const nextMap: Record<string, string> = {};
+      for (const app of missing) {
+        const featureGraphicUrl = await fetchFastlaneFeatureGraphicUrl(app.repo_url);
+        if (!cancelled && featureGraphicUrl) {
+          nextMap[app.id] = featureGraphicUrl;
+        }
+      }
+
+      if (!cancelled) setFastlaneFeatureGraphicMap(nextMap);
+    }
+
+    void loadFastlaneFeatureGraphics();
+    return () => {
+      cancelled = true;
+    };
+  }, [apps, platformListings, platform]);
 
   useEffect(() => {
     let cancelled = false;

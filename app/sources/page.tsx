@@ -12,7 +12,7 @@ const API = "https://api.free-time.me/lumastore";
 
 export default function SourcesPage() {
   const [url, setUrl] = useState("");
-  const [platform, setPlatform] = useState("Linux");
+  const [platform] = useState("Android");
   const [sources, setSources] = useState<SavedSource[]>([]);
   const [busy, setBusy] = useState(false);
   const supabase = useMemo(() => createClient(), []);
@@ -69,12 +69,10 @@ export default function SourcesPage() {
     <section className="glass-panel p-5 sm:p-7">
       <p className="ui-eyebrow mb-2">Tracked sources</p>
       <h1 className="text-3xl font-semibold text-white">Add an app source</h1>
-      <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">Track releases directly from GitHub, GitLab, or Codeberg, or add a direct HTTPS download URL. No Luma Store developer submission is required. This is especially useful for Linux apps distributed outside a central repository.</p>
+      <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">Track Android releases directly from GitHub, GitLab, or Codeberg, or add a direct HTTPS APK download URL.</p>
       <div className="mt-6 grid gap-3 sm:grid-cols-[1fr_10rem_auto]">
         <input className="ui-input min-w-0" value={url} onChange={e => setUrl(e.target.value)} placeholder="https://github.com/owner/repository" />
-        <select className="ui-input" value={platform} onChange={e => setPlatform(e.target.value)}>
-          <option>Linux</option><option>Android</option><option>Windows</option>
-        </select>
+        <div className="ui-input flex items-center text-sm text-slate-300">Android</div>
         <button className="ui-button-primary" disabled={busy} onClick={addSource}>{busy ? "Checking…" : "Add source"}</button>
       </div>
       <p className="mt-3 text-xs text-slate-500">Supported VCS providers: GitHub, GitLab and Codeberg. When you are signed in with the matching provider, release checks use your provider account instead of the anonymous API quota. Direct URLs are treated as a single downloadable artifact.</p>

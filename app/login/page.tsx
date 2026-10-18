@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useEffect, useMemo } from "react";
+import React, { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { UserResponse } from "@supabase/supabase-js";
@@ -36,6 +36,7 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   safeNext(searchParams.get("next"));
+  const [signInError, setSignInError] = useState<string | null>(searchParams.get("error"));
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }: UserResponse) => {
@@ -46,6 +47,7 @@ function LoginContent() {
   }, [router, supabase]);
 
   async function redirectTo(provider: "github" | "gitlab" | "codeberg") {
+    setSignInError(null);
     const destination = "/dashboard";
     const callbackUrl = `${authOrigin()}/auth/callback?next=${encodeURIComponent(destination)}`;
 
@@ -54,7 +56,14 @@ function LoginContent() {
       options: { redirectTo: callbackUrl, scopes: provider === "github" ? "read:user public_repo" : provider === "gitlab" ? "read_user read_api" : "openid profile email read:user read:repository write:repository" },
     });
 
-    if (error) console.error("Login error:", error.message);
+    if (error) {
+      console.error("Login error:", error.message);
+      setSignInError(
+        provider === "codeberg"
+          ? `Codeberg sign-in could not be started: ${error.message}`
+          : error.message,
+      );
+    }
   }
 
   return (
@@ -71,6 +80,12 @@ function LoginContent() {
           GitHub, GitLab, and Codeberg handle the OAuth sign-in and may process connection information under their own privacy
           policies. Read the <Link href="/privacy" className="font-medium text-indigo-300 hover:text-indigo-200">Luma Store privacy policy</Link> before signing in.
         </div>
+
+        {signInError ? (
+          <div role="alert" className="mt-4 rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm leading-5 text-red-200">
+            {signInError}
+          </div>
+        ) : null}
 
         <div className="mt-6 flex flex-col gap-3">
           <button onClick={() => redirectTo("github")} className="ui-button-primary min-h-12 w-full justify-start px-4 py-3 text-left"><ProviderIcon provider="github" /><span className="font-medium text-slate-200">Sign in with GitHub</span></button><button onClick={() => redirectTo("gitlab")} className="ui-button-secondary min-h-12 w-full justify-start px-4 py-3 text-left"><ProviderIcon provider="gitlab" /><span className="font-medium text-slate-200">Sign in with GitLab</span></button><button onClick={() => redirectTo("codeberg")} className="ui-button-secondary min-h-12 w-full justify-start px-4 py-3 text-left"><ProviderIcon provider="codeberg" /><span className="font-medium text-slate-200">Sign in with Codeberg</span></button>

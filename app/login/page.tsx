@@ -39,6 +39,11 @@ function LoginContent() {
   const [signInError, setSignInError] = useState<string | null>(searchParams.get("error"));
 
   useEffect(() => {
+    const urlError = searchParams.get("error");
+    if (urlError) console.error("[login] Sign-in failed:", urlError);
+  }, [searchParams]);
+
+  useEffect(() => {
     supabase.auth.getUser().then(({ data }: UserResponse) => {
       if (data.user) {
         router.replace("/dashboard");

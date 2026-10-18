@@ -21,6 +21,7 @@ function AuthCallbackContent() {
     const next = safeNext(searchParams.get("next"));
 
     if (error) {
+      console.error("[auth/callback] OAuth provider returned an error:", { error, errorDescription });
       router.replace(`/login?next=${encodeURIComponent(next)}&error=${encodeURIComponent(errorDescription || error)}`);
       return;
     }
@@ -28,6 +29,12 @@ function AuthCallbackContent() {
     if (code) {
       supabase.auth.exchangeCodeForSession(code).then(({ error }: { error: AuthError | null }) => {
         if (error) {
+          console.error("[auth/callback] exchangeCodeForSession failed:", {
+            name: error.name,
+            message: error.message,
+            status: error.status,
+            code: error.code,
+          });
           router.replace(`/login?next=${encodeURIComponent(next)}&error=${encodeURIComponent("Authentication failed.")}`);
         } else {
           router.replace(next);
@@ -36,7 +43,10 @@ function AuthCallbackContent() {
     } else {
       supabase.auth.getUser().then(({ data }: UserResponse) => {
         if (data.user) router.replace(next);
-        else router.replace(`/login?next=${encodeURIComponent(next)}&error=${encodeURIComponent("No authorization code received.")}`);
+        else {
+          console.error("[auth/callback] No authorization code in URL and no active session.");
+          router.replace(`/login?next=${encodeURIComponent(next)}&error=${encodeURIComponent("No authorization code received.")}`);
+        }
       });
     }
   }, [router, searchParams, supabase]);

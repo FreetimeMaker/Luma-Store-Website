@@ -26,6 +26,8 @@ export default function AuthNav() {
   const pathname = usePathname();
   const supabase = useMemo(() => createClient(), []);
   const isAppsActive = pathname === "/";
+  const isDevelopersActive =
+    pathname === "/login" || pathname.startsWith("/dashboard");
 
   function handleSearchSubmit() {
     const trimmed = searchValue.trim();
@@ -152,6 +154,13 @@ export default function AuthNav() {
         >
           Donate
         </Link>
+        <Link
+          href="/login?next=/dashboard"
+          aria-current={isDevelopersActive ? "page" : undefined}
+          className={`nav-tab ${isDevelopersActive ? "active" : "text-slate-400 hover:text-white"}`}
+        >
+          Developers
+        </Link>
       </div>
 
       <div className="ml-auto flex items-center gap-1.5">
@@ -274,6 +283,129 @@ export default function AuthNav() {
                   </div>
 
                   <div className="space-y-2">
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
+                      <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
+                        How do I install an app?
+                      </summary>
+                      <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
+                        Open an app page and choose the Android download.
+                        Android apps are provided as APK files. Only files
+                        published by that app's developer are shown.
+                      </p>
+                    </details>
+
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
+                      <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
+                        How do I search for an app?
+                      </summary>
+                      <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
+                        Use the search icon in the top bar. You can search by
+                        app name, package name, developer, category, or
+                        description.
+                      </p>
+                    </details>
+
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
+                      <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
+                        Can Luma Store track apps directly from GitHub, GitLab,
+                        other forges, or a URL?
+                      </summary>
+                      <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
+                        Luma Store supports repository-backed Android apps.
+                        Developers can provide a source repository and release
+                        or download URLs when submitting an app. This makes it
+                        possible to list FOSS apps that are distributed directly
+                        by their developers. Automatic tracking of arbitrary
+                        third-party forge repositories is being expanded
+                        separately; a repository or direct download URL must
+                        currently be added through the Luma Store developer
+                        submission flow.
+                      </p>
+                    </details>
+
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
+                      <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
+                        What do the download and rating values mean?
+                      </summary>
+                      <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
+                        Ratings summarize user feedback for an app. Download
+                        values show how often releases have been downloaded
+                        through Luma Store and may be shortened to values such
+                        as 1K+ or 1M+.
+                      </p>
+                    </details>
+                  </div>
+                </section>
+
+                <section className="border-t border-white/10 pt-4">
+                  <div className="mb-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-300">
+                      Accounts & privacy
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      What requires a login and what does not.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
+                      <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
+                        Do I need an account to use Luma Store?
+                      </summary>
+                      <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
+                        No. Browsing apps, reading app details and downloading
+                        public releases do not require an account. A login is
+                        only required for Developer Dashboard features such as
+                        submitting and managing apps.
+                      </p>
+                    </details>
+
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
+                      <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
+                        Why does developer sign-in use GitHub or GitLab?
+                      </summary>
+                      <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
+                        Luma Store supports a direct email/password account
+                        through Supabase Auth, so a GitHub, GitLab, or Google
+                        account is not required. External providers remain
+                        optional for workflows where you prefer them. Browsing
+                        and downloading public apps still require no account.
+                      </p>
+                    </details>
+
+                    <Link
+                      href="/privacy"
+                      onClick={() => setShowHelp(false)}
+                      className="flex min-h-10 items-center justify-between rounded-xl border border-indigo-400/20 bg-indigo-500/10 px-3 py-2.5 text-xs font-semibold text-indigo-200 transition hover:bg-indigo-500/15 hover:text-white"
+                    >
+                      Read the full privacy policy
+                      <span aria-hidden="true">→</span>
+                    </Link>
+                  </div>
+                </section>
+
+                <section className="border-t border-white/10 pt-4">
+                  <div className="mb-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-indigo-300">
+                      For developers
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Submissions, updates and developer settings.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
+                      <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
+                        How do I submit my app?
+                      </summary>
+                      <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
+                        Sign in with GitHub or GitLab, open the Developer
+                        Dashboard, and complete the submission form. Android
+                        metadata is read from Fastlane.
+                      </p>
+                    </details>
+
                     <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
                       <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
                         Can I upload release files instead of using links?

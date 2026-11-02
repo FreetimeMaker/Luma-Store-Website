@@ -313,9 +313,7 @@ export default function AuthNav() {
                       </summary>
                       <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
                         Android submissions use Fastlane metadata, including
-                        title, descriptions, changelog and screenshots. Windows
-                        and Linux submissions use manual store metadata when
-                        Fastlane is not available.
+                        title, descriptions, changelog and screenshots.
                       </p>
                     </details>
                   </div>

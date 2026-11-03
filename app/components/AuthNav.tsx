@@ -308,7 +308,7 @@ export default function AuthNav() {
                     <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
                       <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
                         Can Luma Store track apps directly from GitHub, GitLab,
-                        other forges, or a URL?
+                        Codeberg, other forges, or a URL?
                       </summary>
                       <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
                         Luma Store supports repository-backed Android apps.
@@ -362,11 +362,12 @@ export default function AuthNav() {
 
                     <details className="group rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2.5 sm:px-3.5 sm:py-3">
                       <summary className="cursor-pointer list-none break-words text-[13px] font-medium leading-5 text-white sm:text-sm">
-                        Why does developer sign-in use GitHub or GitLab?
+                        Why does developer sign-in use GitHub, GitLab, or
+                        Codeberg?
                       </summary>
                       <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
                         Luma Store supports a direct email/password account
-                        through Supabase Auth, so a GitHub, GitLab, or Google
+                        through Supabase Auth, so a GitHub, GitLab, or Codeberg
                         account is not required. External providers remain
                         optional for workflows where you prefer them. Browsing
                         and downloading public apps still require no account.
@@ -400,9 +401,12 @@ export default function AuthNav() {
                         How do I submit my app?
                       </summary>
                       <p className="mt-2 break-words text-[11px] leading-5 text-slate-400 sm:text-xs">
-                        Sign in with GitHub or GitLab, open the Developer
-                        Dashboard, and complete the submission form. Android
-                        metadata is read from Fastlane.
+                        Sign in with GitHub, GitLab, or Codeberg, open the
+                        Developer Dashboard, and complete the submission form.
+                        Android metadata is read from Fastlane. For Codeberg
+                        repositories, sign in with Codeberg and grant repository
+                        access so Luma Store can verify that you own the public
+                        repository or have Write access to it.
                       </p>
                     </details>
 
